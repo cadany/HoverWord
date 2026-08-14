@@ -2,7 +2,11 @@
 DerivedData/
 build/
 *.xcuserdata
-*.xcworkspace/xcuserdata/
+*.xccheckout
+*.moved-aside
+*.ipa
+*.dSYM.zip
+*.dSYM
 
 # macOS
 .DS_Store
@@ -13,10 +17,5 @@ build/
 *.profdata
 Coverage/
 
-# Swift Package Manager
-.build/
-Packages/
-Package.resolved
-
-# CocoaPods (if ever used)
-Pods/
+# Claude Code 本地配置（工作流定义共享，本地设置忽略）
+.claude/settings.local.json
