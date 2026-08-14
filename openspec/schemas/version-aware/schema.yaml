@@ -1,0 +1,49 @@
+name: version-aware
+version: 1
+description: 带基线子版本约束的spec‑driven工作流，propose强制派生子版本
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: 变更提案，强制绑定当前实施基线版本，生成子版本号
+    instruction: |
+      ## MANDATORY VERSION CONSTRAINT（强制，不可跳过）
+      1. 识别当前活跃基线版本：扫描openspec/changes下非archive目录，找到当前正在实施的主基线目录，例如 mvp‑v0‑1。
+      2. /opsx:propose 生成新change时，必须基于当前正在实施的基线版本派生子版本号。
+         版本命名规则：{baseline}-{type}{seq}，type可选feat/patch，seq两位数字，示例基线 mvp‑v0‑1 → mvp‑v0‑1‑feat01、mvp‑v0‑1‑patch02。
+      3. change文件夹命名格式：`{change_sub_version}-{short‑description}`。
+      4. proposal.md YAML frontmatter必须写入元数据：
+         ---
+         baseline_version: "<当前主基线名称>"
+         change_sub_version: "<派生得到的子版本>"
+         ---
+      5. 禁止propose直接创建更高主基线版本；升级主基线版本只能通过 /opsx:archive 归档全部相关变更后人工新建基线。
+      6. 正常生成proposal的意图、scope、approach。
+    template: proposal.md
+    rules:
+      proposal:
+        - proposal frontmatter必须包含baseline_version、change_sub_version元数据，缺失视为校验失败
+        - change目录名必须携带派生的子版本标识，禁止无版本通用命名
+    requires: []
+
+  - id: specs
+    generates: specs/**/*.md
+    description: Delta specs，绑定本次子版本
+    instruction: |
+      生成ADDED/MODIFIED/REMOVED delta spec。
+      每一份spec文档头部必须插入行：
+      > Change-Sub-Version: {{proposal.change_sub_version}}
+      禁止脱离proposal的子版本元数据。
+    template: spec.md
+    requires: [proposal]
+
+  - id: design
+    generates: design.md
+    description: 技术方案
+    template: design.md
+    requires: [specs]
+
+  - id: tasks
+    generates: tasks.md
+    description: 实施任务清单
+    template: tasks.md
+    requires: [design]

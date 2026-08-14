@@ -1,0 +1,114 @@
+## Purpose
+
+背记核心调度引擎，负责将启用单词本的 Section 组织为背记队列，按用户选择的模式（记忆反馈 / 走马灯）驱动单词轮换，检测 Section 完成与全队列完成，并根据设置变化重置进度。
+
+## ADDED Requirements
+
+### Requirement: Section 队列构建
+系统 SHALL 根据用户勾选启用的单词本，按单词本在列表中的排列顺序，将所有 Section 依次拼接为完整的背记队列。
+
+#### Scenario: 单个单词本启用
+- **WHEN** 用户仅启用单词本 A（含 3 个 Section）
+- **THEN** 系统 SHALL 构建队列 [A-S0, A-S1, A-S2]
+
+#### Scenario: 多个单词本启用
+- **WHEN** 用户按顺序启用单词本 A（2 个 Section）和单词本 B（3 个 Section）
+- **THEN** 系统 SHALL 构建队列 [A-S0, A-S1, B-S0, B-S1, B-S2]，Section 间顺序固定
+
+#### Scenario: 无单词本启用
+- **WHEN** 用户未启用任何单词本
+- **THEN** 系统 SHALL 构建空队列，悬浮窗显示无内容或提示状态
+
+#### Scenario: 单词本顺序调整
+- **WHEN** 用户调整单词本列表顺序后（B 在 A 之前）
+- **THEN** 系统 SHALL 按新顺序重建队列 [B-S0, ..., A-S0, ...]
+
+### Requirement: 记忆反馈模式调度
+记忆反馈模式下，系统 SHALL 要求用户对每个单词主动标记"认识"或"不认识"。单轮循环中仅"已反馈"单词不再重复出现；"未反馈"单词在后续再次出现，直至完成标记。Section 内所有单词均完成反馈后判定该 Section 完成。
+
+#### Scenario: 用户点击认识
+- **WHEN** 用户在记忆反馈模式下对当前单词点击"认识"
+- **THEN** 系统 SHALL 标记该单词为已反馈，立即切换至下一单词
+
+#### Scenario: 用户点击不认识
+- **WHEN** 用户在记忆反馈模式下对当前单词点击"不认识"
+- **THEN** 系统 SHALL 标记该单词为已反馈，立即切换至下一单词
+
+#### Scenario: 停留时长耗尽未反馈
+- **WHEN** 用户在停留时长内未对当前单词进行任何标记
+- **THEN** 系统 SHALL 自动切换至下一单词，该单词标记为"未反馈"，在本轮后续再次出现直至完成标记
+
+#### Scenario: 单轮循环中未反馈单词重复出现
+- **WHEN** 一个 Section 有 5 个单词，第一轮中 2 个未反馈
+- **THEN** 系统 SHALL 在第二轮中仅展示这 2 个未反馈单词，已反馈的 3 个不再出现
+
+#### Scenario: Section 完成判定
+- **WHEN** Section 内所有单词均已标记为已反馈
+- **THEN** 系统 SHALL 判定该 Section 完成，自动进入队列中下一个 Section
+
+### Requirement: 走马灯式刷词模式调度
+走马灯模式下，系统 SHALL 按用户设置的停留时长自动切换单词，无需用户操作。每完整播放一遍 Section 内所有单词计为 1 轮，累计播放轮次达到设置值时判定该 Section 完成。
+
+#### Scenario: 自动切换单词
+- **WHEN** 走马灯模式运行中，停留时长设为 5 秒
+- **THEN** 系统 SHALL 每 5 秒自动切换至下一个单词
+
+#### Scenario: 单轮完成计数
+- **WHEN** Section 有 10 个单词，走马灯模式已按顺序播放 10 个
+- **THEN** 系统 SHALL 计为完成 1 轮
+
+#### Scenario: 多轮完成判定
+- **WHEN** 单 Section 循环轮次设置为 3，当前已完成 2 轮
+- **THEN** 系统 SHALL 在第 3 轮播放完毕后判定该 Section 完成，自动进入下一个 Section
+
+#### Scenario: 无用户操作按钮
+- **WHEN** 走马灯模式运行中
+- **THEN** 系统 SHALL 不显示"认识"/"不认识"操作按钮，仅展示收藏按钮（悬停时）
+
+### Requirement: Section 内展示顺序
+系统 SHALL 支持"顺序播放"与"随机播放"两种展示顺序设置，仅在单个 Section 内部生效，Section 之间的先后顺序固定不变。随机模式下每一轮循环重新打乱一次单词顺序。
+
+#### Scenario: 顺序播放
+- **WHEN** 展示顺序设为"顺序播放"
+- **THEN** 系统 SHALL 按词条原始顺序在 Section 内展示单词
+
+#### Scenario: 随机播放每轮重排
+- **WHEN** 展示顺序设为"随机播放"
+- **THEN** 系统 SHALL 在每一轮循环开始时重新打乱 Section 内单词顺序，不同轮次的顺序互不相关
+
+#### Scenario: Section 间顺序不受影响
+- **WHEN** 展示顺序设为"随机播放"，队列中有多个 Section
+- **THEN** 系统 SHALL 保持 Section 之间的队列顺序不变，仅 Section 内部打乱
+
+### Requirement: 全队列完成检测
+当背记队列中所有 Section 全部完成时，系统 SHALL 停止单词切换，进入"已学完"状态。
+
+#### Scenario: 所有 Section 完成
+- **WHEN** 队列中最后一个 Section 完成
+- **THEN** 系统 SHALL 停止调度，悬浮窗显示"已学完"状态
+
+#### Scenario: 已学完状态可重新开始
+- **WHEN** 悬浮窗处于"已学完"状态
+- **THEN** 用户 SHALL 可点击"重新开始"按钮，从队列第一个 Section 重新背记
+
+### Requirement: 设置变化重置进度
+当用户在设置中修改背记规则、增减或调整单词本启用状态时，系统 SHALL 自动重置背记进度，从当前队列第一个 Section 重新开始。
+
+#### Scenario: 修改背记模式
+- **WHEN** 用户从记忆反馈模式切换为走马灯模式
+- **THEN** 系统 SHALL 重置进度，从队列第一个 Section 重新开始
+
+#### Scenario: 启用新单词本
+- **WHEN** 用户启用一个新单词本
+- **THEN** 系统 SHALL 重建队列并重置进度，从新队列第一个 Section 开始
+
+#### Scenario: 修改停留时长
+- **WHEN** 用户修改单单词停留时长
+- **THEN** 系统 SHALL 重置进度并立即使用新时长开始背记
+
+### Requirement: 模式切换进度重置
+全局二选一选择背记模式，切换模式后背记进度 SHALL 重置，从当前队列第一个 Section 重新开始。
+
+#### Scenario: 切换模式
+- **WHEN** 用户从记忆反馈模式切换为走马灯模式（或反之）
+- **THEN** 系统 SHALL 重置当前背记进度，所有 Section 从头开始

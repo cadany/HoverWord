@@ -1,0 +1,213 @@
+import AppKit
+
+/// 全局常量定义
+///
+/// 集中管理 UI spec 中的 px 值、颜色不透明度、动效时长等参数。
+/// 所有可配置数值均在此定义，便于全局调整与主题切换。
+enum Constants {
+
+    // MARK: - 悬浮窗尺寸
+
+    /// 悬浮窗默认宽度（pt）
+    static let floatWindowWidth: CGFloat = 300
+
+    /// 悬浮窗最小宽度（pt）
+    static let floatWindowMinWidth: CGFloat = 300
+
+    /// 悬浮窗最大宽度（pt）
+    static let floatWindowMaxWidth: CGFloat = 1200
+
+    /// 悬浮窗最小高度（pt）
+    static let floatWindowMinHeight: CGFloat = 30
+
+    /// 悬浮窗最大高度（pt）
+    static let floatWindowMaxHeight: CGFloat = 800
+
+    /// 悬浮窗水平内边距（pt）
+    static let floatWindowPaddingHorizontal: CGFloat = 4
+
+    /// 悬浮窗垂直内边距（pt）
+    static let floatWindowPaddingVertical: CGFloat = 2
+
+    /// 悬浮窗圆角半径（pt）
+    static let floatWindowCornerRadius: CGFloat = 8
+
+    // MARK: - 设置窗口
+
+    /// 设置窗口圆角半径（pt）
+    static let settingsWindowCornerRadius: CGFloat = 12
+
+    // MARK: - 字体层级（默认值）
+
+    /// 核心单词字号
+    static let wordFontSize: CGFloat = 14
+
+    /// 音标字号
+    static let phoneticFontSize: CGFloat = 10
+
+    /// 词性 + 释义字号
+    static let meaningFontSize: CGFloat = 12
+
+    /// 按钮文字字号
+    static let buttonFontSize: CGFloat = 13
+
+    // MARK: - 间距
+
+    /// 单词与音标列之间水平间距（pt）
+    static let wordToPhoneticSpacing: CGFloat = 8
+
+    /// 音标列与释义列之间水平间距（pt）
+    static let phoneticToMeaningSpacing: CGFloat = 16
+
+    /// 释义列与按钮区之间水平间距（pt）
+    static let meaningToButtonSpacing: CGFloat = 16
+
+    /// 释义行间距（pt）
+    static let meaningLineSpacing: CGFloat = 6
+
+    /// 操作按钮区与内容区底部间距（pt）
+    static let buttonAreaTopSpacing: CGFloat = 16
+
+    /// 按钮内部左右内边距（pt）
+    static let buttonPaddingHorizontal: CGFloat = 12
+
+    /// 按钮高度（pt）
+    static let buttonHeight: CGFloat = 28
+
+    /// 按钮之间间距（pt）
+    static let buttonSpacing: CGFloat = 8
+
+    // MARK: - 动效时长
+
+    /// 通用状态切换 ease-out 时长（秒）
+    static let transitionDuration: TimeInterval = 0.15
+
+    /// 单词切换动效时长（秒）
+    static let wordSwitchDuration: TimeInterval = 0.15
+
+    /// 按钮浮现动效时长（秒）
+    static let buttonFadeDuration: TimeInterval = 0.15
+
+    /// 按钮点击态动效时长（秒）
+    static let buttonClickDuration: TimeInterval = 0.1
+
+    /// 按钮点击态缩放比例
+    static let buttonClickScale: CGFloat = 0.95
+
+    /// 窗口显隐动效时长（秒）
+    static let windowFadeDuration: TimeInterval = 0.2
+
+    /// 设置修改视觉过渡时长（秒）
+    static let settingsApplyDuration: TimeInterval = 0.2
+
+    // MARK: - 颜色（浅色模式）
+
+    /// 浅色模式主文字不透明度
+    static let lightPrimaryTextAlpha: CGFloat = 0.85
+
+    /// 浅色模式辅助文字（音标）不透明度
+    static let lightSecondaryTextAlpha: CGFloat = 0.55
+
+    /// 浅色模式按钮默认填充不透明度
+    static let lightButtonDefaultAlpha: CGFloat = 0.20
+
+    /// 浅色模式按钮悬停填充不透明度
+    static let lightButtonHoverAlpha: CGFloat = 0.40
+
+    /// 浅色模式内描边不透明度
+    static let lightInnerStrokeAlpha: CGFloat = 0.30
+
+    // MARK: - 颜色（深色模式）
+
+    /// 深色模式主文字不透明度
+    static let darkPrimaryTextAlpha: CGFloat = 0.90
+
+    /// 深色模式辅助文字不透明度
+    static let darkSecondaryTextAlpha: CGFloat = 0.60
+
+    /// 深色模式按钮默认填充不透明度
+    static let darkButtonDefaultAlpha: CGFloat = 0.15
+
+    /// 深色模式按钮悬停填充不透明度
+    static let darkButtonHoverAlpha: CGFloat = 0.30
+
+    /// 深色模式内描边不透明度
+    static let darkInnerStrokeAlpha: CGFloat = 0.15
+
+    // MARK: - 玻璃材质
+
+    /// 内描边宽度（pt）
+    static let innerStrokeWidth: CGFloat = 1.0
+
+    /// 默认背景透明度
+    static let defaultBackgroundOpacity: CGFloat = 0.90
+
+    // MARK: - 默认设置值
+
+    /// 默认单 Section 单词数
+    static let defaultSectionSize: Int = 20
+
+    /// 默认文字颜色（hex）
+    static let defaultTextColorHex: String = "#000000"
+
+    /// 默认单单词停留时长（秒）
+    static let defaultStayDuration: Int = 5
+
+    /// 默认走马灯循环轮次
+    static let defaultCarouselLoops: Int = 3
+
+    /// 单词停留时长最小值（秒）
+    static let minStayDuration: Int = 1
+
+    /// 单词停留时长最大值（秒）
+    static let maxStayDuration: Int = 60
+
+    /// 走马灯轮次最小值
+    static let minCarouselLoops: Int = 1
+
+    /// 走马灯轮次最大值
+    static let maxCarouselLoops: Int = 20
+
+    /// Section 单词数最小值
+    static let minSectionSize: Int = 1
+
+    // MARK: - 性能约束
+
+    /// 后台常驻内存上限（MB）
+    static let maxMemoryMB: Int = 100
+
+    /// 单词切换延迟上限（ms）
+    static let maxSwitchDelayMS: Int = 100
+
+    /// 10000 条单词导入耗时上限（秒）
+    static let maxImportDurationSec: Int = 3
+
+    /// 导入性能测试样本量
+    static let importBenchmarkCount: Int = 10000
+
+    // MARK: - 系统收藏夹
+
+    /// 系统收藏夹单词本名称
+    static let favoritesWordbookName = "我的收藏"
+}
+
+// MARK: - NSColor Hex 扩展
+
+extension NSColor {
+    /// 从 hex 字符串初始化颜色（如 "#FF0000"）
+    convenience init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        guard hexSanitized.count == 6 else { return nil }
+
+        var rgb: UInt64 = 0
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        let r = CGFloat((rgb & 0xFF0000) >> 16) / 255.0
+        let g = CGFloat((rgb & 0x00FF00) >> 8) / 255.0
+        let b = CGFloat(rgb & 0x0000FF) / 255.0
+
+        self.init(red: r, green: g, blue: b, alpha: 1.0)
+    }
+}

@@ -1,0 +1,22 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserdata
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Profiling / Code coverage
+*.profraw
+*.profdata
+Coverage/
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods (if ever used)
+Pods/

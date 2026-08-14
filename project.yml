@@ -1,0 +1,66 @@
+name: HoverWord
+options:
+  bundleIdPrefix: com.hoverword
+  deploymentTarget:
+    macOS: "12.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "12.0"
+targets:
+  HoverWord:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Models
+      - path: Services
+      - path: Controllers
+      - path: Views
+      - path: Utils
+      - path: Resources
+    settings:
+      base:
+        INFOPLIST_FILE: Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoverword.app
+        PRODUCT_NAME: HoverWord
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Automatic
+        COMBINE_HIDPI_IMAGES: "YES"
+        ARCHS: "$(ARCHS_STANDARD)"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 允许测试 target 访问内部类型
+        OTHER_SWIFT_FLAGS: "$(inherited) -enable-testing"
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleName: HoverWord
+        CFBundleDisplayName: HoverWord
+        CFBundleIdentifier: com.hoverword.app
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "0.1.0"
+        CFBundlePackageType: APPL
+        CFBundleExecutable: HoverWord
+        LSUIElement: false
+        NSHumanReadableCopyright: "Copyright © 2026 HoverWord. All rights reserved."
+        NSPrincipalClass: NSApplication
+
+  HoverWordTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: HoverWordTests
+    dependencies:
+      - target: HoverWord
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoverword.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/HoverWord.app/Contents/MacOS/HoverWord"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
