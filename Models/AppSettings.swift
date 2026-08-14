@@ -4,7 +4,7 @@ import Combine
 /// 全局配置模型
 ///
 /// 采用 Codable struct 设计，通过 UserDefaults 存取（JSON 编码单值）。
-/// 提供 computed properties 访问各配置项，变更时通过 Notification 广播。
+/// 提供 stored properties 访问各配置项，变更时通过 Notification 广播。
 ///
 /// 当前为骨架实现，包含所有 v0.1 配置字段与默认值。
 class AppSettings {
@@ -42,16 +42,16 @@ class AppSettings {
     /// 背景透明度，取值 0-1，默认 0.9
     var backgroundOpacity: Double = Double(Constants.defaultBackgroundOpacity)
 
-    /// 单词字体名称，默认系统字体
-    var wordFontName: String = "San Francisco"
+    /// 单词字体名称，空字符串表示系统默认字体
+    var wordFontName: String = ""
 
-    /// 单词字号，默认 24
+    /// 单词字号，默认 14
     var wordFontSize: Double = Double(Constants.wordFontSize)
 
-    /// 释义字体名称，默认系统字体
-    var meaningFontName: String = "San Francisco"
+    /// 释义字体名称，空字符串表示系统默认字体
+    var meaningFontName: String = ""
 
-    /// 释义字号，默认 14
+    /// 释义字号，默认 12
     var meaningFontSize: Double = Double(Constants.meaningFontSize)
 
     /// 文字颜色（hex），默认黑色
@@ -137,9 +137,10 @@ class AppSettings {
         sectionSize = stored.sectionSize
         backgroundColorHex = stored.backgroundColorHex
         backgroundOpacity = stored.backgroundOpacity
-        wordFontName = stored.wordFontName
+        // 向后兼容：旧版默认 "San Francisco" 等价于空字符串（系统默认）
+        wordFontName = stored.wordFontName == "San Francisco" ? "" : stored.wordFontName
         wordFontSize = stored.wordFontSize
-        meaningFontName = stored.meaningFontName
+        meaningFontName = stored.meaningFontName == "San Francisco" ? "" : stored.meaningFontName
         meaningFontSize = stored.meaningFontSize
         // 向后兼容：旧用户无此字段时使用默认值
         textColorHex = stored.textColorHex ?? Constants.defaultTextColorHex

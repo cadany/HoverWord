@@ -4,10 +4,10 @@ import SwiftUI
 ///
 /// 展示单词本列表（名称、单词总数、Section 数量、启用勾选框），
 /// 支持新建 / 删除 / 重命名 / 导入操作，以及全局 Section 大小设置。
+/// 使用玻璃卡片分组样式。
 struct WordbookTabView: View {
     @State private var wordbooks: [WordbookInfo] = []
     @State private var selection: String?
-    @State private var sectionSize: Int = Constants.defaultSectionSize
     @State private var showingImportPanel = false
     @State private var showingNewPanel = false
     @State private var showingRenamePanel = false
@@ -27,75 +27,72 @@ struct WordbookTabView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            // 单词本列表
-            List(wordbooks, selection: $selection) { wb in
-                HStack {
-                    Toggle("", isOn: binding(for: wb))
-                        .toggleStyle(.checkbox)
-                        // 系统收藏夹单词本不禁用：空收藏时点击会触发行内提示
-                        // 非系统单词本空时禁用（依赖导入，无提示需求）
-                        .disabled(wb.wordCount == 0 && !wb.isSystem)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Constants.settingsCardSpacing) {
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(wb.name)
-                            .font(.body)
-                        Text("\(wb.wordCount) 词 · \(wb.sectionCount) Section")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                // 单词本列表卡片
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("单词本")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(wordbooks) { wb in
+                                WordbookRow(
+                                    wordbook: wb,
+                                    isOn: binding(for: wb),
+                                    isSelected: selection == wb.id,
+                                    onSelect: { selection = wb.id }
+                                )
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
+                    .frame(minHeight: 200)
 
-                    if wb.isSystem {
-                        Text("系统")
-                            .font(.caption2)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(Color.gray.opacity(0.2))
-                            .cornerRadius(3)
+                    // 行内提示
+                    if let hint = enableHint {
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                            Text(hint)
+                        }
+                        .font(.system(size: 11))
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: enableHint)
                     }
+                }
+                .glassCard()
 
+                // 操作栏卡片
+                HStack(spacing: 6) {
+                    Button("新建") { showingNewPanel = true }
+                        .glassButtonStyle()
+                        .fixedSize()
+                    Button("导入…") { showingImportPanel = true }
+                        .glassButtonStyle()
+                        .fixedSize()
+                        .disabled(selection == nil)
+                    Button("重命名") { showingRenamePanel = true }
+                        .glassButtonStyle()
+                        .fixedSize()
+                        .disabled(selection == nil)
+                    Button("删除") { deleteSelected() }
+                        .glassButtonStyle()
+                        .fixedSize()
+                        .disabled(selection == nil || isSystemSelected)
                     Spacer()
                 }
-                .tag(wb.id)
-            }
+                .glassCard()
 
-            // 行内提示（空收藏夹启用失败时短暂显示）
-            if let hint = enableHint {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                    Text(hint)
-                }
-                .font(.caption)
-                .foregroundColor(.orange)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: enableHint)
-            }
-
-            Divider()
-
-            // 操作栏
-            HStack(spacing: 8) {
-                Button("新建") { showingNewPanel = true }
-                Button("导入…") { showingImportPanel = true }
-                    .disabled(selection == nil)
-                Button("重命名") { showingRenamePanel = true }
-                    .disabled(selection == nil)
-                Button("删除") { deleteSelected() }
-                    .disabled(selection == nil || isSystemSelected)
                 Spacer()
-                // Section 大小设置
-                Text("Section 大小：")
-                    .font(.body)
-                Stepper(value: $sectionSize, in: Constants.minSectionSize...1000) {
-                    TextField("", value: $sectionSize, format: .number)
-                        .frame(width: 60)
-                        .onChange(of: sectionSize) { _ in saveSectionSize() }
-                }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
+            .padding(Constants.settingsContentPadding)
         }
-        .padding(.top, 8)
+        .scrollContentBackground(.hidden)
         .onAppear { refreshList() }
         .onReceive(NotificationCenter.default.publisher(for: .settingsWindowDidBecomeKey)) { _ in
             refreshList()
@@ -123,6 +120,8 @@ struct WordbookTabView: View {
         }
     }
 
+    // MARK: - Subviews
+
     private var isSystemSelected: Bool {
         guard let sel = selection else { return true }
         return wordbooks.first(where: { $0.id == sel })?.isSystem ?? true
@@ -140,6 +139,7 @@ struct WordbookTabView: View {
                 .textFieldStyle(.roundedBorder)
             HStack {
                 Button("取消") { showingNewPanel = false }
+                    .glassButtonStyle()
                 Button("创建") {
                     if !newWordbookName.isEmpty {
                         _ = WordbookService.shared.createWordbook(name: newWordbookName)
@@ -148,6 +148,7 @@ struct WordbookTabView: View {
                     showingNewPanel = false
                     newWordbookName = ""
                 }
+                .glassButtonStyle()
                 .disabled(newWordbookName.isEmpty)
             }
         }
@@ -165,6 +166,7 @@ struct WordbookTabView: View {
                     showingRenamePanel = false
                     renameWordbookName = ""
                 }
+                .glassButtonStyle()
                 Button("确定") {
                     if !renameWordbookName.isEmpty, let sel = selection {
                         let context = DataStack.shared.viewContext
@@ -179,6 +181,7 @@ struct WordbookTabView: View {
                     showingRenamePanel = false
                     renameWordbookName = ""
                 }
+                .glassButtonStyle()
                 .disabled(renameWordbookName.isEmpty)
             }
         }
@@ -188,6 +191,8 @@ struct WordbookTabView: View {
             renameWordbookName = selectedWordbookName
         }
     }
+
+    // MARK: - Logic
 
     private func binding(for wb: WordbookInfo) -> Binding<Bool> {
         Binding(
@@ -200,7 +205,6 @@ struct WordbookTabView: View {
                 if let wordbook = (try? context.fetch(request))?.first {
                     let success = WordbookService.shared.setWordbookEnabled(wordbook, enabled: newValue)
                     if !success {
-                        // 启用失败：显示行内提示（空收藏夹 / 空单词本共用）
                         enableHint = "请先收藏单词后再启用"
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                             enableHint = nil
@@ -236,12 +240,6 @@ struct WordbookTabView: View {
                 isSystem: wb.isSystem
             )
         }
-        sectionSize = AppSettings.shared.sectionSize
-    }
-
-    private func saveSectionSize() {
-        AppSettings.shared.sectionSize = max(Constants.minSectionSize, sectionSize)
-        AppSettings.shared.postDidChange()
     }
 
     private func handleImport(result: Result<[URL], Error>) {
@@ -251,7 +249,6 @@ struct WordbookTabView: View {
         case .success(let urls):
             guard let url = urls.first else { return }
 
-            // 查找目标单词本
             let context = DataStack.shared.viewContext
             let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
             request.predicate = NSPredicate(format: "wordbookId == %@", sel)
@@ -262,7 +259,6 @@ struct WordbookTabView: View {
                 return
             }
 
-            // 异步导入
             Task {
                 do {
                     try await WordbookService.shared.importFromFile(fileURL: url, to: wordbook)
@@ -278,6 +274,75 @@ struct WordbookTabView: View {
 
         case .failure(let error):
             importError = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Wordbook Row
+
+/// 单词本列表行视图
+///
+/// 交互拆分：左侧 checkbox（Toggle）负责启用/禁用，
+/// 右侧文本区（Button .plain）负责选中单词本。
+/// 避免整行 onTapGesture 抢占 checkbox 点击事件。
+private struct WordbookRow: View {
+    let wordbook: WordbookTabView.WordbookInfo
+    let isOn: Binding<Bool>
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // Checkbox 列：仅负责启用/禁用，不拦截行选中
+            Toggle("", isOn: isOn)
+                .toggleStyle(.checkbox)
+                .disabled(wordbook.wordCount == 0 && !wordbook.isSystem)
+
+            // 文本区：Button(.plain) 负责行选中，不干扰 Toggle
+            Button(action: onSelect) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(wordbook.name)
+                            .font(.system(size: 13))
+                        Text("\(wordbook.wordCount) 词 · \(wordbook.sectionCount) Section")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+
+                    if wordbook.isSystem {
+                        Text("系统")
+                            .font(.system(size: 10))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(Color.primary.opacity(0.08))
+                            )
+                    }
+
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(backgroundColor)
+        )
+        .onHover { hovering in isHovering = hovering }
+        .animation(.easeOut(duration: 0.15), value: isHovering)
+    }
+
+    private var backgroundColor: Color {
+        if isSelected {
+            return Color.accentColor.opacity(0.10)
+        } else if isHovering {
+            return Color.primary.opacity(0.04)
+        } else {
+            return .clear
         }
     }
 }

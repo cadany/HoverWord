@@ -34,8 +34,32 @@ enum Constants {
 
     // MARK: - 设置窗口
 
-    /// 设置窗口圆角半径（pt）
-    static let settingsWindowCornerRadius: CGFloat = 12
+    /// 设置窗口默认宽度（pt）
+    static let settingsWindowWidth: CGFloat = 720
+
+    /// 设置窗口默认高度（pt）
+    static let settingsWindowHeight: CGFloat = 560
+
+    /// 设置窗口最小宽度（pt）
+    static let settingsWindowMinWidth: CGFloat = 640
+
+    /// 设置窗口最小高度（pt）
+    static let settingsWindowMinHeight: CGFloat = 480
+
+    /// 设置窗口 sidebar 宽度（pt）
+    static let settingsSidebarWidth: CGFloat = 200
+
+    /// 设置窗口内容区圆角半径（pt）
+    static let settingsCardCornerRadius: CGFloat = 12
+
+    /// 设置窗口卡片分组间距（pt）
+    static let settingsCardSpacing: CGFloat = 12
+
+    /// 设置窗口内容区内边距（pt）
+    static let settingsContentPadding: CGFloat = 20
+
+    /// Sidebar hover 态 ease-out 时长（秒）
+    static let sidebarHoverDuration: TimeInterval = 0.15
 
     // MARK: - 字体层级（默认值）
 
@@ -170,6 +194,9 @@ enum Constants {
 
     /// Section 单词数最小值
     static let minSectionSize: Int = 1
+
+    /// Section 单词数最大值
+    static let maxSectionSize: Int = 500
 
     // MARK: - 性能约束
 

@@ -3,19 +3,28 @@ import SwiftUI
 
 /// 主设置窗口控制器
 ///
-/// 标准标题栏 + Liquid Glass 内容区设计。窗口内嵌 SwiftUI TabView，
-/// 包含 4 个 Tab 页：单词本管理 / 背记规则 / 外观 / 发音。
+/// Liquid Glass 玻璃材质 + sidebar 导航设计。
+/// 使用 NavigationSplitView 实现左侧 sidebar + 右侧内容区布局。
+/// 包含 4 个导航项：单词本 / 背记 / 外观 / 发音。
 class SettingsWindowController: NSWindowController {
 
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: Constants.settingsWindowWidth, height: Constants.settingsWindowHeight),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         window.title = "HoverWord 设置"
         window.center()
+        window.minSize = NSSize(
+            width: Constants.settingsWindowMinWidth,
+            height: Constants.settingsWindowMinHeight
+        )
+
+        // 窗口透明：让 SwiftUI .regularMaterial / .thinMaterial 能透出桌面，呈现玻璃质感
+        window.isOpaque = false
+        window.backgroundColor = .clear
 
         // 内容区使用 SwiftUI 宿主
         let rootView = SettingsRootView()
@@ -58,21 +67,100 @@ class SettingsWindowDelegate: NSObject, NSWindowDelegate {
 }
 
 /// 设置窗口根视图（SwiftUI）
+///
+/// NavigationSplitView sidebar 布局：左侧导航 + 右侧内容。
+/// 整窗 Liquid Glass 材质。
 struct SettingsRootView: View {
+    @State private var selectedItemId: String = SidebarItem.wordbook.id
+
     var body: some View {
-        TabView {
-            WordbookTabView()
-                .tabItem { Label("单词本", systemImage: "book") }
-
-            ReciteSettingsView()
-                .tabItem { Label("背记", systemImage: "arrow.triangle.2.circlepath") }
-
-            AppearanceView()
-                .tabItem { Label("外观", systemImage: "paintbrush") }
-
-            SpeechSettingsView()
-                .tabItem { Label("发音", systemImage: "speaker.wave.2") }
+        NavigationSplitView {
+            // Sidebar
+            List(SidebarItem.allItems, selection: $selectedItemId) { item in
+                SidebarRow(item: item, isSelected: selectedItemId == item.id)
+                    .tag(item.id)
+            }
+            .listStyle(.sidebar)
+            .optionalLiquidGlassBackground(.sidebar)
+            .scrollContentBackground(.hidden)
+            .navigationSplitViewColumnWidth(
+                min: Constants.settingsSidebarWidth,
+                ideal: Constants.settingsSidebarWidth,
+                max: Constants.settingsSidebarWidth
+            )
+        } detail: {
+            // 内容区
+            Group {
+                switch selectedItemId {
+                case SidebarItem.wordbook.id:
+                    WordbookTabView()
+                case SidebarItem.recite.id:
+                    ReciteSettingsView()
+                case SidebarItem.appearance.id:
+                    AppearanceView()
+                case SidebarItem.speech.id:
+                    SpeechSettingsView()
+                default:
+                    WordbookTabView() // String switch 需要 default 才能编译
+                }
+            }
+            .optionalLiquidGlassBackground(.content)
+            .animation(.spring(duration: 0.3), value: selectedItemId)
         }
-        .frame(minWidth: 640, minHeight: 520)
+        .navigationSplitViewStyle(.balanced)
+        .frame(
+            minWidth: Constants.settingsWindowMinWidth,
+            minHeight: Constants.settingsWindowMinHeight
+        )
+    }
+}
+
+/// Sidebar 导航行视图
+///
+/// 图标 + 文字标签，选中态使用玻璃药丸高亮。
+private struct SidebarRow: View {
+    let item: SidebarItem
+    let isSelected: Bool
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: item.icon)
+                .font(.system(size: 14))
+                .frame(width: 20)
+                .foregroundColor(isSelected ? Color.primary : .secondary)
+            Text(item.label)
+                .font(.system(size: 13))
+                .foregroundColor(isSelected ? Color.primary : .secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(backgroundColor)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(
+                    isSelected ? Color.accentColor.opacity(0.25) : Color.clear,
+                    lineWidth: 0.5
+                )
+        )
+        .animation(.easeOut(duration: Constants.sidebarHoverDuration), value: isHovering)
+        .animation(.easeOut(duration: Constants.sidebarHoverDuration), value: isSelected)
+        .onHover { hovering in
+            isHovering = hovering
+        }
+    }
+
+    private var backgroundColor: Color {
+        if isSelected {
+            return Color.accentColor.opacity(0.15)
+        } else if isHovering {
+            return Color.primary.opacity(0.06)
+        } else {
+            return .clear
+        }
     }
 }
