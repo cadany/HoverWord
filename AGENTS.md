@@ -23,7 +23,7 @@
 | UI 框架 | AppKit + SwiftUI 混合 |	窗口管理、悬浮窗自定义使用 AppKit；设置界面内容使用 SwiftUI 提升开发效率 |
 | 数据持久化 | Core Data |	存储单词本、词条、收藏记录与全局配置，原生兼容 macOS |
 | 发音引擎 | AVFoundation / AVSpeechSynthesizer |	调用系统原生 TTS，离线可用，支持英 / 美音切换 |
-| 最低系统版本 | macOS 12.0 (Monterey) |	向下兼容 Intel 芯片设备，适配 Apple Silicon |
+| 最低系统版本 | macOS 14.0 (Sonoma) |	使用最新 Liquid Glass 材质与 NavigationSplitView API |
 | 开发工具 | Xcode 15+ |	使用最新版本的 Xcode 进行开发 |
 | 依赖管理 | Swift Package Manager |	不引入任何第三方依赖，全部使用系统原生框架 |
 

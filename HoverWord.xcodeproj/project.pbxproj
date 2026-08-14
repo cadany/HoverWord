@@ -21,6 +21,8 @@
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */; };
 		614B9173806097F6091A208D /* FloatWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3690945B618D6972DF60E1E /* FloatWindowController.swift */; };
 		67C16A57A7231DF44B9A8B9F /* AppearanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3134C94B8F520D3AA4944905 /* AppearanceView.swift */; };
+		G50000000000000000000002 /* GlassStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = G50000000000000000000001 /* GlassStyles.swift */; };
+		G50000000000000000000004 /* SidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = G50000000000000000000003 /* SidebarItem.swift */; };
 		89464B51FDE47BEB9D6CB6A0 /* DataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6542EAFD71253420F6397B33 /* DataStack.swift */; };
 		A6C53DB162D903EB1EE539C8 /* GlassBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA4E4A165BD908A7E8D9F01 /* GlassBackgroundView.swift */; };
 		AEA8F72D50DAF7BF290A24F5 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453973A5FD772833F1C44A85 /* Constants.swift */; };
@@ -59,6 +61,8 @@
 		10AE12D078A4B6FE706BCCB1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		15A87F4D760AF6E35D872AB0 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		3134C94B8F520D3AA4944905 /* AppearanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceView.swift; sourceTree = "<group>"; };
+		G50000000000000000000001 /* GlassStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyles.swift; sourceTree = "<group>"; };
+		G50000000000000000000003 /* SidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarItem.swift; sourceTree = "<group>"; };
 		33E178D4E8EFC124BEC08B5D /* HoverWord.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HoverWord.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3A93660EF34F8AC686402D5B /* WordbookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookService.swift; sourceTree = "<group>"; };
 		44854A195C686AA28C460BAB /* WordEntry+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WordEntry+CoreDataProperties.swift"; sourceTree = "<group>"; };
@@ -176,6 +180,8 @@
 			isa = PBXGroup;
 			children = (
 				9600E0E70C13324E5A62F2A6 /* SettingsWindowController.swift */,
+				G50000000000000000000001 /* GlassStyles.swift */,
+				G50000000000000000000003 /* SidebarItem.swift */,
 				3134C94B8F520D3AA4944905 /* AppearanceView.swift */,
 				0EB157AEDF8C24AC099AB5A7 /* ReciteSettingsView.swift */,
 				86BB2B0F71619949DBD3ABAB /* SpeechSettingsView.swift */,
@@ -346,6 +352,8 @@
 				B32978AC1F0B6D4828A492CE /* AppDelegate.swift in Sources */,
 				1D03693445B2C197896245DD /* AppSettings.swift in Sources */,
 				67C16A57A7231DF44B9A8B9F /* AppearanceView.swift in Sources */,
+				G50000000000000000000002 /* GlassStyles.swift in Sources */,
+				G50000000000000000000004 /* SidebarItem.swift in Sources */,
 				AEA8F72D50DAF7BF290A24F5 /* Constants.swift in Sources */,
 				89464B51FDE47BEB9D6CB6A0 /* DataStack.swift in Sources */,
 				3C433EC6693EDFAD6DAE7A65 /* Favorite+CoreDataClass.swift in Sources */,
@@ -447,7 +455,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -509,7 +517,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

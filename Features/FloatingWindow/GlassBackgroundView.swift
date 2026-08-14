@@ -2,9 +2,10 @@ import AppKit
 
 /// 玻璃背景视图
 ///
-/// NSVisualEffectView 子类，提供 Liquid Glass 视觉效果：
-/// - macOS 14+：使用 .liquid 材质（完整 Liquid Glass）
+/// NSVisualEffectView 子类，提供玻璃视觉效果：
+/// - macOS 14-25：使用 .underWindowBackground 材质（精致磨砂，最接近 Liquid Glass）
 /// - macOS 12-13：使用 .hudWindow 材质 + 1px 内描边降级
+/// 注：真正的 `.liquid` 材质仅存在于 SwiftUI（macOS 26+），AppKit 无此枚举值。
 /// - 支持自定义背景色叠加（tint 层）
 /// - 支持透明度控制（文字层始终保持 100% 不透明）
 class GlassBackgroundView: NSVisualEffectView {
@@ -83,11 +84,9 @@ class GlassBackgroundView: NSVisualEffectView {
 
     /// 根据系统版本选择材质
     ///
-    /// - macOS 14+：使用 `.underWindowBackground` 材质（更精致的磨砂质感，最接近 Liquid Glass 视觉效果）
-    /// - macOS 12–13：使用 `.hudWindow` 材质 + 1px 内描边降级
-    ///
-    /// 注：ui-spec 中提到的 `.liquid` 枚举值在当前 macOS SDK 中不存在，
-    /// 已替换为视觉效果最接近的 `.underWindowBackground`。
+    /// 注：`.liquid` 仅存在于 SwiftUI（macOS 26+），AppKit 的 NSVisualEffectView.Material 不包含此值。
+    /// AppKit 层面选用 `.underWindowBackground`（macOS 14+ 最精致的磨砂质感，最接近 Liquid Glass 视觉效果）。
+    /// SwiftUI 层面（设置窗口等）在 macOS 26+ 使用 `.liquid` 获得真正的液态玻璃。
     private func effectiveMaterial() -> NSVisualEffectView.Material {
         if #available(macOS 14.0, *) {
             return .underWindowBackground
