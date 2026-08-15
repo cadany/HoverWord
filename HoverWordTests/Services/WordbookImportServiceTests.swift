@@ -1,10 +1,38 @@
 import XCTest
+import CoreData
 @testable import HoverWord
 
 /// 词库导入功能验证
 ///
 /// 对应任务 3.8：正常文件、空文件、格式错误（精准行号）、编码错误、10000 条大文件。
 final class WordbookImportServiceTests: XCTestCase {
+
+    // MARK: - 生命周期（Core Data 写入测试需要）
+
+    override func setUp() {
+        super.setUp()
+        DataStack.shared.initialize()
+        clearAllData()
+    }
+
+    override func tearDown() {
+        clearAllData()
+        super.tearDown()
+    }
+
+    private func clearAllData() {
+        let context = DataStack.shared.viewContext
+        let entities = ["WordEntry", "Wordbook", "Favorite"]
+        for entityName in entities {
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: entityName)
+            if let objects = try? context.fetch(fetchRequest) {
+                for object in objects {
+                    context.delete(object)
+                }
+            }
+        }
+        DataStack.shared.saveContext()
+    }
 
     // MARK: - 正常解析
 
@@ -158,5 +186,67 @@ final class WordbookImportServiceTests: XCTestCase {
                 XCTFail("解析失败: \(error)")
             }
         }
+    }
+
+    // MARK: - orderIndex 写入验证
+
+    /// 导入后词条 orderIndex 值与文件行序一致
+    func testImportWritesOrderIndex() async throws {
+        // 准备内容：5 个单词，文件顺序为 zebra, apple, mango, banana, cherry
+        let content = """
+        zebra\t\t\tn.\t斑马
+        apple\t\t\tn.\t苹果
+        mango\t\t\tn.\t芒果
+        banana\t\t\tn.\t香蕉
+        cherry\t\t\tn.\t樱桃
+        """
+        let data = content.data(using: .utf8)!
+        let parsed = try WordbookImportService.parse(data: data)
+
+        // 创建测试单词本
+        let wordbook = WordbookService.shared.createWordbook(name: "测试排序")
+
+        // 执行导入
+        try await WordbookImportService.importEntries(parsed, to: wordbook, sectionSize: 20)
+
+        // 直接查询数据库，按 orderIndex 排序
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbook.wordbookId == %@", wordbook.wordbookId)
+        request.sortDescriptors = [NSSortDescriptor(key: "orderIndex", ascending: true)]
+
+        let entries = try context.fetch(request)
+        XCTAssertEqual(entries.count, 5)
+
+        // 验证 orderIndex 与文件行序一致
+        let expectedOrder: [String] = ["zebra", "apple", "mango", "banana", "cherry"]
+        for (i, entry) in entries.enumerated() {
+            XCTAssertEqual(entry.orderIndex, Int32(i), "第 \(i) 个词条 orderIndex 应为 \(i)")
+            XCTAssertEqual(entry.sourceWord, expectedOrder[i], "第 \(i) 个词条 sourceWord 应为 \(expectedOrder[i])")
+        }
+    }
+
+    /// getEntries 返回结果按 orderIndex 排序，而非 wordId（UUID）
+    func testGetEntriesSortedByOrderIndex() async throws {
+        // 准备内容：故意让字母序与文件序不同
+        let content = """
+        zebra\t\t\tn.\t斑马
+        apple\t\t\tn.\t苹果
+        mango\t\t\tn.\t芒果
+        """
+        let data = content.data(using: .utf8)!
+        let parsed = try WordbookImportService.parse(data: data)
+
+        let wordbook = WordbookService.shared.createWordbook(name: "排序验证")
+        try await WordbookImportService.importEntries(parsed, to: wordbook, sectionSize: 20)
+
+        // 通过 getEntries 获取（应返回 orderIndex 排序结果）
+        let entries = WordbookService.shared.getEntries(for: wordbook, sectionIndex: 0)
+        XCTAssertEqual(entries.count, 3)
+
+        // 验证顺序为文件行序（zebra, apple, mango），而非字母序（apple, mango, zebra）
+        XCTAssertEqual(entries[0].sourceWord, "zebra")
+        XCTAssertEqual(entries[1].sourceWord, "apple")
+        XCTAssertEqual(entries[2].sourceWord, "mango")
     }
 }

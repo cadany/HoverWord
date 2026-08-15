@@ -169,6 +169,7 @@ class WordbookImportService {
                 let entry = WordEntry(context: context)
                 entry.wordId = UUID().uuidString
                 entry.sectionIndex = sectionIndex
+                entry.orderIndex = Int32(index)
                 entry.sourceWord = parsed.sourceWord
                 entry.phonetic = parsed.phonetic
                 entry.pos1 = parsed.pos1

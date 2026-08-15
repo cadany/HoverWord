@@ -230,7 +230,10 @@ class WordbookService {
             format: "wordbook.wordbookId == %@ AND sectionIndex == %d",
             wordbook.wordbookId, Int32(sectionIndex)
         )
-        request.sortDescriptors = [NSSortDescriptor(key: "wordId", ascending: true)]
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "orderIndex", ascending: true),
+            NSSortDescriptor(key: "sourceWord", ascending: true)  // 平局兜底
+        ]
         return (try? context.fetch(request)) ?? []
     }
 

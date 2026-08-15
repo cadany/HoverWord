@@ -15,6 +15,13 @@ class DataStack {
     /// 持久化容器
     private(set) lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "HoverWord")
+
+        // 启用轻量迁移：模型版本升级时自动迁移 store，不丢失数据
+        if let description = container.persistentStoreDescriptions.first {
+            description.setOption(NSNumber(value: true), forKey: NSMigratePersistentStoresAutomaticallyOption)
+            description.setOption(NSNumber(value: true), forKey: NSInferMappingModelAutomaticallyOption)
+        }
+
         container.loadPersistentStores { _, error in
             if let error = error as NSError? {
                 fatalError("Core Data 栈加载失败: \(error), \(error.userInfo)")

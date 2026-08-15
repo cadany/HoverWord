@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22225" systemVersion="23G80" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="NO" userDefinedModelVersionIdentifier="">
+    <entity name="Wordbook" representedClassName="Wordbook" syncable="YES">
+        <attribute name="wordbookId" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="sourceLang" attributeType="String" defaultValueString="en"/>
+        <attribute name="targetLang" attributeType="String" defaultValueString="zh-Hans"/>
+        <attribute name="isEnabled" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isSystem" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="WordEntry" inverseName="wordbook" inverseEntity="WordEntry"/>
+    </entity>
+    <entity name="WordEntry" representedClassName="WordEntry" syncable="YES">
+        <attribute name="wordId" attributeType="String"/>
+        <attribute name="sectionIndex" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="orderIndex" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="sourceWord" attributeType="String"/>
+        <attribute name="phonetic" optional="YES" attributeType="String"/>
+        <attribute name="pos1" optional="YES" attributeType="String"/>
+        <attribute name="meaning1" optional="YES" attributeType="String"/>
+        <attribute name="pos2" optional="YES" attributeType="String"/>
+        <attribute name="meaning2" optional="YES" attributeType="String"/>
+        <attribute name="pos3" optional="YES" attributeType="String"/>
+        <attribute name="meaning3" optional="YES" attributeType="String"/>
+        <relationship name="wordbook" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Wordbook" inverseName="entries" inverseEntity="Wordbook"/>
+    </entity>
+    <entity name="Favorite" representedClassName="Favorite" syncable="YES">
+        <attribute name="favoriteId" attributeType="String"/>
+        <attribute name="sourceWord" attributeType="String"/>
+        <attribute name="wordDetail" optional="YES" attributeType="Binary"/>
+        <attribute name="collectedAt" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+</model>

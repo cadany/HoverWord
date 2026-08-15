@@ -11,6 +11,8 @@ extension WordEntry {
     @NSManaged public var wordId: String
     /// 所属 Section 序号（从 0 开始）
     @NSManaged public var sectionIndex: Int32
+    /// 导入时的文件行序（用于顺序播放）
+    @NSManaged public var orderIndex: Int32
     /// 源语言词条（核心背记单词）
     @NSManaged public var sourceWord: String
     /// 源语言注音 / 音标
