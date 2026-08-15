@@ -19,6 +19,3 @@ Coverage/
 
 # Claude Code 本地配置（工作流定义共享，本地设置忽略）
 .claude/settings.local.json
-
-#中间文件
-docs/icons/AppIcon.appiconset/
