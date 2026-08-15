@@ -15,11 +15,16 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 本项目以该质感为基础，实现悬浮窗与桌面环境的自然融合，替代纯色背景的生硬感。
 
 ### 系统版本分级适配
-| 系统版本 | 材质方案 | 实现说明 |
-| --- | --- | --- |
-| macOS 14.0+ | 完整 Liquid Glass | 使用 NSVisualEffectView.Material.liquid，开启系统原生内边框与高光 |
-| macOS 12.0 ~ 13.x | 降级磨砂玻璃 | 使用 .hudWindow 材质 + 自定义 1px 内描边，模拟接近的通透质感 |
-| 通用规则 | 自动跟随系统 | 所有玻璃材质自动适配深色 / 浅色模式，无需手动切换颜色 |
+
+本项目同时包含 AppKit（悬浮窗）与 SwiftUI（设置窗口）两套渲染路径，两者的 Liquid Glass 可用性不同，需分别适配。
+
+| 渲染层 | 系统版本 | 材质方案 | 实现说明 |
+| --- | --- | --- | --- |
+| 悬浮窗（AppKit） | macOS 14.0+ | 精致磨砂玻璃 | 使用 NSVisualEffectView.Material.underWindowBackground，配合 behindWindow 混合模式抓取桌面内容进行磨砂虚化 |
+| 悬浮窗（AppKit） | macOS 12.0 ~ 13.x | 降级磨砂玻璃 | 使用 .hudWindow 材质 + 自定义 1px 内描边，模拟接近的通透质感 |
+| 设置窗口（SwiftUI） | macOS 26.0+ | 完整 Liquid Glass | 使用系统原生 `.glassEffect()`、`.buttonStyle(.glass)`、`.thinMaterial` / `.regularMaterial`，整窗透明（isOpaque=false, backgroundColor=.clear）让材质透出桌面 |
+| 设置窗口（SwiftUI） | macOS 14.0 ~ 25.x | 系统默认 | 不添加任何自定义玻璃效果，完全交由系统默认控件渲染（遵循「系统默认优先」原则） |
+| 通用规则 | 所有版本 | 自动跟随系统 | 所有玻璃材质自动适配深色 / 浅色模式，无需手动切换颜色 |
 
 ### 悬浮背记窗玻璃实现规范（核心场景）
 #### 底层结构
@@ -27,7 +32,7 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 - 材质混合模式为 .behindWindow，抓取窗口后方桌面与应用内容进行磨砂虚化
 - 禁用窗口自带标题栏与背景色，完全由玻璃视图承载视觉表现
 #### 形状与边缘
-- 圆角：统一使用 16px 连续圆角（continuous corner），曲率与系统控制中心、通知中心保持一致
+- 圆角：统一使用 8pt 连续圆角（continuous corner），曲率与系统控制中心、通知中心保持一致
 - 内描边：叠加 1px 半透明白色内边框，浅色模式 alpha 0.3，深色模式 alpha 0.15，模拟玻璃边缘反光
 - 阴影：使用系统默认窗口阴影，不自定义厚重阴影，保持轻盈悬浮感
 #### 自定义外观兼容规则
@@ -39,10 +44,10 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 - 拖拽到屏幕边缘时无磁吸变形，保持原有玻璃形态与圆角
 
 ### 主设置窗口玻璃适配规范
-- 窗口结构：标准标题栏 + Liquid Glass 材质贯穿设计，标题栏区域与内容区无缝融合
-- Sidebar 导航：左侧 200pt 宽 sidebar，使用 .thinMaterial 材质；4 个导航项（单词本/背记/外观/发音），选中态蓝色玻璃药丸高亮，hover 态微微提亮，切换时 spring 过渡
-- 内容区域：右侧使用 .regularMaterial 材质，配置项以圆角 12pt 玻璃卡片分组，卡片间 12pt 间距
-- 自定义控件：按钮、Toggle、Radio 均采用 glass 风格样式，与悬浮窗视觉语言统一
+- 窗口结构：标准标题栏 + Liquid Glass 材质贯穿设计。窗口设为透明（isOpaque=false, backgroundColor=.clear），让 SwiftUI material 能透出桌面呈现玻璃质感
+- Sidebar 导航：左侧 200pt 宽 sidebar（macOS 26+ 使用 .thinMaterial 材质；macOS 14-25 使用系统默认）；4 个导航项（单词本/背记/外观/发音），选中态 accentColor 药丸高亮（opacity 0.15），hover 态微微提亮（primary opacity 0.06），切换时 spring 过渡（0.3s）
+- 内容区域：右侧（macOS 26+ 使用 .regularMaterial 材质；macOS 14-25 使用系统默认），配置项以圆角 12pt 玻璃卡片分组（macOS 26+ 使用 .glassEffect()；macOS 14-25 无额外背景），卡片间 12pt 间距
+- 自定义控件：macOS 26+ 按钮使用 .glass / .glassProminent 样式，Toggle、Picker 使用系统原生 glass 风格；macOS 14-25 使用系统默认控件
 - 窗口尺寸：默认 720×560pt，最小 640×480pt
 
 ### 控件级玻璃交互反馈
@@ -58,16 +63,16 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 
 | 层级 | 用途 | 字体与字号 | 字重 |
 | --- | --- | --- | --- |
-| 一级 | 核心单词 | SF Pro Display | Semibold 24pt |
-| 二级 | 音标 | SF Pro Text | Regular 12pt |
-| 三级 | 词性 + 释义 | SF Pro Text | Regular 14pt |
+| 一级 | 核心单词 | SF Pro Display | Semibold 14pt |
+| 二级 | 音标 | SF Pro Text | Regular 10pt |
+| 三级 | 词性 + 释义 | SF Pro Text | Regular 12pt |
 | 四级 | 按钮文字 | SF Pro Text | Medium 13pt |
 
 ### 间距规范
-- 悬浮窗内边距：水平 16px，垂直 20px
-- 元素垂直间距：单词与音标间距 8px，音标与释义区块间距 12px，释义行间距 6px
-- 操作按钮区与内容区底部间距：16px
-- 按钮内部左右内边距：12px，按钮高度 28px
+- 悬浮窗内边距：水平 4pt，垂直 2pt
+- 元素垂直间距：单词与音标间距 8pt，音标与释义区块间距 16pt，释义行间距 6pt
+- 操作按钮区与内容区底部间距：16pt
+- 按钮内部左右内边距：12pt，按钮高度 28pt
 
 ### 默认颜色系统
 #### 浅色模式
