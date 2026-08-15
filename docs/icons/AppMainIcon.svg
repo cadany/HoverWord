@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="bookCover">
+   <stop stop-color="#5AC8FA" offset="0%"/>
+   <stop stop-color="#3DDC84" offset="100%"/>
+  </linearGradient>
+ </defs>
+ <!-- 背景：直角，Apple 会自行加圆角 -->
+ <rect fill="url(#bookCover)" width="1024" height="1024" x="0" y="0"/>
+ <!-- 三条白色横杠，模拟书本/词条行 -->
+ <rect fill="rgba(255,255,255,0.9)" rx="16" width="767" height="64" x="128" y="256"/>
+ <rect fill="rgba(255,255,255,0.7)" rx="16" width="639" height="64" x="128" y="384"/>
+ <rect fill="rgba(255,255,255,0.5)" rx="16" width="703" height="64" x="128" y="512"/>
+ <!-- 应用名称 -->
+ <text text-anchor="middle" fill="#FFFFFF" font-weight="600" font-size="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" x="512" y="704">HoverWord</text>
+</svg>
