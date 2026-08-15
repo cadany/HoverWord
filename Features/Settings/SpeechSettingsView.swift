@@ -26,8 +26,9 @@ struct SpeechSettingsView: View {
                             .toggleStyle(.switch)
                             .labelsHidden()
                             .onChange(of: autoPlay) { newValue in
+                                guard AppSettings.shared.autoPlaySpeech != newValue else { return }
                                 AppSettings.shared.autoPlaySpeech = newValue
-                                AppSettings.shared.postDidChange()
+                                AppSettings.shared.postAppearanceChange()
                             }
                     }
 
@@ -69,8 +70,9 @@ struct SpeechSettingsView: View {
     }
 
     private func saveAccent() {
+        guard AppSettings.shared.useAmericanAccent != useAmerican else { return }
         AppSettings.shared.useAmericanAccent = useAmerican
         SpeechService.shared.applySettings()
-        AppSettings.shared.postDidChange()
+        AppSettings.shared.postAppearanceChange()
     }
 }

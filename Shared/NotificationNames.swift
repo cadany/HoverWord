@@ -9,10 +9,23 @@ extension Notification.Name {
 
     // MARK: - 设置相关
 
-    /// 全局设置已变更（任何设置项修改后发送）
+    /// 背记规则设置已变更（影响背记队列的结构设置修改后发送）
     ///
-    /// 监听方：ReciteEngine（重置进度）、FloatContentView（刷新外观）
+    /// 监听方：ReciteEngine（重置进度）
+    /// 触发方：ReciteSettingsView 中背记模式、播放顺序、Section 大小、走马灯轮次
     static let appSettingsDidChange = Notification.Name("appSettingsDidChange")
+
+    /// 外观设置已变更（不影响背记队列的视觉设置修改后发送）
+    ///
+    /// 监听方：FloatContentView（刷新外观）
+    /// 触发方：AppearanceView、SpeechSettingsView
+    static let appAppearanceDidChange = Notification.Name("appAppearanceDidChange")
+
+    /// 计时参数已变更（仅影响计时器，不影响队列结构）
+    ///
+    /// 监听方：ReciteEngine（热更新计时器，不重置进度）
+    /// 触发方：ReciteSettingsView 中停留时长、全屏自动隐藏
+    static let appTimingDidChange = Notification.Name("appTimingDidChange")
 
     /// 设置窗口获得焦点（每次从后台切回或重新唤起时发送）
     ///

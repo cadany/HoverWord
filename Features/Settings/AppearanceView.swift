@@ -73,9 +73,7 @@ struct AppearanceView: View {
                             }
                         }
                         .pickerStyle(.segmented)
-                        .onChange(of: selectedTheme) { newTheme in
-                            applyTheme(newTheme)
-                        }
+                        .onChange(of: selectedTheme) { newTheme in applyTheme(newTheme) }
                     }
                 }
                 .glassCard()
@@ -171,7 +169,7 @@ struct AppearanceView: View {
                             }
                         }
                         .labelsHidden()
-                        .onChange(of: meaningFontName) { _ in saveAppearance() }
+                        .onChange(of: meaningFontName) { _ in saveAppearance()}
                     }
 
                     Divider()
@@ -180,7 +178,7 @@ struct AppearanceView: View {
                         Text("字号")
                             .font(.system(size: 13))
                         Slider(value: $meaningFontSize, in: 10...24, step: 1)
-                            .onChange(of: meaningFontSize) { _ in saveAppearance() }
+                            .onChange(of: meaningFontSize) { _ in saveAppearance()}
                         Text("\(Int(meaningFontSize))pt")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
@@ -216,8 +214,12 @@ struct AppearanceView: View {
     }
 
     private func applyTheme(_ theme: ThemeOption) {
-        customColor = theme.backgroundColor
-        textColor = theme.textColor
+        // 主题未变化时跳过，避免 onAppear 加载触发冗余保存
+        let newBg = theme.backgroundColor
+        let newFg = theme.textColor
+        guard customColor != newBg || textColor != newFg else { return }
+        customColor = newBg
+        textColor = newFg
         saveAppearance()
     }
 
@@ -233,14 +235,34 @@ struct AppearanceView: View {
     }
 
     private func saveAppearance() {
-        AppSettings.shared.backgroundOpacity = backgroundOpacity
+        // 计算新值
+        let newOpacity = backgroundOpacity
+        let newWordFont = (wordFontName == "System Default") ? "" : wordFontName
+        let newWordSize = wordFontSize
+        let newMeaningFont = (meaningFontName == "System Default") ? "" : meaningFontName
+        let newMeaningSize = meaningFontSize
+        let newBgHex = hexString(from: customColor)
+        let newFgHex = hexString(from: textColor)
+
+        // 所有值均未变化时跳过保存与通知（防止 sidebar 切换触发 onChange）
+        let s = AppSettings.shared
+        guard s.backgroundOpacity != newOpacity
+            || s.wordFontName != newWordFont
+            || s.wordFontSize != newWordSize
+            || s.meaningFontName != newMeaningFont
+            || s.meaningFontSize != newMeaningSize
+            || s.backgroundColorHex != newBgHex
+            || s.textColorHex != newFgHex
+        else { return }
+
+        s.backgroundOpacity = newOpacity
         // "System Default" 与空字符串都存储为空字符串，渲染层自行映射
-        AppSettings.shared.wordFontName = (wordFontName == "System Default") ? "" : wordFontName
-        AppSettings.shared.wordFontSize = wordFontSize
-        AppSettings.shared.meaningFontName = (meaningFontName == "System Default") ? "" : meaningFontName
-        AppSettings.shared.meaningFontSize = meaningFontSize
-        AppSettings.shared.backgroundColorHex = hexString(from: customColor)
-        AppSettings.shared.textColorHex = hexString(from: textColor)
-        AppSettings.shared.postDidChange()
+        s.wordFontName = newWordFont
+        s.wordFontSize = newWordSize
+        s.meaningFontName = newMeaningFont
+        s.meaningFontSize = newMeaningSize
+        s.backgroundColorHex = newBgHex
+        s.textColorHex = newFgHex
+        s.postAppearanceChange()
     }
 }

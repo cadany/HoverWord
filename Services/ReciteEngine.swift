@@ -76,6 +76,12 @@ class ReciteEngine {
         )
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(handleTimingChange),
+            name: .appTimingDidChange,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(handleWordbookChange),
             name: .wordbookEnablementDidChange,
             object: nil
@@ -353,9 +359,15 @@ class ReciteEngine {
     // MARK: - 通知处理
 
     @objc private func handleSettingsChange() {
-        // 设置变化时重置进度
+        // 背记规则变化时重置进度
         stopTimer()
         start()
+    }
+
+    @objc private func handleTimingChange() {
+        // 计时参数变化时仅热更新计时器，不重置进度
+        guard state == .playing else { return }
+        startTimer()
     }
 
     @objc private func handleWordbookChange() {

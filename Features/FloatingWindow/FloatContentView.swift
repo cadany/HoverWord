@@ -68,11 +68,11 @@ class FloatContentView: NSView {
         applyAppearanceSettings()
         updateTextColors()
 
-        // 监听设置变更
+        // 监听外观设置变更
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleSettingsChange),
-            name: .appSettingsDidChange,
+            selector: #selector(handleAppearanceChange),
+            name: .appAppearanceDidChange,
             object: nil
         )
     }
@@ -108,7 +108,7 @@ class FloatContentView: NSView {
         updateTextColors()
     }
 
-    @objc private func handleSettingsChange() {
+    @objc private func handleAppearanceChange() {
         // 设置变更使用过渡动效
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = Constants.settingsApplyDuration

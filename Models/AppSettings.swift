@@ -102,10 +102,22 @@ class AppSettings {
         }
     }
 
-    /// 通知所有设置已变更
+    /// 通知背记规则已变更（影响队列结构，引擎需重启）
     func postDidChange() {
         save()
         NotificationCenter.default.post(name: .appSettingsDidChange, object: self)
+    }
+
+    /// 通知外观设置已变更（不影响队列，仅刷新 UI）
+    func postAppearanceChange() {
+        save()
+        NotificationCenter.default.post(name: .appAppearanceDidChange, object: self)
+    }
+
+    /// 通知计时参数已变更（仅热更新计时器，不重置进度）
+    func postTimingChange() {
+        save()
+        NotificationCenter.default.post(name: .appTimingDidChange, object: self)
     }
 
     // MARK: - Codable 内部模型

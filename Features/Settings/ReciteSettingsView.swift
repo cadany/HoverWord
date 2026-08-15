@@ -111,8 +111,9 @@ struct ReciteSettingsView: View {
                         .foregroundColor(.secondary)
                     Toggle("全屏应用时自动隐藏悬浮窗", isOn: $fullscreenAutoHide)
                         .onChange(of: fullscreenAutoHide) { newValue in
+                            guard AppSettings.shared.fullscreenAutoHide != newValue else { return }
                             AppSettings.shared.fullscreenAutoHide = newValue
-                            AppSettings.shared.postDidChange()
+                            AppSettings.shared.postTimingChange()
                         }
                 }
                 .glassCard()
@@ -137,34 +138,38 @@ struct ReciteSettingsView: View {
     }
 
     private func saveReciteMode() {
+        guard AppSettings.shared.reciteMode != reciteMode else { return }
         AppSettings.shared.reciteMode = reciteMode
         AppSettings.shared.postDidChange()
     }
 
     private func savePlayOrder() {
+        guard AppSettings.shared.playOrder != playOrder else { return }
         AppSettings.shared.playOrder = playOrder
         AppSettings.shared.postDidChange()
     }
 
     private func saveCarouselLoops() {
-        AppSettings.shared.carouselLoopCount = min(
-            Constants.maxCarouselLoops,
-            max(Constants.minCarouselLoops, carouselLoops)
-        )
-        carouselLoops = AppSettings.shared.carouselLoopCount
+        let newValue = min(Constants.maxCarouselLoops, max(Constants.minCarouselLoops, carouselLoops))
+        carouselLoops = newValue
+        guard AppSettings.shared.carouselLoopCount != newValue else { return }
+        AppSettings.shared.carouselLoopCount = newValue
         AppSettings.shared.postDidChange()
     }
 
     private func saveSectionSize() {
-        AppSettings.shared.sectionSize = max(Constants.minSectionSize, sectionSize)
-        sectionSize = AppSettings.shared.sectionSize
+        let newValue = max(Constants.minSectionSize, sectionSize)
+        sectionSize = newValue
+        guard AppSettings.shared.sectionSize != newValue else { return }
+        AppSettings.shared.sectionSize = newValue
         AppSettings.shared.postDidChange()
     }
 
     private func saveStayDuration(_ value: Int) {
         let clamped = min(Constants.maxStayDuration, max(Constants.minStayDuration, value))
         stayDuration = Double(clamped)
+        guard AppSettings.shared.stayDuration != clamped else { return }
         AppSettings.shared.stayDuration = clamped
-        AppSettings.shared.postDidChange()
+        AppSettings.shared.postTimingChange()
     }
 }
