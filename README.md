@@ -75,3 +75,19 @@ ambition	/æmˈbʃən/	n.	野心，抱负	v.	渴望
 ## 系统要求
 
 macOS 12.0 (Monterey) 及以上，同时支持 Intel 与 Apple Silicon。
+
+## 界面截图
+
+![HoverWord 界面截图](docs/imgs/TOP.png)
+
+![HoverWord 界面截图](docs/imgs/A.png)
+
+![HoverWord 界面截图](docs/imgs/B.png)
+
+![HoverWord 界面截图](docs/imgs/C.png)
+
+![HoverWord 界面截图](docs/imgs/D.png)
+
+![HoverWord 界面截图](docs/imgs/E1.png)
+
+![HoverWord 界面截图](docs/imgs/E2.png)
