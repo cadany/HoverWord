@@ -146,7 +146,9 @@ class WordbookService {
 
     /// 将 Favorite 记录转换为游离 WordEntry（不写入 Core Data，仅用于引擎调度）
     ///
-    /// 从 `Favorite.wordDetail` JSON 反序列化字段，生成新的 UUID 作为 wordId。
+    /// 从 `Favorite.wordDetail` JSON 反序列化字段。
+    /// wordId 使用收藏记录的 favoriteId（持久化且跨会话稳定），
+    /// 供进度保存/恢复与 feedbackSet 匹配；临时 UUID 会导致重启后进度失效。
     /// 解析失败时返回 nil。
     private func favoriteToWordEntry(_ favorite: Favorite, sectionIndex: Int) -> WordEntry? {
         guard let data = favorite.wordDetail,
@@ -157,7 +159,7 @@ class WordbookService {
 
         // 创建游离 WordEntry（不插入 context）
         let entry = WordEntry(entity: WordEntry.entity(), insertInto: nil)
-        entry.wordId = UUID().uuidString
+        entry.wordId = favorite.favoriteId
         entry.sectionIndex = Int32(sectionIndex)
         entry.sourceWord = favorite.sourceWord
         entry.phonetic = json["phonetic"] as? String
@@ -371,8 +373,17 @@ class WordbookService {
             }
 
             if context.hasChanges {
-                try? context.save()
+                do {
+                    try context.save()
+                } catch {
+                    NSLog("[WordbookService] 收藏夹同步保存失败: \(error as NSError)")
+                }
             }
+        }
+
+        // context.perform 在后台上下文队列执行，通知引擎必须回到主线程
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
         }
     }
 
@@ -407,11 +418,12 @@ class WordbookService {
         request.predicate = NSPredicate(format: "sourceWord == %@", sourceWord)
         request.fetchLimit = 1
 
+        let nowFavorite: Bool
         if let existing = try? context.fetch(request), let fav = existing.first {
             // 已收藏 → 取消收藏
             context.delete(fav)
             DataStack.shared.saveContext()
-            return false
+            nowFavorite = false
         } else {
             // 未收藏 → 添加收藏
             let favorite = Favorite(context: context)
@@ -420,8 +432,12 @@ class WordbookService {
             favorite.wordDetail = wordDetail
             favorite.collectedAt = Date()
             DataStack.shared.saveContext()
-            return true
+            nowFavorite = true
         }
+
+        // 通知引擎收藏内容变化（收藏夹单词本启用时需重建队列）
+        NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
+        return nowFavorite
     }
 
     /// 检查某词条是否已收藏

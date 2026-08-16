@@ -143,6 +143,106 @@ final class ReciteEngineProgressTests: XCTestCase {
 
     // MARK: - 进度校验
 
+    func testRestoreLaterLoopLandsOnCorrectWord() {
+        // 顺序模式第二轮：currentWordOrder 已被过滤为"未反馈子集"，
+        // 恢复后必须仍停留在该子集内，而不是重建全量顺序后回到已认识的单词
+        AppSettings.shared.sectionSize = 2
+        AppSettings.shared.playOrder = .sequential
+        AppSettings.shared.reciteMode = .memoryFeedback
+        engine.start()
+
+        let alpha = engine.currentWord()!
+        engine.markKnown()          // alpha 已认识
+        let beta = engine.currentWord()!
+        engine.markUnknown()        // 本轮结束，进入第二轮（仅剩 beta）
+        let resumed = engine.currentWord()!
+        XCTAssertEqual(resumed.wordId, beta.wordId, "第二轮应从 beta 开始")
+        XCTAssertNotEqual(resumed.wordId, alpha.wordId)
+
+        engine.saveProgress()
+
+        let newEngine = ReciteEngine()
+        newEngine.delegate = MockProgressDelegate()
+        newEngine.start()
+
+        XCTAssertEqual(newEngine.currentWord()?.wordId, beta.wordId,
+                       "恢复后应停留在第二轮的 beta，而不是已认识的 alpha")
+
+        newEngine.stop()
+        newEngine.clearProgress()
+    }
+
+    func testRestoreShuffledPreservesExactWord() {
+        // shuffle 模式下播放顺序随机，恢复时必须还原保存时的顺序，
+        // 否则 currentWordIndex 指向的单词与保存时不同
+        AppSettings.shared.sectionSize = 5  // 5 个单词在同一 Section
+        AppSettings.shared.playOrder = .shuffled
+        AppSettings.shared.reciteMode = .memoryFeedback
+        engine.start()
+
+        let first = engine.currentWord()!
+        engine.markUnknown()   // 推进到下一个单词
+        let second = engine.currentWord()!
+        XCTAssertNotEqual(first.wordId, second.wordId)
+
+        engine.saveProgress()
+
+        let newEngine = ReciteEngine()
+        newEngine.delegate = MockProgressDelegate()
+        newEngine.start()
+
+        XCTAssertEqual(newEngine.currentWord()?.wordId, second.wordId,
+                       "shuffle 模式恢复后应显示保存时的同一个单词")
+
+        newEngine.stop()
+        newEngine.clearProgress()
+    }
+
+    func testRestoreWithFavoritesWordbookEnabled() {
+        // 收藏夹词条由 Favorite 记录转换而来，其 wordId 必须跨会话稳定，
+        // 否则重启后 buildQueue 重新生成的 wordId 与保存的进度对不上，进度被整体重置
+        AppSettings.shared.sectionSize = 2
+        AppSettings.shared.playOrder = .sequential
+        AppSettings.shared.reciteMode = .memoryFeedback
+
+        // 停用普通测试单词本，让队列仅包含收藏夹
+        if let normal = WordbookService.shared.getAllWordbooks().first(where: { !$0.isSystem }) {
+            normal.isEnabled = false
+        }
+        DataStack.shared.saveContext()
+
+        WordbookService.shared.ensureSystemFavorites()
+        for word in ["apple", "banana"] {
+            let json = try? JSONSerialization.data(withJSONObject: ["meaning1": "释义"])
+            _ = WordbookService.shared.toggleFavorite(sourceWord: word, wordDetail: json)
+        }
+        guard let favorites = WordbookService.shared.getFavoritesWordbook() else {
+            XCTFail("系统收藏夹单词本不存在")
+            return
+        }
+        favorites.isEnabled = true
+        DataStack.shared.saveContext()
+
+        engine.start()
+        let first = engine.currentWord()
+        XCTAssertNotNil(first)
+        engine.markUnknown()
+        let second = engine.currentWord()!
+        XCTAssertEqual(second.sourceWord, "banana")
+
+        engine.saveProgress()
+
+        let newEngine = ReciteEngine()
+        newEngine.delegate = MockProgressDelegate()
+        newEngine.start()
+
+        XCTAssertEqual(newEngine.currentWord()?.sourceWord, "banana",
+                       "收藏夹启用时重启后应恢复到第二个收藏词条，而不是被重置回第一个")
+
+        newEngine.stop()
+        newEngine.clearProgress()
+    }
+
     func testInvalidSectionIndexClearsProgress() {
         AppSettings.shared.playOrder = .sequential
         engine.start()

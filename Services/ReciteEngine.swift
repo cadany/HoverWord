@@ -86,6 +86,12 @@ class ReciteEngine {
             name: .wordbookEnablementDidChange,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFavoritesChange),
+            name: .favoritesDidChange,
+            object: nil
+        )
     }
 
     deinit {
@@ -390,23 +396,51 @@ class ReciteEngine {
         start()
     }
 
+    @objc private func handleFavoritesChange() {
+        // 收藏内容变化只影响收藏夹单词本对应的 Section：
+        // 收藏夹未启用时队列不变，直接忽略，避免不必要的进度重置
+        guard WordbookService.shared.getFavoritesWordbook()?.isEnabled == true,
+              state == .playing else { return }
+
+        // 保存当前进度后重建队列；restoreProgress 校验失败
+        //（如当前单词已被移出收藏）则自动从头开始
+        saveProgress()
+        stopTimer()
+        start()
+    }
+
     // MARK: - 进度持久化
 
     private let progressSectionKey = "ReciteProgressSectionIndex"
     private let progressWordKey = "ReciteProgressWordIndex"
     private let progressFeedbackSetKey = "ReciteProgressFeedbackSet"
     private let progressCompletedLoopsKey = "ReciteProgressCompletedLoops"
+    private let progressOrderKey = "ReciteProgressWordOrder"
 
     /// 保存当前背记进度到 UserDefaults
     ///
     /// 保存时机：单词切换、Section 完成、App 退出。
-    /// 存储内容：Section 索引、单词索引、已反馈集合、走马灯已完成轮次。
+    /// 存储内容：Section 索引、单词索引、当前轮次播放顺序（wordId）、已反馈集合、走马灯已完成轮次。
     func saveProgress() {
         let defaults = UserDefaults.standard
         defaults.set(currentSectionQueueIndex, forKey: progressSectionKey)
         defaults.set(currentWordIndex, forKey: progressWordKey)
         defaults.set(Array(feedbackSet), forKey: progressFeedbackSetKey)
         defaults.set(completedLoops, forKey: progressCompletedLoopsKey)
+
+        // 持久化当前轮次的播放顺序（按 wordId）。
+        // currentWordIndex 的语义依赖 currentWordOrder（shuffle 顺序、记忆反馈后续轮次的
+        // "未反馈子集"顺序），不保存顺序就无法还原到确切的单词。
+        if currentSectionQueueIndex < sectionQueue.count {
+            let entries = sectionQueue[currentSectionQueueIndex].entries
+            let orderIds = currentWordOrder.compactMap { index -> String? in
+                guard index >= 0 && index < entries.count else { return nil }
+                return entries[index].wordId
+            }
+            defaults.set(orderIds, forKey: progressOrderKey)
+        } else {
+            defaults.removeObject(forKey: progressOrderKey)
+        }
     }
 
     /// 清除持久化的进度数据
@@ -416,6 +450,7 @@ class ReciteEngine {
         defaults.removeObject(forKey: progressWordKey)
         defaults.removeObject(forKey: progressFeedbackSetKey)
         defaults.removeObject(forKey: progressCompletedLoopsKey)
+        defaults.removeObject(forKey: progressOrderKey)
     }
 
     /// 尝试从 UserDefaults 恢复历史进度
@@ -423,11 +458,13 @@ class ReciteEngine {
     /// 校验流程：
     /// 1. 检查是否存在已保存的进度
     /// 2. Section 索引不越界
-    /// 3. 单词索引不越界
-    /// 4. feedbackSet 中的单词 ID 均存在于当前 Section
-    /// 5. 走马灯已完成轮次不越界
+    /// 3. 保存的播放顺序（wordId）无重复，且每个单词都存在于当前 Section
+    /// 4. 单词索引不越界（对还原后的顺序校验）
+    /// 5. feedbackSet 中的单词 ID 均存在于当前 Section
+    /// 6. 走马灯已完成轮次不越界
     ///
     /// 任意校验失败则清除进度，返回 false 由调用方从头开始。
+    /// 旧版本进度缺少播放顺序数据时同样视为失效，从头开始（一次性迁移代价）。
     ///
     /// - Returns: 恢复成功返回 true，无有效进度或校验失败返回 false
     private func restoreProgress() -> Bool {
@@ -449,17 +486,38 @@ class ReciteEngine {
             return false
         }
 
-        // 移到目标 Section 并重建单词顺序
+        // 移到目标 Section 并重置轮次状态（单词顺序稍后用保存值覆盖）
         currentSectionQueueIndex = savedSectionIndex
         prepareCurrentSection()
 
-        // 校验单词索引
+        let section = sectionQueue[currentSectionQueueIndex]
+
+        // 还原保存时的播放顺序：wordId 映射回 Section 内索引
+        guard let savedOrderIds = defaults.stringArray(forKey: progressOrderKey),
+              !savedOrderIds.isEmpty,
+              savedOrderIds.count == Set(savedOrderIds).count else {
+            return resetProgressAndFail()
+        }
+
+        var indexByWordId: [String: Int] = [:]
+        for (index, entry) in section.entries.enumerated() {
+            if indexByWordId[entry.wordId] == nil {
+                indexByWordId[entry.wordId] = index
+            }
+        }
+        let restoredOrder = savedOrderIds.compactMap { indexByWordId[$0] }
+        guard restoredOrder.count == savedOrderIds.count else {
+            // 词库已变化（如重新导入），保存顺序中的单词不存在
+            return resetProgressAndFail()
+        }
+        currentWordOrder = restoredOrder
+
+        // 校验单词索引（对还原后的顺序）
         guard savedWordIndex >= 0 && savedWordIndex < currentWordOrder.count else {
             return resetProgressAndFail()
         }
 
         // 校验 feedbackSet 中所有单词 ID 存在于当前 Section
-        let section = sectionQueue[currentSectionQueueIndex]
         let sectionWordIds = Set(section.entries.map { $0.wordId })
         for wordId in savedFeedbackSet {
             if !sectionWordIds.contains(wordId) {

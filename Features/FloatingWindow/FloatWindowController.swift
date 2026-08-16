@@ -124,9 +124,6 @@ class FloatWindowController: NSWindowController {
                 isFavorite: WordbookService.shared.isFavorite(sourceWord: word.sourceWord)
             )
         }
-        contentViewContainer.onRestartTap = { [weak self] in
-            self?.engine.restart()
-        }
         contentViewContainer.onRightClick = { [weak self] event in
             self?.showContextMenu(event: event)
         }

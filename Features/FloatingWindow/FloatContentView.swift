@@ -19,7 +19,6 @@ class FloatContentView: NSView {
     var onKnowTap: (() -> Void)?
     var onUnknownTap: (() -> Void)?
     var onFavoriteTap: (() -> Void)?
-    var onRestartTap: (() -> Void)?
     var onRightClick: ((NSEvent) -> Void)?
 
     // MARK: - UI 组件
@@ -39,7 +38,6 @@ class FloatContentView: NSView {
     private let favoriteButton = NSButton()
     private let knowButton = NSButton()
     private let unknownButton = NSButton()
-    private let restartButton = NSButton()
     private let completedLabel = NSTextField(labelWithString: "已学完")
 
     // MARK: - 状态
@@ -81,26 +79,8 @@ class FloatContentView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        DispatchQueue.main.async { [weak self] in
-            self?.debugPrintIntrinsicSizes()
-        }
-    }
-
     deinit {
         NotificationCenter.default.removeObserver(self)
-    }
-
-    /// 调试：输出各组件的 intrinsicContentSize
-    func debugPrintIntrinsicSizes() {
-        NSLog("[FloatContentView] self.intrinsicContentSize: \(intrinsicContentSize)")
-        NSLog("[FloatContentView] self.bounds: \(bounds)")
-        NSLog("[FloatContentView] rootStack.intrinsicContentSize: \(rootStack.intrinsicContentSize)")
-        NSLog("[FloatContentView] meaningLabel.intrinsicContentSize: \(meaningLabel.intrinsicContentSize)")
-        NSLog("[FloatContentView] buttonStack.intrinsicContentSize: \(buttonStack.intrinsicContentSize)")
-        NSLog("[FloatContentView] wordLabel.intrinsicContentSize: \(wordLabel.intrinsicContentSize)")
-        NSLog("[FloatContentView] phoneticLabel.intrinsicContentSize: \(phoneticLabel.intrinsicContentSize)")
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -143,7 +123,6 @@ class FloatContentView: NSView {
         favoriteButton.layer?.backgroundColor = bgColor
         knowButton.layer?.backgroundColor = bgColor
         unknownButton.layer?.backgroundColor = bgColor
-        restartButton.layer?.backgroundColor = bgColor
     }
 
     private func applyAppearanceSettings() {
@@ -286,10 +265,6 @@ class FloatContentView: NSView {
         configureButton(unknownButton, title: "不认识", action: #selector(unknownTapped))
         unknownButton.target = self
 
-        // 重新开始按钮
-        configureButton(restartButton, title: "重新开始", action: #selector(restartTapped))
-        restartButton.target = self
-
         buttonStack.addArrangedSubview(favoriteButton)
         buttonStack.addArrangedSubview(knowButton)
         buttonStack.addArrangedSubview(unknownButton)
@@ -327,16 +302,8 @@ class FloatContentView: NSView {
 
     override func mouseEntered(with event: NSEvent) {
         isMouseInside = true
-        // 完成状态：只显示 restart；单词状态：显示 word-mode 按钮
-        if isShowingCompleted {
-            restartButton.isHidden = false
-            restartButton.alphaValue = 1
-            favoriteButton.isHidden = true
-            knowButton.isHidden = true
-            unknownButton.isHidden = true
-        } else {
-            animateButtonsIn()
-        }
+        // 按当前状态显示对应按钮（完成态无按钮，此调用为空操作）
+        setButtonsHidden(false)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -351,7 +318,7 @@ class FloatContentView: NSView {
     // MARK: - 按钮显隐
 
     private func setButtonsHidden(_ hidden: Bool) {
-        let buttons = visibleButtons()
+        let buttons = activeButtons()
         let animated = !hidden
 
         if hidden {
@@ -384,7 +351,12 @@ class FloatContentView: NSView {
         }
     }
 
-    /// 根据当前模式返回应显示的按钮列表
+    /// 当前状态下参与显隐控制的按钮集合（完成状态无操作按钮，重开入口由右键菜单提供）
+    private func activeButtons() -> [NSButton] {
+        return isShowingCompleted ? [] : visibleButtons()
+    }
+
+    /// 根据当前背记模式返回应显示的按钮列表
     private func visibleButtons() -> [NSButton] {
         switch currentMode {
         case .memoryFeedback:
@@ -417,11 +389,6 @@ class FloatContentView: NSView {
     @objc private func favoriteTapped() {
         animateButtonClick(favoriteButton)
         onFavoriteTap?()
-    }
-
-    @objc private func restartTapped() {
-        animateButtonClick(restartButton)
-        onRestartTap?()
     }
 
     /// 按钮点击态动效：微缩 + 亮度降低，0.1s 后恢复
@@ -543,17 +510,6 @@ class FloatContentView: NSView {
                 ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
                 self.completedLabel.animator().alphaValue = 1
             })
-
-            // 如果鼠标在窗口内，显示重新开始按钮
-            if self.isMouseInside {
-                self.restartButton.isHidden = false
-                self.restartButton.alphaValue = 0
-                NSAnimationContext.runAnimationGroup({ ctx in
-                    ctx.duration = Constants.buttonFadeDuration
-                    ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                    self.restartButton.animator().alphaValue = 1
-                })
-            }
         })
     }
 

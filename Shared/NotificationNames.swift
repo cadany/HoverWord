@@ -38,4 +38,11 @@ extension Notification.Name {
     ///
     /// ReciteEngine 收到后重建队列并重置进度
     static let wordbookEnablementDidChange = Notification.Name("wordbookEnablementDidChange")
+
+    /// 收藏内容已变更（新增 / 移除收藏、导入后的收藏夹同步）
+    ///
+    /// ReciteEngine 收到后仅在收藏夹单词本启用时重建队列，
+    /// 未启用收藏夹时队列不受影响，忽略此通知。
+    /// 必须在主线程发送（后台上下文写入完成后需切回主线程再 post）。
+    static let favoritesDidChange = Notification.Name("favoritesDidChange")
 }

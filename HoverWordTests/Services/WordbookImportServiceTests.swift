@@ -91,20 +91,26 @@ final class WordbookImportServiceTests: XCTestCase {
 
     // MARK: - 空文件
 
-    func testParseEmptyFile() throws {
+    func testParseEmptyFile() {
         let data = "".data(using: .utf8)!
 
-        let entries = try WordbookImportService.parse(data: data)
-
-        XCTAssertTrue(entries.isEmpty, "空文件应返回空数组")
+        XCTAssertThrowsError(try WordbookImportService.parse(data: data)) { error in
+            guard case WordbookImportService.ImportError.emptyFile = error else {
+                XCTFail("空文件应抛出 emptyFile，实际: \(error)")
+                return
+            }
+        }
     }
 
-    func testParseOnlyBlankLines() throws {
+    func testParseOnlyBlankLines() {
         let data = "\n\n\n".data(using: .utf8)!
 
-        let entries = try WordbookImportService.parse(data: data)
-
-        XCTAssertTrue(entries.isEmpty, "仅空行的文件应返回空数组")
+        XCTAssertThrowsError(try WordbookImportService.parse(data: data)) { error in
+            guard case WordbookImportService.ImportError.emptyFile = error else {
+                XCTFail("仅空行的文件应抛出 emptyFile，实际: \(error)")
+                return
+            }
+        }
     }
 
     // MARK: - 格式错误（精准行号）

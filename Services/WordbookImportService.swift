@@ -55,8 +55,8 @@ class WordbookImportService {
     /// 解析 TXT 文件内容，返回解析后的词条数组或错误
     ///
     /// - Parameter data: 文件原始数据
-    /// - Returns: 解析后的词条数组（至少有一个有效词条时返回非空数组）
-    /// - Throws: ImportError
+    /// - Returns: 解析后的词条数组
+    /// - Throws: ImportError（空文件 / 仅空行的文件抛出 emptyFile，避免全量覆盖导入清空词库）
     static func parse(data: Data) throws -> [ParsedEntry] {
         // 1. UTF-8 编码检测
         guard let content = String(data: data, encoding: .utf8) else {
@@ -123,6 +123,11 @@ class WordbookImportService {
             ))
         }
 
+        // 无任何有效词条：空文件或仅含空行，拒绝导入
+        // （否则 importEntries 会清空目标单词本的所有词条）
+        guard !entries.isEmpty else {
+            throw ImportError.emptyFile
+        }
         return entries
     }
 
