@@ -27,11 +27,11 @@ class WordbookImportService {
         var errorDescription: String? {
             switch self {
             case .invalidEncoding:
-                return "文件格式错误：非 UTF-8 编码"
+                return L10n.t("import.error.encoding")
             case .formatError(let line, let reason):
-                return "第 \(line) 行格式错误：\(reason)"
+                return L10n.t("import.error.line.format", line, reason)
             case .emptyFile:
-                return "文件内容为空"
+                return L10n.t("import.error.empty")
             }
         }
     }
@@ -84,7 +84,7 @@ class WordbookImportService {
             guard fields.count >= 4 else {
                 throw ImportError.formatError(
                     lineNumber: lineNumber,
-                    reason: "字段数量不足（至少需要 4 个字段）"
+                    reason: L10n.t("import.error.fields")
                 )
             }
 
@@ -101,13 +101,13 @@ class WordbookImportService {
             if sourceWord.isEmpty {
                 throw ImportError.formatError(
                     lineNumber: lineNumber,
-                    reason: "缺少源语言词条（第 1 字段）"
+                    reason: L10n.t("import.error.word")
                 )
             }
             if meaning1.isEmpty {
                 throw ImportError.formatError(
                     lineNumber: lineNumber,
-                    reason: "缺少释义 1（第 4 字段）"
+                    reason: L10n.t("import.error.meaning")
                 )
             }
 
@@ -155,7 +155,7 @@ class WordbookImportService {
             request.fetchLimit = 1
 
             guard let targetWordbook = try context.fetch(request).first else {
-                throw ImportError.formatError(lineNumber: 0, reason: "单词本不存在")
+                throw ImportError.formatError(lineNumber: 0, reason: L10n.t("import.error.wordbookMissing"))
             }
 
             // 2. 清空旧词条（级联删除由 Core Data 处理）

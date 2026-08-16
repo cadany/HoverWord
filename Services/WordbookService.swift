@@ -133,8 +133,11 @@ class WordbookService {
     // MARK: - 查询
 
     /// 判断单词本是否为系统收藏夹
+    ///
+    /// 仅依据 isSystem 标记判定，不比对名称：系统单词本的界面显示名
+    /// 已本地化（词条映射），存储名与显示名不再一致。
     private func isFavoritesWordbook(_ wordbook: Wordbook) -> Bool {
-        return wordbook.isSystem && wordbook.name == Constants.favoritesWordbookName
+        return wordbook.isSystem
     }
 
     /// 获取收藏词条总数

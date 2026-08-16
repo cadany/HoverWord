@@ -45,4 +45,11 @@ extension Notification.Name {
     /// 未启用收藏夹时队列不受影响，忽略此通知。
     /// 必须在主线程发送（后台上下文写入完成后需切回主线程再 post）。
     static let favoritesDidChange = Notification.Name("favoritesDidChange")
+
+    /// 界面语言已变更
+    ///
+    /// 监听方：设置窗口 SwiftUI 树（经 LanguageManager 重渲染）、
+    /// FloatContentView（刷新按钮/完成态文案）
+    /// 触发方：通用设置页语言切换。必须在主线程发送。
+    static let appLanguageDidChange = Notification.Name("appLanguageDidChange")
 }

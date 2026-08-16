@@ -18,7 +18,7 @@ struct ReciteSettingsView: View {
 
                 // 背记模式卡片
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("背记模式")
+                    Text(L10n.t("recite.mode"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     Picker("", selection: $reciteMode) {
@@ -33,13 +33,13 @@ struct ReciteSettingsView: View {
 
                 // Section 设置卡片
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Section 设置")
+                    Text(L10n.t("recite.section"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
                     // 每组词数
                     HStack {
-                        Text("每组词数")
+                        Text(L10n.t("recite.sectionSize"))
                             .font(.system(size: 13))
                         Spacer()
                         Stepper(
@@ -54,7 +54,7 @@ struct ReciteSettingsView: View {
 
                     // 走马灯循环轮次（非走马灯模式禁用）
                     HStack {
-                        Text("走马灯循环轮次")
+                        Text(L10n.t("recite.carouselLoops"))
                             .font(.system(size: 13))
                         Spacer()
                         Stepper(
@@ -73,7 +73,7 @@ struct ReciteSettingsView: View {
 
                 // 展示顺序卡片
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("展示顺序")
+                    Text(L10n.t("recite.playOrder"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     Picker("", selection: $playOrder) {
@@ -88,7 +88,7 @@ struct ReciteSettingsView: View {
 
                 // 停留时长卡片
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("单单词停留时长")
+                    Text(L10n.t("recite.stayDuration"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     HStack {
@@ -96,7 +96,7 @@ struct ReciteSettingsView: View {
                             .onChange(of: stayDuration) { newValue in
                                 saveStayDuration(Int(newValue))
                             }
-                        Text("\(Int(stayDuration)) 秒")
+                        Text(L10n.t("recite.seconds.format", Int(stayDuration)))
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .frame(width: 50, alignment: .trailing)
@@ -106,10 +106,10 @@ struct ReciteSettingsView: View {
 
                 // 其他设置卡片
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("其他")
+                    Text(L10n.t("recite.other"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
-                    Toggle("全屏应用时自动隐藏悬浮窗", isOn: $fullscreenAutoHide)
+                    Toggle(L10n.t("recite.fullscreenHide"), isOn: $fullscreenAutoHide)
                         .onChange(of: fullscreenAutoHide) { newValue in
                             guard AppSettings.shared.fullscreenAutoHide != newValue else { return }
                             AppSettings.shared.fullscreenAutoHide = newValue

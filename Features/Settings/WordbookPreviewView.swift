@@ -58,13 +58,13 @@ struct WordbookPreviewView: View {
 
     private var headerBar: some View {
         HStack {
-            Text("词条预览 — \(wordbook.name ?? "")")
+            Text(L10n.t("preview.title.format", wordbook.name ?? ""))
                 .font(.headline)
             Spacer()
-            Text("共 \(totalEntries) 条")
+            Text(L10n.t("preview.total.format", totalEntries))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
-            Button("关闭") { dismiss() }
+            Button(L10n.t("common.close")) { dismiss() }
                 .glassButtonStyle()
         }
         .padding(.horizontal, 16)
@@ -77,7 +77,7 @@ struct WordbookPreviewView: View {
             Image(systemName: "text.book.closed")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary)
-            Text("该单词本暂无词条")
+            Text(L10n.t("preview.empty"))
                 .font(.system(size: 14))
                 .foregroundColor(.secondary)
             Spacer()
@@ -87,13 +87,13 @@ struct WordbookPreviewView: View {
 
     private var tableHeader: some View {
         HStack(spacing: 8) {
-            Text("单词")
+            Text(L10n.t("preview.col.word"))
                 .frame(width: 140, alignment: .leading)
-            Text("音标")
+            Text(L10n.t("preview.col.phonetic"))
                 .frame(width: 110, alignment: .leading)
-            Text("词性")
+            Text(L10n.t("preview.col.pos"))
                 .frame(width: 50, alignment: .leading)
-            Text("释义")
+            Text(L10n.t("preview.col.meaning"))
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text("")
                 .frame(width: 32)
@@ -134,7 +134,7 @@ struct WordbookPreviewView: View {
             .glassButtonStyle()
             .disabled(currentPage <= 0)
 
-            Text("第 \(currentPage + 1) / \(totalPages) 页")
+            Text(L10n.t("preview.page.format", currentPage + 1, totalPages))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
 

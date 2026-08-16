@@ -38,7 +38,7 @@ class FloatContentView: NSView {
     private let favoriteButton = NSButton()
     private let knowButton = NSButton()
     private let unknownButton = NSButton()
-    private let completedLabel = NSTextField(labelWithString: "已学完")
+    private let completedLabel = NSTextField(labelWithString: L10n.t("float.completed"))
 
     // MARK: - 状态
 
@@ -73,6 +73,14 @@ class FloatContentView: NSView {
             name: .appAppearanceDidChange,
             object: nil
         )
+
+        // 监听界面语言变更（刷新按钮标题与完成态文案，单词内容不受影响）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLanguageChange),
+            name: .appLanguageDidChange,
+            object: nil
+        )
     }
 
     required init?(coder: NSCoder) {
@@ -96,6 +104,17 @@ class FloatContentView: NSView {
             self.applyAppearanceSettings()
             self.updateTextColors()
         })
+    }
+
+    @objc private func handleLanguageChange() {
+        refreshLocalizedTexts()
+    }
+
+    /// 按当前界面语言刷新静态文案（按钮标题、完成态文字）
+    private func refreshLocalizedTexts() {
+        knowButton.title = L10n.t("float.button.know")
+        unknownButton.title = L10n.t("float.button.unknown")
+        completedLabel.stringValue = L10n.t("float.completed")
     }
 
     /// 根据当前系统外观更新文字和按钮颜色
@@ -258,11 +277,11 @@ class FloatContentView: NSView {
         favoriteButton.target = self
 
         // 认识按钮
-        configureButton(knowButton, title: "认识", action: #selector(knowTapped))
+        configureButton(knowButton, title: L10n.t("float.button.know"), action: #selector(knowTapped))
         knowButton.target = self
 
         // 不认识按钮
-        configureButton(unknownButton, title: "不认识", action: #selector(unknownTapped))
+        configureButton(unknownButton, title: L10n.t("float.button.unknown"), action: #selector(unknownTapped))
         unknownButton.target = self
 
         buttonStack.addArrangedSubview(favoriteButton)

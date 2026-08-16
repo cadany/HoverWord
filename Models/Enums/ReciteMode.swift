@@ -13,8 +13,8 @@ enum ReciteMode: String, Codable, CaseIterable {
     /// 用户可读的显示名称
     var displayName: String {
         switch self {
-        case .memoryFeedback: return "记忆反馈模式"
-        case .carousel: return "走马灯式刷词模式"
+        case .memoryFeedback: return L10n.t("enum.reciteMode.memoryFeedback")
+        case .carousel: return L10n.t("enum.reciteMode.carousel")
         }
     }
 }

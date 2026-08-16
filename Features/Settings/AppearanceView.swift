@@ -14,7 +14,10 @@ struct AppearanceView: View {
     @State private var meaningFontName: String = "System Default"
     @State private var meaningFontSize: Double = Double(Constants.meaningFontSize)
 
-    private let availableFonts: [String] = {
+    /// 可选字体族列表：static 只枚举一次。
+    /// NSFontManager.availableFontFamilies 每次调用都查询字体服务，
+    /// 实例 let 会在每次构造本视图（每次切换到外观页）时重复执行，造成主线程卡顿。
+    private static let availableFonts: [String] = {
         let defaults = ["System Default"]
         let extras = NSFontManager.shared.availableFontFamilies.filter { family in
             let lowercased = family.lowercased()
@@ -31,11 +34,20 @@ struct AppearanceView: View {
     }()
 
     enum ThemeOption: String, CaseIterable, Identifiable {
-        case light = "浅色"
-        case dark = "深色"
-        case green = "护眼绿"
+        case light
+        case dark
+        case green
 
         var id: String { rawValue }
+
+        /// 本地化显示名
+        var displayName: String {
+            switch self {
+            case .light: return L10n.t("appearance.theme.light")
+            case .dark: return L10n.t("appearance.theme.dark")
+            case .green: return L10n.t("appearance.theme.green")
+            }
+        }
 
         var backgroundColor: Color {
             switch self {
@@ -60,16 +72,16 @@ struct AppearanceView: View {
 
                 // 预设主题卡片
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("预设主题")
+                    Text(L10n.t("appearance.preset"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
                     HStack {
-                        Text("主题")
+                        Text(L10n.t("appearance.theme"))
                             .font(.system(size: 13))
                         Spacer()
                         Picker("", selection: $selectedTheme) {
                             ForEach(ThemeOption.allCases) { theme in
-                                Text(theme.rawValue).tag(theme)
+                                Text(theme.displayName).tag(theme)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -80,12 +92,12 @@ struct AppearanceView: View {
 
                 // 背景与文字卡片
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("背景与文字")
+                    Text(L10n.t("appearance.bgText"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
                     HStack {
-                        Text("背景色")
+                        Text(L10n.t("appearance.bgColor"))
                             .font(.system(size: 13))
                         Spacer()
                         ColorPicker("", selection: $customColor, supportsOpacity: false)
@@ -96,7 +108,7 @@ struct AppearanceView: View {
                     Divider()
 
                     HStack {
-                        Text("文字颜色")
+                        Text(L10n.t("appearance.textColor"))
                             .font(.system(size: 13))
                         Spacer()
                         ColorPicker("", selection: $textColor, supportsOpacity: false)
@@ -107,7 +119,7 @@ struct AppearanceView: View {
                     Divider()
 
                     HStack {
-                        Text("透明度")
+                        Text(L10n.t("appearance.opacity"))
                             .font(.system(size: 13))
                         Slider(value: $backgroundOpacity, in: 0...1)
                             .onChange(of: backgroundOpacity) { _ in saveAppearance() }
@@ -121,27 +133,22 @@ struct AppearanceView: View {
 
                 // 单词样式卡片
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("单词样式")
+                    Text(L10n.t("appearance.wordStyle"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
                     HStack {
-                        Text("字体")
+                        Text(L10n.t("appearance.font"))
                             .font(.system(size: 13))
                         Spacer()
-                        Picker("", selection: $wordFontName) {
-                            ForEach(availableFonts, id: \.self) { font in
-                                Text(font).font(.custom(font, size: 12)).tag(font)
-                            }
-                        }
-                        .labelsHidden()
-                        .onChange(of: wordFontName) { _ in saveAppearance() }
+                        FontPickerField(selection: $wordFontName, fonts: Self.availableFonts)
+                            .onChange(of: wordFontName) { _ in saveAppearance() }
                     }
 
                     Divider()
 
                     HStack {
-                        Text("字号")
+                        Text(L10n.t("appearance.fontSize"))
                             .font(.system(size: 13))
                         Slider(value: $wordFontSize, in: 16...48, step: 1)
                             .onChange(of: wordFontSize) { _ in saveAppearance() }
@@ -155,27 +162,22 @@ struct AppearanceView: View {
 
                 // 释义样式卡片
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("释义样式")
+                    Text(L10n.t("appearance.meaningStyle"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
                     HStack {
-                        Text("字体")
+                        Text(L10n.t("appearance.font"))
                             .font(.system(size: 13))
                         Spacer()
-                        Picker("", selection: $meaningFontName) {
-                            ForEach(availableFonts, id: \.self) { font in
-                                Text(font).font(.custom(font, size: 12)).tag(font)
-                            }
-                        }
-                        .labelsHidden()
-                        .onChange(of: meaningFontName) { _ in saveAppearance()}
+                        FontPickerField(selection: $meaningFontName, fonts: Self.availableFonts)
+                            .onChange(of: meaningFontName) { _ in saveAppearance() }
                     }
 
                     Divider()
 
                     HStack {
-                        Text("字号")
+                        Text(L10n.t("appearance.fontSize"))
                             .font(.system(size: 13))
                         Slider(value: $meaningFontSize, in: 10...24, step: 1)
                             .onChange(of: meaningFontSize) { _ in saveAppearance()}
@@ -264,5 +266,71 @@ struct AppearanceView: View {
         s.backgroundColorHex = newBgHex
         s.textColorHex = newFgHex
         s.postAppearanceChange()
+    }
+}
+
+// MARK: - 字体选择器
+
+/// 字体选择器：按钮 + popover 懒加载列表
+///
+/// 每行以对应字体渲染文字作为预览。列表用 LazyVStack，
+/// 行仅在 popover 打开后按可视区域增量构建，
+/// 避免菜单式 Picker 在建页时一次性实例化全部字体导致的卡顿。
+private struct FontPickerField: View {
+    @Binding var selection: String
+    let fonts: [String]
+
+    @State private var isPresented = false
+
+    /// "System Default" 行使用系统字体，其余用字体本身渲染
+    private func rowFont(_ font: String) -> Font? {
+        font == "System Default" ? nil : .custom(font, size: 13)
+    }
+
+    var body: some View {
+        Button {
+            isPresented.toggle()
+        } label: {
+            HStack(spacing: 6) {
+                Text(selection)
+                    .font(rowFont(selection))
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+            .frame(minWidth: 170, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .popover(isPresented: $isPresented, arrowEdge: .bottom) {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(fonts, id: \.self) { font in
+                        Button {
+                            selection = font
+                            isPresented = false
+                        } label: {
+                            HStack {
+                                Text(font)
+                                    .font(rowFont(font))
+                                    .lineLimit(1)
+                                Spacer()
+                                if font == selection {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .medium))
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .frame(width: 280, height: 300)
+        }
     }
 }

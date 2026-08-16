@@ -14,12 +14,12 @@ struct SpeechSettingsView: View {
 
                 // 发音设置卡片
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("发音设置")
+                    Text(L10n.t("speech.title"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
                     HStack {
-                        Text("切换单词时自动播放发音")
+                        Text(L10n.t("speech.autoPlay"))
                             .font(.system(size: 13))
                         Spacer()
                         Toggle("", isOn: $autoPlay)
@@ -35,12 +35,12 @@ struct SpeechSettingsView: View {
                     Divider()
 
                     HStack {
-                        Text("发音类型")
+                        Text(L10n.t("speech.accent"))
                             .font(.system(size: 13))
                         Spacer()
                         Picker("", selection: $useAmerican) {
-                            Text("英式").tag(false)
-                            Text("美式").tag(true)
+                            Text(L10n.t("speech.accent.british")).tag(false)
+                            Text(L10n.t("speech.accent.american")).tag(true)
                         }
                         .pickerStyle(.radioGroup)
                         .onChange(of: useAmerican) { _ in saveAccent() }
@@ -49,7 +49,7 @@ struct SpeechSettingsView: View {
                 .glassCard()
 
                 // 说明卡片
-                Text("发音基于系统语音引擎，离线可用")
+                Text(L10n.t("speech.footer"))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                     .padding(16)

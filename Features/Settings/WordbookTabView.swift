@@ -36,7 +36,7 @@ struct WordbookTabView: View {
 
                 // 单词本列表卡片
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("单词本")
+                    Text(L10n.t("sidebar.wordbook"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
@@ -73,22 +73,22 @@ struct WordbookTabView: View {
 
                 // 操作栏卡片
                 HStack(spacing: 6) {
-                    Button("新建") { showingNewPanel = true }
+                    Button(L10n.t("wordbook.toolbar.new")) { showingNewPanel = true }
                         .glassButtonStyle()
                         .fixedSize()
-                    Button("导入…") { showingImportPanel = true }
-                        .glassButtonStyle()
-                        .fixedSize()
-                        .disabled(selection == nil)
-                    Button("重命名") { showingRenamePanel = true }
+                    Button(L10n.t("wordbook.toolbar.import")) { showingImportPanel = true }
                         .glassButtonStyle()
                         .fixedSize()
                         .disabled(selection == nil)
-                    Button("预览") { showingPreviewPanel = true }
+                    Button(L10n.t("wordbook.toolbar.rename")) { showingRenamePanel = true }
+                        .glassButtonStyle()
+                        .fixedSize()
+                        .disabled(selection == nil)
+                    Button(L10n.t("wordbook.toolbar.preview")) { showingPreviewPanel = true }
                         .glassButtonStyle()
                         .fixedSize()
                         .disabled(selection == nil || isSystemSelected)
-                    Button("删除") { deleteSelected() }
+                    Button(L10n.t("wordbook.toolbar.delete")) { deleteSelected() }
                         .glassButtonStyle()
                         .fixedSize()
                         .disabled(selection == nil || isSystemSelected)
@@ -123,11 +123,11 @@ struct WordbookTabView: View {
         ) { result in
             handleImport(result: result)
         }
-        .alert("导入失败", isPresented: .init(
+        .alert(L10n.t("wordbook.import.failed"), isPresented: .init(
             get: { importError != nil },
             set: { if !$0 { importError = nil } }
         )) {
-            Button("确定") { importError = nil }
+            Button(L10n.t("common.ok")) { importError = nil }
         } message: {
             Text(importError ?? "")
         }
@@ -167,13 +167,13 @@ struct WordbookTabView: View {
 
     private var newWordbookSheet: some View {
         VStack(spacing: 16) {
-            Text("新建单词本").font(.headline)
-            TextField("名称", text: $newWordbookName)
+            Text(L10n.t("wordbook.new.title")).font(.headline)
+            TextField(L10n.t("wordbook.new.placeholder"), text: $newWordbookName)
                 .textFieldStyle(.roundedBorder)
             HStack {
-                Button("取消") { showingNewPanel = false }
+                Button(L10n.t("common.cancel")) { showingNewPanel = false }
                     .glassButtonStyle()
-                Button("创建") {
+                Button(L10n.t("common.create")) {
                     if !newWordbookName.isEmpty {
                         _ = WordbookService.shared.createWordbook(name: newWordbookName)
                         refreshList()
@@ -191,16 +191,16 @@ struct WordbookTabView: View {
 
     private var renameWordbookSheet: some View {
         VStack(spacing: 16) {
-            Text("重命名单词本").font(.headline)
-            TextField("新名称", text: $renameWordbookName)
+            Text(L10n.t("wordbook.rename.title")).font(.headline)
+            TextField(L10n.t("wordbook.rename.placeholder"), text: $renameWordbookName)
                 .textFieldStyle(.roundedBorder)
             HStack {
-                Button("取消") {
+                Button(L10n.t("common.cancel")) {
                     showingRenamePanel = false
                     renameWordbookName = ""
                 }
                 .glassButtonStyle()
-                Button("确定") {
+                Button(L10n.t("common.ok")) {
                     if !renameWordbookName.isEmpty, let sel = selection {
                         let context = DataStack.shared.viewContext
                         let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
@@ -238,7 +238,7 @@ struct WordbookTabView: View {
                 if let wordbook = (try? context.fetch(request))?.first {
                     let success = WordbookService.shared.setWordbookEnabled(wordbook, enabled: newValue)
                     if !success {
-                        enableHint = "请先收藏单词后再启用"
+                        enableHint = L10n.t("wordbook.favorites.enableHint")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                             enableHint = nil
                         }
@@ -288,7 +288,7 @@ struct WordbookTabView: View {
             request.fetchLimit = 1
 
             guard let wordbook = (try? context.fetch(request))?.first else {
-                importError = "找不到目标单词本"
+                importError = L10n.t("wordbook.error.notFound")
                 return
             }
 
@@ -336,15 +336,15 @@ private struct WordbookRow: View {
             Button(action: onSelect) {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(wordbook.name)
+                        Text(wordbook.isSystem ? L10n.t("wordbook.favorites.name") : wordbook.name)
                             .font(.system(size: 13))
-                        Text("\(wordbook.wordCount) 词 · \(wordbook.sectionCount) Section")
+                        Text(L10n.t("wordbook.meta.format", wordbook.wordCount, wordbook.sectionCount))
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                     }
 
                     if wordbook.isSystem {
-                        Text("系统")
+                        Text(L10n.t("wordbook.badge.system"))
                             .font(.system(size: 10))
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)

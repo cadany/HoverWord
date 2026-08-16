@@ -1,9 +1,7 @@
 ## Purpose
 
 主设置窗口，用户通过该界面管理单词本、配置背记规则、自定义外观样式与发音设置。窗口采用 Liquid Glass 玻璃材质 + sidebar 导航设计，内嵌悬浮窗实时预览。最低系统版本 macOS 14.0 (Sonoma)。
-
 ## Requirements
-
 ### Requirement: 设置窗口基础样式
 主设置窗口 SHALL 采用 Liquid Glass 玻璃材质贯穿设计。标题栏使用 `.underWindowBackground` 材质与内容区无缝融合。内容区分 sidebar 与主区域：sidebar 使用 `.thinMaterial` 材质，主内容区使用 `.regularMaterial` 材质。整窗自动适配深色/浅色模式。最低系统版本 macOS 14.0 (Sonoma)。
 
@@ -20,11 +18,11 @@
 - **THEN** 设置窗口 SHALL 使用最新材质渲染；macOS 14 以下版本不运行本应用
 
 ### Requirement: Sidebar 导航
-设置窗口 SHALL 使用左侧 sidebar 导航替代顶部 Tab 切换。Sidebar 包含 4 个导航项：单词本、背记、外观、发音。每个导航项包含 SF Symbol 图标 + 文字标签。选中项 SHALL 以蓝色玻璃药丸高亮。
+设置窗口 SHALL 使用左侧 sidebar 导航替代顶部 Tab 切换。Sidebar 包含 5 个导航项：单词本、背记、外观、发音、通用。每个导航项包含 SF Symbol 图标 + 文字标签。选中项 SHALL 以蓝色玻璃药丸高亮。导航项标签 SHALL 跟随界面语言设置本地化渲染。
 
 #### Scenario: Sidebar 导航项
 - **WHEN** 用户打开设置窗口
-- **THEN** 左侧 sidebar SHALL 显示 4 个导航项，每项包含图标与文字标签，默认选中第一项
+- **THEN** 左侧 sidebar SHALL 显示 5 个导航项，每项包含图标与文字标签，默认选中第一项
 
 #### Scenario: 选中态高亮
 - **WHEN** 某导航项被选中
@@ -37,6 +35,10 @@
 #### Scenario: 切换导航
 - **WHEN** 用户点击 sidebar 中的导航项
 - **THEN** 右侧内容区 SHALL 以 spring 过渡切换到对应 Tab 内容，选中药丸平滑滑动到新项
+
+#### Scenario: 通用页内容
+- **WHEN** 用户点击"通用"导航项
+- **THEN** 内容区 SHALL 显示"界面语言"设置组（"跟随系统"与已提供的语言选项，v0.1.1 为简体中文、English），采用与其他页一致的卡片分组样式
 
 ### Requirement: 卡片式分组
 内容区配置项 SHALL 使用圆角玻璃卡片分组，替代默认 Form Section 样式。卡片圆角 12pt，卡片间垂直间距 12pt，卡片内配置项行间使用 Divider 分隔。
@@ -222,3 +224,4 @@
 #### Scenario: 分页导航
 - **WHEN** 单词本包含超过 100 条词条
 - **THEN** 预览 Sheet SHALL 显示分页控件，用户可翻页浏览所有词条
+

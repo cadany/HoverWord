@@ -201,19 +201,19 @@ class FloatWindowController: NSWindowController {
 
         // 已学完状态时，顶部插入"重新开始"
         if engine.isAllComplete {
-            let restartItem = NSMenuItem(title: "重新开始", action: #selector(menuItemAction(_:)), keyEquivalent: "")
+            let restartItem = NSMenuItem(title: L10n.t("float.menu.restart"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
             restartItem.tag = Constants.FloatMenuTag.restart
             restartItem.target = self
             menu.addItem(restartItem)
             menu.addItem(NSMenuItem.separator())
         }
 
-        let settingsItem = NSMenuItem(title: "打开设置", action: #selector(menuItemAction(_:)), keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: L10n.t("float.menu.settings"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
         settingsItem.tag = Constants.FloatMenuTag.openSettings
         settingsItem.target = self
         menu.addItem(settingsItem)
         menu.addItem(NSMenuItem.separator())
-        let quitItem = NSMenuItem(title: "退出程序", action: #selector(menuItemAction(_:)), keyEquivalent: "")
+        let quitItem = NSMenuItem(title: L10n.t("float.menu.quit"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
         quitItem.tag = Constants.FloatMenuTag.quit
         quitItem.target = self
         menu.addItem(quitItem)

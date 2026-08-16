@@ -13,8 +13,8 @@ enum PlayOrder: String, Codable, CaseIterable {
     /// 用户可读的显示名称
     var displayName: String {
         switch self {
-        case .sequential: return "顺序播放"
-        case .shuffled: return "随机播放"
+        case .sequential: return L10n.t("enum.playOrder.sequential")
+        case .shuffled: return L10n.t("enum.playOrder.shuffled")
         }
     }
 }

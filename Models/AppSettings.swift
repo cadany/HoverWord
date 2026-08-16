@@ -65,6 +65,11 @@ class AppSettings {
     /// 发音类型：true=美式，false=英式，默认美式
     var useAmericanAccent: Bool = true
 
+    // MARK: - 通用
+
+    /// 界面语言："system"（默认，跟随系统）/ "zh-Hans" / "en"
+    var uiLanguage: String = L10n.systemLanguage
+
     // MARK: - 持久化
 
     private init() {}
@@ -95,7 +100,8 @@ class AppSettings {
             meaningFontSize: meaningFontSize,
             textColorHex: textColorHex,
             autoPlaySpeech: autoPlaySpeech,
-            useAmericanAccent: useAmericanAccent
+            useAmericanAccent: useAmericanAccent,
+            uiLanguage: uiLanguage
         )
         if let data = try? JSONEncoder().encode(stored) {
             UserDefaults.standard.set(data, forKey: storageKey)
@@ -120,6 +126,12 @@ class AppSettings {
         NotificationCenter.default.post(name: .appTimingDidChange, object: self)
     }
 
+    /// 通知界面语言已变更（主线程发送，UI 层立即刷新文案）
+    func postLanguageChange() {
+        save()
+        NotificationCenter.default.post(name: .appLanguageDidChange, object: self)
+    }
+
     // MARK: - Codable 内部模型
 
     private struct StoredSettings: Codable {
@@ -138,6 +150,7 @@ class AppSettings {
         var textColorHex: String?
         var autoPlaySpeech: Bool
         var useAmericanAccent: Bool
+        var uiLanguage: String?
     }
 
     private func apply(stored: StoredSettings) {
@@ -158,5 +171,7 @@ class AppSettings {
         textColorHex = stored.textColorHex ?? Constants.defaultTextColorHex
         autoPlaySpeech = stored.autoPlaySpeech
         useAmericanAccent = stored.useAmericanAccent
+        // 向后兼容：旧版本无界面语言字段时保持"跟随系统"
+        uiLanguage = stored.uiLanguage ?? L10n.systemLanguage
     }
 }

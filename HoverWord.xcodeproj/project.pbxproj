@@ -19,6 +19,10 @@
 		4EA052AB2DE9D6B7146C9CB5 /* WordEntry+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44854A195C686AA28C460BAB /* WordEntry+CoreDataProperties.swift */; };
 		58DB3D9F2D3A26BC7E28E899 /* ReciteEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859327D0EE740A7454911D49 /* ReciteEngineTests.swift */; };
 		FDEC27D40F1046649CFFD44B /* ReciteEngineProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DEEFE9A5C5B4FA29D28E33B /* ReciteEngineProgressTests.swift */; };
+		AAA000000000000000000002 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000001 /* L10n.swift */; };
+		AAA000000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000003 /* Localizable.xcstrings */; };
+		AAA000000000000000000006 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000005 /* GeneralSettingsView.swift */; };
+		AAA000000000000000000008 /* L10nTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA000000000000000000007 /* L10nTests.swift */; };
 		41C6D8842FFB4E0F9072BD4C /* WordbookPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 890EBBBB9E6E42C1A20562AF /* WordbookPreviewTests.swift */; };
 		614B9173806097F6091A208D /* FloatWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3690945B618D6972DF60E1E /* FloatWindowController.swift */; };
 		67C16A57A7231DF44B9A8B9F /* AppearanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3134C94B8F520D3AA4944905 /* AppearanceView.swift */; };
@@ -98,6 +102,10 @@
 		F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookServiceFavoritesTests.swift; sourceTree = "<group>"; };
 		G50000000000000000000001 /* GlassStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyles.swift; sourceTree = "<group>"; };
 		G50000000000000000000003 /* SidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarItem.swift; sourceTree = "<group>"; };
+		AAA000000000000000000001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		AAA000000000000000000003 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		AAA000000000000000000005 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		AAA000000000000000000007 /* L10nTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -170,6 +178,7 @@
 				D102E9C253542A91FF6AE7C7 /* Assets.xcassets */,
 				E001F28E3114ACA6BA7E6414 /* HoverWord.xcdatamodeld */,
 				10AE12D078A4B6FE706BCCB1 /* Info.plist */,
+				AAA000000000000000000003 /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -185,6 +194,7 @@
 				86BB2B0F71619949DBD3ABAB /* SpeechSettingsView.swift */,
 				4FDF219946B48B880F21C928 /* WordbookTabView.swift */,
 				4D8F085298284D63BDECEFA2 /* WordbookPreviewView.swift */,
+				AAA000000000000000000005 /* GeneralSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -235,6 +245,7 @@
 			children = (
 				453973A5FD772833F1C44A85 /* Constants.swift */,
 				74C180D67C96E1F20F86E20A /* NotificationNames.swift */,
+				AAA000000000000000000001 /* L10n.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -255,6 +266,7 @@
 				F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */,
 				940E6376250A2BFAB9CF56C1 /* WordbookImportServiceTests.swift */,
 				890EBBBB9E6E42C1A20562AF /* WordbookPreviewTests.swift */,
+				AAA000000000000000000007 /* L10nTests.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -319,6 +331,7 @@
 			knownRegions = (
 				Base,
 				en,
+				zh-Hans,
 			);
 			mainGroup = 9B09C5B67FF8A4CE0650A091;
 			minimizedProjectReferenceProxies = 1;
@@ -337,6 +350,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CAA5B6CCA270C845C73575B1 /* Assets.xcassets in Resources */,
+				AAA000000000000000000004 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -353,6 +367,7 @@
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */,
 				385BD9D0DF1181ABDDB5135B /* WordbookImportServiceTests.swift in Sources */,
 				41C6D8842FFB4E0F9072BD4C /* WordbookPreviewTests.swift in Sources */,
+				AAA000000000000000000008 /* L10nTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,6 +405,8 @@
 				F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */,
 				D1AB2577EDB06AE17A08A716 /* WordbookTabView.swift in Sources */,
 				2881DC19D25C4E8399AA31BE /* WordbookPreviewView.swift in Sources */,
+				AAA000000000000000000002 /* L10n.swift in Sources */,
+				AAA000000000000000000006 /* GeneralSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -555,7 +572,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -enable-testing";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoverword.app;
 				PRODUCT_NAME = HoverWord;
@@ -595,7 +612,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -enable-testing";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoverword.app;
 				PRODUCT_NAME = HoverWord;
