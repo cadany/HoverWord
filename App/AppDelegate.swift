@@ -66,6 +66,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 保存悬浮窗位置
         floatWindowController?.saveWindowPosition()
 
+        // 保存背记进度
+        floatWindowController?.saveEngineProgress()
+
         // 保存全局设置
         AppSettings.shared.save()
 
@@ -86,9 +89,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 因 app 处于 `.accessory` 模式时，makeKeyAndOrderFront 会被窗口服务器拒绝，
     /// 导致窗口即使被 order 也不会显示。
     func showSettingsWindow() {
-        NSLog("[AppDelegate] showSettingsWindow called")
         if settingsWindowController == nil {
-            NSLog("[AppDelegate] Creating new SettingsWindowController")
             settingsWindowController = SettingsWindowController()
         }
 
@@ -99,8 +100,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindowController?.showWindow(nil)
         settingsWindowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-
-        NSLog("[AppDelegate] showSettingsWindow done")
     }
 
     /// 隐藏主设置窗口，同时隐藏 Dock 图标

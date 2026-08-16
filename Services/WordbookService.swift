@@ -237,6 +237,84 @@ class WordbookService {
         return (try? context.fetch(request)) ?? []
     }
 
+    // MARK: - 词条预览（分页 CRUD）
+
+    /// 分页获取单词本词条
+    ///
+    /// 不支持系统收藏夹单词本（返回空结果）。
+    ///
+    /// - Parameters:
+    ///   - wordbook: 目标单词本
+    ///   - page: 页码（从 0 开始）
+    ///   - pageSize: 每页条数
+    /// - Returns: (entries: 当前页词条列表, totalPages: 总页数, totalCount: 总条数)
+    func getEntriesPaginated(
+        for wordbook: Wordbook,
+        page: Int,
+        pageSize: Int
+    ) -> (entries: [WordEntry], totalPages: Int, totalCount: Int) {
+        guard !isFavoritesWordbook(wordbook) else { return ([], 0, 0) }
+
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbook.wordbookId == %@", wordbook.wordbookId)
+
+        let totalCount = (try? context.count(for: request)) ?? 0
+        let totalPages = pageSize > 0 ? max(1, (totalCount + pageSize - 1) / pageSize) : 1
+
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "orderIndex", ascending: true),
+            NSSortDescriptor(key: "sourceWord", ascending: true)
+        ]
+        request.fetchOffset = page * pageSize
+        request.fetchLimit = pageSize
+
+        let entries = (try? context.fetch(request)) ?? []
+        return (entries, totalPages, totalCount)
+    }
+
+    /// 更新词条字段
+    ///
+    /// - Parameters:
+    ///   - wordId: 词条唯一标识
+    ///   - sourceWord: 新的单词文本
+    ///   - phonetic: 新的音标
+    ///   - pos1: 新的词性
+    ///   - meaning1: 新的释义
+    func updateEntry(
+        wordId: String,
+        sourceWord: String,
+        phonetic: String?,
+        pos1: String?,
+        meaning1: String?
+    ) {
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordId == %@", wordId)
+        request.fetchLimit = 1
+
+        guard let entry = (try? context.fetch(request))?.first else { return }
+        entry.sourceWord = sourceWord
+        entry.phonetic = phonetic?.isEmpty == true ? nil : phonetic
+        entry.pos1 = pos1?.isEmpty == true ? nil : pos1
+        entry.meaning1 = meaning1?.isEmpty == true ? nil : meaning1
+        DataStack.shared.saveContext()
+    }
+
+    /// 删除词条
+    ///
+    /// - Parameter wordId: 词条唯一标识
+    func deleteEntry(wordId: String) {
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordId == %@", wordId)
+        request.fetchLimit = 1
+
+        guard let entry = (try? context.fetch(request))?.first else { return }
+        context.delete(entry)
+        DataStack.shared.saveContext()
+    }
+
     // MARK: - 导入
 
     /// 导入 TXT 文件到指定单词本（全量覆盖）

@@ -11,11 +11,15 @@ struct WordbookTabView: View {
     @State private var showingImportPanel = false
     @State private var showingNewPanel = false
     @State private var showingRenamePanel = false
+    @State private var showingPreviewPanel = false
     @State private var newWordbookName = ""
     @State private var renameWordbookName = ""
     @State private var importError: String?
     /// 空收藏夹启用时的行内提示文字（2 秒自动淡出）
     @State private var enableHint: String?
+    /// 缓存当前选中单词本的 Core Data 对象，避免每次 body 重绘都 fetch
+    @State private var cachedPreviewWordbook: Wordbook?
+    @State private var cachedPreviewWordbookId: String?
 
     struct WordbookInfo: Identifiable {
         let id: String
@@ -80,6 +84,10 @@ struct WordbookTabView: View {
                         .glassButtonStyle()
                         .fixedSize()
                         .disabled(selection == nil)
+                    Button("预览") { showingPreviewPanel = true }
+                        .glassButtonStyle()
+                        .fixedSize()
+                        .disabled(selection == nil || isSystemSelected)
                     Button("删除") { deleteSelected() }
                         .glassButtonStyle()
                         .fixedSize()
@@ -102,6 +110,11 @@ struct WordbookTabView: View {
         }
         .sheet(isPresented: $showingRenamePanel) {
             renameWordbookSheet
+        }
+        .sheet(isPresented: $showingPreviewPanel) {
+            if let wordbook = selectedWordbookObject {
+                WordbookPreviewView(wordbook: wordbook)
+            }
         }
         .fileImporter(
             isPresented: $showingImportPanel,
@@ -130,6 +143,26 @@ struct WordbookTabView: View {
     private var selectedWordbookName: String {
         guard let sel = selection else { return "" }
         return wordbooks.first(where: { $0.id == sel })?.name ?? ""
+    }
+
+    /// 获取当前选中单词本的 Core Data 对象（用于传递给预览 Sheet）
+    ///
+    /// 使用缓存避免每次 body 重绘都执行 Core Data fetch，
+    /// 仅在 selection 变化时重新获取。
+    private var selectedWordbookObject: Wordbook? {
+        if cachedPreviewWordbookId == selection, let cached = cachedPreviewWordbook {
+            return cached
+        }
+        guard let sel = selection else { return nil }
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbookId == %@", sel)
+        request.fetchLimit = 1
+        let result = (try? context.fetch(request))?.first
+        // 更新缓存
+        cachedPreviewWordbook = result
+        cachedPreviewWordbookId = sel
+        return result
     }
 
     private var newWordbookSheet: some View {

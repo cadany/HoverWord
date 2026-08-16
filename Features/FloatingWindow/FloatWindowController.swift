@@ -15,7 +15,7 @@ class FloatWindowController: NSWindowController {
     // MARK: - 依赖
 
     private let engine = ReciteEngine()
-    private let contentView_container = FloatContentView()
+    private let contentViewContainer = FloatContentView()
     private var rightClickMonitor: Any?
 
     // MARK: - 初始化
@@ -66,6 +66,14 @@ class FloatWindowController: NSWindowController {
             object: panel
         )
 
+        // 监听窗口移动结束，保存位置（修复拖拽移动后位置不保存的 bug）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidMove),
+            name: NSWindow.didMoveNotification,
+            object: panel
+        )
+
         // 恢复位置
         restoreWindowPosition()
 
@@ -95,31 +103,31 @@ class FloatWindowController: NSWindowController {
 
     private func setupContentView() {
         guard let panel = window as? NSPanel else { return }
-        contentView_container.frame = panel.contentView?.bounds ?? .zero
-        contentView_container.autoresizingMask = [.width, .height]
-        panel.contentView = contentView_container
+        contentViewContainer.frame = panel.contentView?.bounds ?? .zero
+        contentViewContainer.autoresizingMask = [.width, .height]
+        panel.contentView = contentViewContainer
 
         // 绑定按钮事件
-        contentView_container.onKnowTap = { [weak self] in
+        contentViewContainer.onKnowTap = { [weak self] in
             self?.engine.markKnown()
         }
-        contentView_container.onUnknownTap = { [weak self] in
+        contentViewContainer.onUnknownTap = { [weak self] in
             self?.engine.markUnknown()
         }
-        contentView_container.onFavoriteTap = { [weak self] in
+        contentViewContainer.onFavoriteTap = { [weak self] in
             guard let self = self, let word = self.engine.currentWord() else { return }
             _ = WordbookService.shared.toggleFavorite(
                 sourceWord: word.sourceWord,
                 wordDetail: word.encodeWordDetail()
             )
-            self.contentView_container.updateFavoriteState(
+            self.contentViewContainer.updateFavoriteState(
                 isFavorite: WordbookService.shared.isFavorite(sourceWord: word.sourceWord)
             )
         }
-        contentView_container.onRestartTap = { [weak self] in
+        contentViewContainer.onRestartTap = { [weak self] in
             self?.engine.restart()
         }
-        contentView_container.onRightClick = { [weak self] event in
+        contentViewContainer.onRightClick = { [weak self] event in
             self?.showContextMenu(event: event)
         }
     }
@@ -131,11 +139,13 @@ class FloatWindowController: NSWindowController {
             return
         }
 
+        // 抑制收缩动画期间的 didMoveNotification，避免保存错误的中间帧
+        isSuppressingPositionSave = true
+
         // 设置初始状态：透明 + 微缩
         panel.alphaValue = 0
         let originalFrame = panel.frame
-        let shrinkFactor: CGFloat = 0.95
-        let shrunkFrame = originalFrame.shrink(by: shrinkFactor)
+        let shrunkFrame = originalFrame.shrink(by: 0.95)
         panel.setFrame(shrunkFrame, display: true)
 
         // 显示窗口
@@ -148,6 +158,10 @@ class FloatWindowController: NSWindowController {
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1.0
             panel.animator().setFrame(originalFrame, display: true)
+        }, completionHandler: { [weak self] in
+            self?.isSuppressingPositionSave = false
+            // 动画结束后显式保存最终位置，确保与用户上次关闭时一致
+            self?.saveWindowPosition()
         })
     }
 
@@ -158,6 +172,10 @@ class FloatWindowController: NSWindowController {
             return
         }
 
+        // 保存最终位置（隐藏前的真实位置），再抑制动画期间的通知
+        saveWindowPosition()
+        isSuppressingPositionSave = true
+
         let originalFrame = panel.frame
         let shrunkFrame = originalFrame.shrink(by: 0.95)
 
@@ -166,11 +184,12 @@ class FloatWindowController: NSWindowController {
             ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 0.0
             panel.animator().setFrame(shrunkFrame, display: true)
-        }, completionHandler: {
+        }, completionHandler: { [weak self] in
             panel.orderOut(nil)
             // 恢复 frame 和 alpha，以便下次显示
             panel.setFrame(originalFrame, display: false)
             panel.alphaValue = 1.0
+            self?.isSuppressingPositionSave = false
         })
     }
 
@@ -186,19 +205,19 @@ class FloatWindowController: NSWindowController {
         // 已学完状态时，顶部插入"重新开始"
         if engine.isAllComplete {
             let restartItem = NSMenuItem(title: "重新开始", action: #selector(menuItemAction(_:)), keyEquivalent: "")
-            restartItem.tag = 100
+            restartItem.tag = Constants.FloatMenuTag.restart
             restartItem.target = self
             menu.addItem(restartItem)
             menu.addItem(NSMenuItem.separator())
         }
 
         let settingsItem = NSMenuItem(title: "打开设置", action: #selector(menuItemAction(_:)), keyEquivalent: "")
-        settingsItem.tag = 101
+        settingsItem.tag = Constants.FloatMenuTag.openSettings
         settingsItem.target = self
         menu.addItem(settingsItem)
         menu.addItem(NSMenuItem.separator())
         let quitItem = NSMenuItem(title: "退出程序", action: #selector(menuItemAction(_:)), keyEquivalent: "")
-        quitItem.tag = 102
+        quitItem.tag = Constants.FloatMenuTag.quit
         quitItem.target = self
         menu.addItem(quitItem)
 
@@ -206,7 +225,7 @@ class FloatWindowController: NSWindowController {
         // 注意：不能用 NSEvent.mouseLocation（屏幕坐标），from:nil 期望的是窗口基坐标系，
         // 两者相差窗口在屏幕上的 origin，会导致菜单位置偏移
         let viewPoint = event.locationInWindow
-        menu.popUp(positioning: nil, at: viewPoint, in: contentView_container)
+        menu.popUp(positioning: nil, at: viewPoint, in: contentViewContainer)
     }
 
     @objc private func menuItemAction(_ sender: NSMenuItem) {
@@ -214,16 +233,15 @@ class FloatWindowController: NSWindowController {
     }
 
     func handleMenuAction(tag: Int) {
-        NSLog("[FloatWindow] handleMenuAction tag=\(tag)")
         switch tag {
-        case 100: engine.restart()
-        case 101:
-            NSLog("[FloatWindow] Opening settings window...")
+        case Constants.FloatMenuTag.restart:
+            engine.restart()
+        case Constants.FloatMenuTag.openSettings:
             // 延迟到下一轮 run loop，确保 popUp 的 modal tracking 完全退出后再操作窗口
             DispatchQueue.main.async {
                 AppDelegate.shared.showSettingsWindow()
             }
-        case 102:
+        case Constants.FloatMenuTag.quit:
             AppDelegate.shared.quitApp()
         default: break
         }
@@ -236,8 +254,21 @@ class FloatWindowController: NSWindowController {
     private let layoutVersionKey = "FloatWindowLayoutVersion"
     private let currentLayoutVersion: Int = 2
 
+    /// 动画期间抑制位置保存（避免 showWindow/hideWindow 的收缩动画覆盖真实位置）
+    private var isSuppressingPositionSave = false
+
     @objc private func windowDidEndLiveResize() {
         saveWindowPosition()
+    }
+
+    @objc private func windowDidMove(_ notification: Notification) {
+        guard !isSuppressingPositionSave else { return }
+        saveWindowPosition()
+    }
+
+    /// 保存引擎背记进度（App 退出时调用）
+    func saveEngineProgress() {
+        engine.saveProgress()
     }
 
     func saveWindowPosition() {
@@ -248,8 +279,8 @@ class FloatWindowController: NSWindowController {
     }
 
     private func restoreWindowPosition() {
-        // 布局版本升级时，旧尺寸与新布局不兼容，强制重置为默认尺寸
         let savedVersion = UserDefaults.standard.integer(forKey: layoutVersionKey)
+
         if savedVersion != currentLayoutVersion {
             UserDefaults.standard.removeObject(forKey: positionKey)
             UserDefaults.standard.set(currentLayoutVersion, forKey: layoutVersionKey)
@@ -264,12 +295,13 @@ class FloatWindowController: NSWindowController {
         }
         let savedFrame = NSRectFromString(frameString)
 
-        // 将历史尺寸 clamp 到当前 min/max 边界
         let clampedSize = clampSize(savedFrame.size)
         let restoredFrame = NSRect(origin: savedFrame.origin, size: clampedSize)
 
+        // 使用 NSPointInRect 判断窗口原点是否落在某个屏幕内
+        // 注意：不能用 NSIntersectsRect + zero-size rect，因为 NSIsEmptyRect 把 width/height<=0 视为空
         let isValidScreen = NSScreen.screens.contains { screen in
-            NSIntersectsRect(screen.frame, NSRect(origin: restoredFrame.origin, size: .zero))
+            NSPointInRect(restoredFrame.origin, screen.frame)
         }
 
         if isValidScreen {
@@ -308,7 +340,7 @@ extension FloatWindowController: ReciteEngineDelegate {
     func engineDidAdvanceToWord(_ word: WordEntry) {
         let mode = AppSettings.shared.reciteMode
         let isFav = WordbookService.shared.isFavorite(sourceWord: word.sourceWord)
-        contentView_container.showWord(
+        contentViewContainer.showWord(
             word: word,
             mode: mode,
             isFavorite: isFav
@@ -320,7 +352,7 @@ extension FloatWindowController: ReciteEngineDelegate {
     }
 
     func engineDidCompleteAll() {
-        contentView_container.showCompleted()
+        contentViewContainer.showCompleted()
         // 保存位置
         saveWindowPosition()
     }

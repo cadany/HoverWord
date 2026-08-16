@@ -216,6 +216,15 @@ enum Constants {
 
     /// 系统收藏夹单词本名称
     static let favoritesWordbookName = "我的收藏"
+
+    // MARK: - 悬浮窗右键菜单 tag
+
+    /// 悬浮窗右键菜单项 tag
+    enum FloatMenuTag {
+        static let restart = 100
+        static let openSettings = 101
+        static let quit = 102
+    }
 }
 
 // MARK: - NSColor Hex 扩展

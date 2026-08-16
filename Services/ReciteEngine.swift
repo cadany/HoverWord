@@ -93,7 +93,7 @@ class ReciteEngine {
         NotificationCenter.default.removeObserver(self)
     }
 
-    /// 启动背记（从队列第一个 Section 开始）
+    /// 启动背记（尝试恢复历史进度，无有效进度则从第一个 Section 开始）
     func start() {
         buildQueue()
         guard !sectionQueue.isEmpty else {
@@ -101,15 +101,19 @@ class ReciteEngine {
             delegate?.engineDidCompleteAll()
             return
         }
-        currentSectionQueueIndex = 0
-        state = .playing
-        prepareCurrentSection()
-        // 首次展示：直接显示 index 0 的单词，不递增索引
-        displayCurrentWord()
+
+        // 尝试从 UserDefaults 恢复历史进度
+        if !restoreProgress() {
+            currentSectionQueueIndex = 0
+            prepareCurrentSection()
+            state = .playing
+            displayCurrentWord()
+        }
     }
 
     /// 重新开始（从队列第一个 Section 重新开始）
     func restart() {
+        clearProgress()
         start()
     }
 
@@ -216,15 +220,18 @@ class ReciteEngine {
     private func advanceToNextSection() {
         currentSectionQueueIndex += 1
         if currentSectionQueueIndex >= sectionQueue.count {
+            // 全部 Section 完成，清除进度
             state = .allComplete
             stopTimer()
+            clearProgress()
             delegate?.engineDidCompleteAll()
             return
         }
         state = .playing
         prepareCurrentSection()
-        // 新 Section 首次展示：直接显示 index 0 的单词
         displayCurrentWord()
+        // 新 Section 开始后保存进度
+        saveProgress()
     }
 
     // MARK: - 私有：单词切换
@@ -241,6 +248,11 @@ class ReciteEngine {
             advanceMemoryFeedback(section: section)
         case .carousel:
             advanceCarousel(section: section)
+        }
+
+        // 单词切换后保存进度（若仍在播放状态）
+        if state == .playing {
+            saveProgress()
         }
     }
 
@@ -359,8 +371,9 @@ class ReciteEngine {
     // MARK: - 通知处理
 
     @objc private func handleSettingsChange() {
-        // 背记规则变化时重置进度
+        // 背记规则变化时清除进度并重新开始
         stopTimer()
+        clearProgress()
         start()
     }
 
@@ -371,9 +384,110 @@ class ReciteEngine {
     }
 
     @objc private func handleWordbookChange() {
-        // 单词本启用状态变化时重建队列
+        // 单词本启用状态变化时清除进度并重建队列
         stopTimer()
+        clearProgress()
         start()
+    }
+
+    // MARK: - 进度持久化
+
+    private let progressSectionKey = "ReciteProgressSectionIndex"
+    private let progressWordKey = "ReciteProgressWordIndex"
+    private let progressFeedbackSetKey = "ReciteProgressFeedbackSet"
+    private let progressCompletedLoopsKey = "ReciteProgressCompletedLoops"
+
+    /// 保存当前背记进度到 UserDefaults
+    ///
+    /// 保存时机：单词切换、Section 完成、App 退出。
+    /// 存储内容：Section 索引、单词索引、已反馈集合、走马灯已完成轮次。
+    func saveProgress() {
+        let defaults = UserDefaults.standard
+        defaults.set(currentSectionQueueIndex, forKey: progressSectionKey)
+        defaults.set(currentWordIndex, forKey: progressWordKey)
+        defaults.set(Array(feedbackSet), forKey: progressFeedbackSetKey)
+        defaults.set(completedLoops, forKey: progressCompletedLoopsKey)
+    }
+
+    /// 清除持久化的进度数据
+    func clearProgress() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: progressSectionKey)
+        defaults.removeObject(forKey: progressWordKey)
+        defaults.removeObject(forKey: progressFeedbackSetKey)
+        defaults.removeObject(forKey: progressCompletedLoopsKey)
+    }
+
+    /// 尝试从 UserDefaults 恢复历史进度
+    ///
+    /// 校验流程：
+    /// 1. 检查是否存在已保存的进度
+    /// 2. Section 索引不越界
+    /// 3. 单词索引不越界
+    /// 4. feedbackSet 中的单词 ID 均存在于当前 Section
+    /// 5. 走马灯已完成轮次不越界
+    ///
+    /// 任意校验失败则清除进度，返回 false 由调用方从头开始。
+    ///
+    /// - Returns: 恢复成功返回 true，无有效进度或校验失败返回 false
+    private func restoreProgress() -> Bool {
+        let defaults = UserDefaults.standard
+
+        // 无已保存的进度（首次启动或进度已清除）
+        guard defaults.object(forKey: progressSectionKey) != nil else {
+            return false
+        }
+
+        let savedSectionIndex = defaults.integer(forKey: progressSectionKey)
+        let savedWordIndex = defaults.integer(forKey: progressWordKey)
+        let savedFeedbackSet = defaults.stringArray(forKey: progressFeedbackSetKey) ?? []
+        let savedCompletedLoops = defaults.integer(forKey: progressCompletedLoopsKey)
+
+        // 校验 Section 索引（此时 currentSectionQueueIndex 尚未修改，仅需 clearProgress）
+        guard savedSectionIndex >= 0 && savedSectionIndex < sectionQueue.count else {
+            clearProgress()
+            return false
+        }
+
+        // 移到目标 Section 并重建单词顺序
+        currentSectionQueueIndex = savedSectionIndex
+        prepareCurrentSection()
+
+        // 校验单词索引
+        guard savedWordIndex >= 0 && savedWordIndex < currentWordOrder.count else {
+            return resetProgressAndFail()
+        }
+
+        // 校验 feedbackSet 中所有单词 ID 存在于当前 Section
+        let section = sectionQueue[currentSectionQueueIndex]
+        let sectionWordIds = Set(section.entries.map { $0.wordId })
+        for wordId in savedFeedbackSet {
+            if !sectionWordIds.contains(wordId) {
+                return resetProgressAndFail()
+            }
+        }
+
+        // 校验走马灯已完成轮次
+        let loopCount = AppSettings.shared.carouselLoopCount
+        guard savedCompletedLoops >= 0 && savedCompletedLoops < loopCount else {
+            return resetProgressAndFail()
+        }
+
+        // 恢复状态
+        feedbackSet = Set(savedFeedbackSet)
+        currentWordIndex = savedWordIndex
+        completedLoops = savedCompletedLoops
+        state = .playing
+        displayCurrentWord()
+        return true
+    }
+
+    /// 清除进度并重置到初始状态，返回 false 供 restoreProgress 校验失败时使用
+    private func resetProgressAndFail() -> Bool {
+        clearProgress()
+        currentSectionQueueIndex = 0
+        prepareCurrentSection()
+        return false
     }
 }
 

@@ -24,11 +24,15 @@ final class ReciteEngineTests: XCTestCase {
 
         engine = ReciteEngine()
         delegate = MockEngineDelegate()
-        engine.delegate = delegate
+        engine.delegate = self.delegate
+
+        // 清除 UserDefaults 中的历史进度，避免干扰测试
+        engine.clearProgress()
     }
 
     override func tearDown() {
         engine.stop()
+        engine.clearProgress()
         clearAllData()
         engine = nil
         delegate = nil
