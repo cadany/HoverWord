@@ -1,21 +1,40 @@
 # Xcode
 DerivedData/
 build/
-*.xcuserdata
+xcuserdata/
+*.xcuserstate
 *.xccheckout
 *.moved-aside
+*.xcscmblueprint
 *.ipa
 *.dSYM.zip
-*.dSYM
+*.dSYM/
+
+# Swift Package Manager
+.build/
+# Package.resolved 应提交以锁定依赖版本，不忽略
 
 # macOS
 .DS_Store
 .AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# 编辑器临时文件
+*.swp
+*.swo
+*~
 
 # Profiling / Code coverage
 *.profraw
 *.profdata
 Coverage/
+*.xccovreport
+*.xccovarchive
 
 # Claude Code 本地配置（工作流定义共享，本地设置忽略）
-.claude/settings.local.json
+.claude/settings*.json
