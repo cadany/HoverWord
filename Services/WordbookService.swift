@@ -299,11 +299,22 @@ class WordbookService {
         request.fetchLimit = 1
 
         guard let entry = (try? context.fetch(request))?.first else { return }
+        let oldSourceWord = entry.sourceWord
         entry.sourceWord = sourceWord
         entry.phonetic = phonetic?.isEmpty == true ? nil : phonetic
         entry.pos1 = pos1?.isEmpty == true ? nil : pos1
         entry.meaning1 = meaning1?.isEmpty == true ? nil : meaning1
+
+        // 收藏一致性：同步关联收藏的 sourceWord 与 wordDetail 快照
+        let favoritesChanged = syncFavoriteAfterEdit(of: entry, oldSourceWord: oldSourceWord)
+
         DataStack.shared.saveContext()
+
+        // 收藏在前、内容在后（与导入链路次序约定一致），本方法仅在主线程调用
+        if favoritesChanged {
+            NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
+        }
+        postContentDidChange(wordbookId: entry.wordbook?.wordbookId)
     }
 
     /// 删除词条
@@ -316,8 +327,98 @@ class WordbookService {
         request.fetchLimit = 1
 
         guard let entry = (try? context.fetch(request))?.first else { return }
+        let wordbookId = entry.wordbook?.wordbookId
+        let sourceWord = entry.sourceWord
         context.delete(entry)
+
+        // 收藏一致性：无其他单词本包含相同 sourceWord 时移除关联收藏
+        //（与导入后收藏同步的隔离语义一致）
+        let favoritesChanged: Bool
+        if !anyOtherWordbookContains(
+            sourceWord: sourceWord,
+            excludingWordbookId: wordbookId ?? "",
+            context: context
+        ) {
+            favoritesChanged = removeFavorites(sourceWord: sourceWord, in: context)
+        } else {
+            favoritesChanged = false
+        }
+
         DataStack.shared.saveContext()
+
+        if favoritesChanged {
+            NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
+        }
+        postContentDidChange(wordbookId: wordbookId)
+    }
+
+    // MARK: - 收藏一致性
+
+    /// 编辑词条后同步关联收藏（按旧 sourceWord 匹配）
+    ///
+    /// - 改名：更新收藏的 sourceWord；若新词文本已被其他收藏占用，
+    ///   删除旧收藏（保持 sourceWord 全局唯一，toggleFavorite / isFavorite 依赖此假设）
+    /// - 任意编辑：刷新收藏的 wordDetail 快照，收藏夹展示与词库实时一致
+    /// - Returns: 收藏状态是否实际变化（用于决定是否补发 favoritesDidChange）
+    @discardableResult
+    private func syncFavoriteAfterEdit(of entry: WordEntry, oldSourceWord: String) -> Bool {
+        let context = DataStack.shared.viewContext
+        guard !oldSourceWord.isEmpty,
+              let favorite = fetchFavorite(sourceWord: oldSourceWord, in: context) else {
+            return false
+        }
+
+        let newSourceWord = entry.sourceWord
+        if newSourceWord != oldSourceWord {
+            if fetchFavorite(sourceWord: newSourceWord, in: context) != nil {
+                // 新词文本已被收藏：删除旧收藏，保持 sourceWord 唯一
+                context.delete(favorite)
+                return true
+            }
+            favorite.sourceWord = newSourceWord
+        }
+
+        // 刷新快照；内容无变化时保持 false，避免无谓的收藏通知
+        let newDetail = entry.encodeWordDetail()
+        if favorite.wordDetail != newDetail {
+            favorite.wordDetail = newDetail
+            return true
+        }
+        return newSourceWord != oldSourceWord
+    }
+
+    /// 按源语言文本查找收藏记录
+    private func fetchFavorite(sourceWord: String, in context: NSManagedObjectContext) -> Favorite? {
+        let request: NSFetchRequest<Favorite> = Favorite.fetchRequest()
+        request.predicate = NSPredicate(format: "sourceWord == %@", sourceWord)
+        request.fetchLimit = 1
+        return (try? context.fetch(request))?.first
+    }
+
+    /// 移除指定 sourceWord 的全部收藏记录
+    ///
+    /// - Returns: 是否实际移除了记录
+    @discardableResult
+    private func removeFavorites(sourceWord: String, in context: NSManagedObjectContext) -> Bool {
+        let request: NSFetchRequest<Favorite> = Favorite.fetchRequest()
+        request.predicate = NSPredicate(format: "sourceWord == %@", sourceWord)
+        guard let favorites = try? context.fetch(request), !favorites.isEmpty else {
+            return false
+        }
+        for favorite in favorites {
+            context.delete(favorite)
+        }
+        return true
+    }
+
+    /// 发送单词本内容变更通知（仅在主线程同步接口内调用）
+    private func postContentDidChange(wordbookId: String?) {
+        guard let wordbookId, !wordbookId.isEmpty else { return }
+        NotificationCenter.default.post(
+            name: .wordbookContentDidChange,
+            object: nil,
+            userInfo: ["wordbookId": wordbookId]
+        )
     }
 
     // MARK: - 导入
@@ -337,6 +438,18 @@ class WordbookService {
 
         // 导入后同步收藏夹
         syncFavoritesAfterImport(wordbook: wordbook, importedSourceWords: Set(entries.map { $0.sourceWord }))
+
+        // 内容变更通知经主线程队列派发：syncFavoritesAfterImport 内的
+        // favoritesDidChange 已先行入队，同队列 FIFO 保证 content 通知最后到达，
+        // 引擎以最新数据收尾
+        let wordbookId = wordbook.wordbookId
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: .wordbookContentDidChange,
+                object: nil,
+                userInfo: ["wordbookId": wordbookId]
+            )
+        }
     }
 
     // MARK: - 收藏夹同步

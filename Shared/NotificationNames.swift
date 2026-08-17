@@ -39,6 +39,15 @@ extension Notification.Name {
     /// ReciteEngine 收到后重建队列并重置进度
     static let wordbookEnablementDidChange = Notification.Name("wordbookEnablementDidChange")
 
+    /// 单词本内容已变更（词条更新 / 词条删除 / 词库导入完成）
+    ///
+    /// userInfo 携带变更所属单词本的 wordbookId（键 "wordbookId"），
+    /// 仅在变更成功落盘后发送，无实际变更（如 wordId 不存在）不发送。
+    /// ReciteEngine 与 favoritesDidChange 共用同一处理入口：
+    /// 来源单词本启用且引擎处于播放 / Section 完成态时保存进度并重建队列，
+    /// 其余情况忽略。必须在主线程发送。
+    static let wordbookContentDidChange = Notification.Name("wordbookContentDidChange")
+
     /// 收藏内容已变更（新增 / 移除收藏、导入后的收藏夹同步）
     ///
     /// ReciteEngine 收到后仅在收藏夹单词本启用时重建队列，

@@ -212,6 +212,14 @@ enum Constants {
     /// 导入性能测试样本量
     static let importBenchmarkCount: Int = 10000
 
+    // MARK: - 发音服务
+
+    /// 语音列表刷新节流间隔（秒）
+    ///
+    /// speak 前距上次枚举超过该时长才重新枚举系统语音，
+    /// 避免高频切词路径上 speechVoices() 的磁盘/服务开销。
+    static let voiceListRefreshInterval: TimeInterval = 60
+
     // MARK: - 系统收藏夹
 
     /// 系统收藏夹单词本名称

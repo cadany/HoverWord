@@ -162,12 +162,18 @@ class FloatWindowController: NSWindowController {
         })
     }
 
-    /// 带动画隐藏窗口
+    /// 带动画隐藏窗口（全屏自动隐藏路径）
+    ///
+    /// 已隐藏（不可见或透明度已为 0）时跳过，避免重复动画。
     func hideWindowWithAnimation() {
         guard let panel = window as? NSPanel else {
             window?.orderOut(nil)
             return
         }
+        guard panel.isVisible, panel.alphaValue > 0 else { return }
+
+        visibilityAnimationToken += 1
+        let token = visibilityAnimationToken
 
         // 保存最终位置（隐藏前的真实位置），再抑制动画期间的通知
         saveWindowPosition()
@@ -182,11 +188,43 @@ class FloatWindowController: NSWindowController {
             panel.animator().alphaValue = 0.0
             panel.animator().setFrame(shrunkFrame, display: true)
         }, completionHandler: { [weak self] in
+            guard let self = self, self.visibilityAnimationToken == token else { return }
             panel.orderOut(nil)
             // 恢复 frame 和 alpha，以便下次显示
             panel.setFrame(originalFrame, display: false)
             panel.alphaValue = 1.0
-            self?.isSuppressingPositionSave = false
+            self.isSuppressingPositionSave = false
+        })
+    }
+
+    /// 带动画恢复显示窗口（退出全屏路径）
+    ///
+    /// 纯 UI 恢复：不重启引擎、不重置进度。
+    /// 已完整显示时跳过；透明度为 0（隐藏动画进行中或残留）时仍执行以纠正状态。
+    func showWindowWithAnimation() {
+        guard let panel = window as? NSPanel else { return }
+        guard !(panel.isVisible && panel.alphaValue >= 1.0) else { return }
+
+        visibilityAnimationToken += 1
+        let token = visibilityAnimationToken
+        isSuppressingPositionSave = true
+
+        let originalFrame = panel.frame
+        // 初始状态：透明 + 微缩
+        panel.alphaValue = 0
+        panel.setFrame(originalFrame.shrink(by: 0.95), display: false)
+        panel.orderFront(nil)
+
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = Constants.windowFadeDuration
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1.0
+            panel.animator().setFrame(originalFrame, display: true)
+        }, completionHandler: { [weak self] in
+            guard let self = self, self.visibilityAnimationToken == token else { return }
+            self.isSuppressingPositionSave = false
+            // 动画结束后显式保存最终位置
+            self.saveWindowPosition()
         })
     }
 
@@ -253,6 +291,10 @@ class FloatWindowController: NSWindowController {
 
     /// 动画期间抑制位置保存（避免 showWindow/hideWindow 的收缩动画覆盖真实位置）
     private var isSuppressingPositionSave = false
+
+    /// 显隐动画代际标记：新一轮动画使旧动画的 completion 失效，
+    /// 避免滞后的 orderOut 覆盖新动画的最终状态
+    private var visibilityAnimationToken = 0
 
     @objc private func windowDidEndLiveResize() {
         saveWindowPosition()
@@ -352,25 +394,6 @@ extension FloatWindowController: ReciteEngineDelegate {
         contentViewContainer.showCompleted()
         // 保存位置
         saveWindowPosition()
-    }
-}
-
-// MARK: - WordEntry 收藏信息编码
-
-private extension WordEntry {
-    /// 将词条完整信息编码为 JSON 二进制数据，用于收藏记录的 wordDetail 字段
-    func encodeWordDetail() -> Data? {
-        var detail: [String: Any?] = [
-            "wordId": wordId,
-            "sourceWord": sourceWord,
-            "phonetic": phonetic,
-            "pos1": pos1, "meaning1": meaning1,
-            "pos2": pos2, "meaning2": meaning2,
-            "pos3": pos3, "meaning3": meaning3
-        ]
-        // 移除 nil 值，确保 JSON 序列化不会失败
-        detail = detail.compactMapValues { $0 }
-        return try? JSONSerialization.data(withJSONObject: detail)
     }
 }
 

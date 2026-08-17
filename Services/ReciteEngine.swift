@@ -88,8 +88,14 @@ class ReciteEngine {
         )
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleFavoritesChange),
+            selector: #selector(handleDataChange(_:)),
             name: .favoritesDidChange,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDataChange(_:)),
+            name: .wordbookContentDidChange,
             object: nil
         )
     }
@@ -396,17 +402,40 @@ class ReciteEngine {
         start()
     }
 
-    @objc private func handleFavoritesChange() {
-        // 收藏内容变化只影响收藏夹单词本对应的 Section：
-        // 收藏夹未启用时队列不变，直接忽略，避免不必要的进度重置
-        guard WordbookService.shared.getFavoritesWordbook()?.isEnabled == true,
-              state == .playing else { return }
+    /// 队列数据源变更统一入口（favoritesDidChange / wordbookContentDidChange）
+    ///
+    /// 两个通知的处理体一致（保存进度 → 重建 → 尽量恢复），仅进入条件不同；
+    /// 处理幂等：同一变更引发的连续通知先后到达时，
+    /// 每次处理均以前次结果为基线，最终状态与单次处理一致。
+    @objc private func handleDataChange(_ notification: Notification) {
+        if notification.name == .wordbookContentDidChange {
+            // 词条内容变更：来源单词本启用、引擎处于播放 / Section 完成态才处理。
+            // sectionComplete 视同播放态（当前代码该状态不可达，属 spec 预留），
+            // 避免将来可达时该状态下后续 Section 继续使用过期队列
+            guard let wordbookId = notification.userInfo?["wordbookId"] as? String,
+                  isWordbookEnabled(wordbookId),
+                  state == .playing || state == .sectionComplete else { return }
+        } else {
+            // 收藏内容变化只影响收藏夹单词本对应的 Section：
+            // 收藏夹未启用时队列不变，直接忽略，避免不必要的进度重置
+            guard WordbookService.shared.getFavoritesWordbook()?.isEnabled == true,
+                  state == .playing else { return }
+        }
 
         // 保存当前进度后重建队列；restoreProgress 校验失败
-        //（如当前单词已被移出收藏）则自动从头开始
+        //（如当前单词已被删除、词库重新导入）则自动从头开始
         saveProgress()
         stopTimer()
         start()
+    }
+
+    /// 判断指定单词本是否处于启用状态
+    private func isWordbookEnabled(_ wordbookId: String) -> Bool {
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbookId == %@ AND isEnabled == YES", wordbookId)
+        request.fetchLimit = 1
+        return ((try? context.count(for: request)) ?? 0) > 0
     }
 
     // MARK: - 进度持久化

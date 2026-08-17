@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 全屏检测
 
-    private var fullscreenObserver: NSObjectProtocol?
+    private var fullscreenObservers: [NSObjectProtocol] = []
 
     // MARK: - NSApplicationDelegate
 
@@ -76,7 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DataStack.shared.saveContext()
 
         // 移除观察者
-        if let observer = fullscreenObserver {
+        for observer in fullscreenObservers {
             NotificationCenter.default.removeObserver(observer)
         }
     }
@@ -137,43 +137,67 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - 全屏自动隐藏
 
     private func setupFullscreenObserver() {
-        // 监听空间变化（包括全屏切换）
-        fullscreenObserver = NotificationCenter.default.addObserver(
+        // 活跃空间切换：进入/退出全屏必然伴随空间变化
+        fullscreenObservers.append(NotificationCenter.default.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             self?.checkFullscreenState()
-        }
+        })
 
-        // 也监听窗口变化
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(applicationDidBecomeActive),
-            name: NSApplication.didBecomeActiveNotification,
-            object: nil
-        )
-    }
-
-    @objc private func applicationDidBecomeActive() {
-        checkFullscreenState()
+        // 任意前台应用激活：覆盖"切换前台应用但不切空间"的入口
+        //（原 NSApplication.didBecomeActive 仅本应用激活，检测不到其他应用场景）
+        fullscreenObservers.append(NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.checkFullscreenState()
+        })
     }
 
     private func checkFullscreenState() {
         guard AppSettings.shared.fullscreenAutoHide else { return }
 
-        // 遍历所有窗口检查是否存在全屏窗口（排除悬浮窗自身）
-        let isFullscreen = NSApp.windows.contains { window in
-            window !== floatWindowController?.window
-                && window.styleMask.contains(.fullScreen)
+        if hasFullscreenWindowOnAnyScreen() {
+            floatWindowController?.hideWindowWithAnimation()
+        } else {
+            floatWindowController?.showWindowWithAnimation()
+        }
+    }
+
+    /// 屏幕级全屏检测
+    ///
+    /// 通过 CGWindowList 查询屏幕上的其他进程普通层级（layer 0）窗口，
+    /// 存在 bounds 完整覆盖某块屏幕（含菜单栏区域，以此区分"最大化"与"全屏"）
+    /// 的窗口即判定为全屏。
+    /// 仅读取 ownerPID / layer / bounds，不读窗口标题，无需屏幕录制权限。
+    private func hasFullscreenWindowOnAnyScreen() -> Bool {
+        guard let windowList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly], kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return false
         }
 
-        if isFullscreen {
-            // 隐藏悬浮窗
-            floatWindowController?.window?.orderOut(nil)
-        } else {
-            // 恢复悬浮窗
-            floatWindowController?.window?.orderFront(nil)
+        let ownPID = getpid()
+        let screenFrames = NSScreen.screens.map { $0.frame }
+
+        for window in windowList {
+            guard let ownerPID = window[kCGWindowOwnerPID as String] as? Int,
+                  ownerPID != ownPID,
+                  let layer = window[kCGWindowLayer as String] as? Int,
+                  layer == 0,
+                  let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
+                  let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary),
+                  bounds.width > 0,
+                  bounds.height > 0 else {
+                continue
+            }
+            if screenFrames.contains(where: { NSContainsRect($0, bounds) }) {
+                return true
+            }
         }
+        return false
     }
 }

@@ -22,6 +22,8 @@ class SpeechService: NSObject {
     private let synthesizer = AVSpeechSynthesizer()
     private var currentAccent: Accent = .american
     private var availableVoices: [AVSpeechSynthesisVoice] = []
+    /// 上次语音列表枚举时间（节流基准，初始化时的首次枚举即起点）
+    private var lastVoiceRefreshDate = Date.distantPast
 
     // MARK: - 初始化
 
@@ -43,6 +45,8 @@ class SpeechService: NSObject {
     func applySettings() {
         let accent: Accent = AppSettings.shared.useAmericanAccent ? .american : .british
         setAccent(accent)
+        // 设置口音时无条件刷新，立即纳入新下载的系统语音
+        refreshVoices()
     }
 
     /// 播放单词发音
@@ -51,6 +55,11 @@ class SpeechService: NSObject {
     /// 若 TTS 不可用，静默跳过不抛错。
     func speak(_ word: String) {
         stopSpeaking()
+
+        // 播放前按需刷新语音列表：超时节流间隔才重新枚举，新下载语音无需重启即生效
+        if Date().timeIntervalSince(lastVoiceRefreshDate) > Constants.voiceListRefreshInterval {
+            refreshVoices()
+        }
 
         let utterance = AVSpeechUtterance(string: word)
 
@@ -78,6 +87,7 @@ class SpeechService: NSObject {
     /// 刷新可用语音列表
     private func refreshVoices() {
         availableVoices = AVSpeechSynthesisVoice.speechVoices()
+        lastVoiceRefreshDate = Date()
     }
 
     /// 为指定口音选择最佳语音

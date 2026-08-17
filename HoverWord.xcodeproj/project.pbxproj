@@ -28,6 +28,7 @@
 		67C16A57A7231DF44B9A8B9F /* AppearanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3134C94B8F520D3AA4944905 /* AppearanceView.swift */; };
 		89464B51FDE47BEB9D6CB6A0 /* DataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6542EAFD71253420F6397B33 /* DataStack.swift */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */; };
+		C0FFEE1234567890ABCDEF02 /* WordbookContentChangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FFEE1234567890ABCDEF01 /* WordbookContentChangeTests.swift */; };
 		A6C53DB162D903EB1EE539C8 /* GlassBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCA4E4A165BD908A7E8D9F01 /* GlassBackgroundView.swift */; };
 		AEA8F72D50DAF7BF290A24F5 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453973A5FD772833F1C44A85 /* Constants.swift */; };
 		B32978AC1F0B6D4828A492CE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98978A8AC8CAB2C325E45DB7 /* AppDelegate.swift */; };
@@ -100,6 +101,7 @@
 		E1272A8141F56E87E813F8A2 /* Wordbook+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wordbook+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		E183DC35C70AB0B2F1AACBEC /* ReciteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngine.swift; sourceTree = "<group>"; };
 		F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookServiceFavoritesTests.swift; sourceTree = "<group>"; };
+		C0FFEE1234567890ABCDEF01 /* WordbookContentChangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookContentChangeTests.swift; sourceTree = "<group>"; };
 		G50000000000000000000001 /* GlassStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassStyles.swift; sourceTree = "<group>"; };
 		G50000000000000000000003 /* SidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarItem.swift; sourceTree = "<group>"; };
 		AAA000000000000000000001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
@@ -264,6 +266,7 @@
 				859327D0EE740A7454911D49 /* ReciteEngineTests.swift */,
 				2DEEFE9A5C5B4FA29D28E33B /* ReciteEngineProgressTests.swift */,
 				F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */,
+				C0FFEE1234567890ABCDEF01 /* WordbookContentChangeTests.swift */,
 				940E6376250A2BFAB9CF56C1 /* WordbookImportServiceTests.swift */,
 				890EBBBB9E6E42C1A20562AF /* WordbookPreviewTests.swift */,
 				AAA000000000000000000007 /* L10nTests.swift */,
@@ -365,6 +368,7 @@
 				58DB3D9F2D3A26BC7E28E899 /* ReciteEngineTests.swift in Sources */,
 				FDEC27D40F1046649CFFD44B /* ReciteEngineProgressTests.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */,
+				C0FFEE1234567890ABCDEF02 /* WordbookContentChangeTests.swift in Sources */,
 				385BD9D0DF1181ABDDB5135B /* WordbookImportServiceTests.swift in Sources */,
 				41C6D8842FFB4E0F9072BD4C /* WordbookPreviewTests.swift in Sources */,
 				AAA000000000000000000008 /* L10nTests.swift in Sources */,
