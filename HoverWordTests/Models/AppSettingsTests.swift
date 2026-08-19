@@ -26,7 +26,8 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.stayDuration = Constants.defaultStayDuration
         AppSettings.shared.sectionSize = Constants.defaultSectionSize
         AppSettings.shared.autoPlaySpeech = true
-        AppSettings.shared.useAmericanAccent = true
+        AppSettings.shared.voiceNameByLanguage = [:]
+        AppSettings.shared.speechRateMultiplier = 1.0
         AppSettings.shared.backgroundOpacity = Double(Constants.defaultBackgroundOpacity)
         AppSettings.shared.fullscreenAutoHide = false
         AppSettings.shared.save()
@@ -70,9 +71,12 @@ final class AppSettingsTests: XCTestCase {
                       "默认自动播放发音应开启")
     }
 
-    func testDefaultAccent() {
-        XCTAssertTrue(AppSettings.shared.useAmericanAccent,
-                      "默认发音应为美式")
+    func testDefaultSpeechConfig() {
+        // 默认不指定具体语音（自动选择），语速为标准倍速
+        XCTAssertTrue(AppSettings.shared.voiceNameByLanguage.isEmpty,
+                      "默认语音配置应为空（自动选择）")
+        XCTAssertEqual(AppSettings.shared.speechRateMultiplier, 1.0,
+                       "默认语速倍率应为 1.0")
     }
 
     func testDefaultBackgroundOpacity() {
@@ -92,7 +96,8 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.stayDuration = 10
         AppSettings.shared.sectionSize = 30
         AppSettings.shared.autoPlaySpeech = false
-        AppSettings.shared.useAmericanAccent = false
+        AppSettings.shared.voiceNameByLanguage = ["en": "TestVoice"]
+        AppSettings.shared.speechRateMultiplier = 1.5
         AppSettings.shared.backgroundOpacity = 0.5
 
         // 保存
@@ -113,7 +118,8 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(AppSettings.shared.stayDuration, 10)
         XCTAssertEqual(AppSettings.shared.sectionSize, 30)
         XCTAssertFalse(AppSettings.shared.autoPlaySpeech)
-        XCTAssertFalse(AppSettings.shared.useAmericanAccent)
+        XCTAssertEqual(AppSettings.shared.voiceNameByLanguage["en"], "TestVoice")
+        XCTAssertEqual(AppSettings.shared.speechRateMultiplier, 1.5)
         XCTAssertEqual(AppSettings.shared.backgroundOpacity, 0.5, accuracy: 0.01)
     }
 

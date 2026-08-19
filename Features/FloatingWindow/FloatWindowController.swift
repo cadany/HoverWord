@@ -127,6 +127,11 @@ class FloatWindowController: NSWindowController {
         contentViewContainer.onRightClick = { [weak self] event in
             self?.showContextMenu(event: event)
         }
+        contentViewContainer.onSpeakTap = { [weak self] in
+            guard let word = self?.engine.currentWord() else { return }
+            // 语种取自当前词条所属单词本的 sourceLang，与引擎自动播报一致
+            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? "en")
+        }
     }
 
     override func showWindow(_ sender: Any?) {

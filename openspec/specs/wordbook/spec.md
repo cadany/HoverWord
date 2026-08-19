@@ -154,11 +154,15 @@
 - **THEN** 系统 SHALL 对这些词条按 `sourceWord` 字母升序排列，保证每次查询结果一致
 
 ### Requirement: Core Data 轻量迁移
-系统 SHALL 在 Core Data 模型版本升级时启用轻量迁移（`NSMigratePersistentStoresAutomaticallyOption` + `NSInferMappingModelAutomaticallyOption`），自动为存量 `WordEntry` 填充 `orderIndex` 默认值 0。
+系统 SHALL 在 Core Data 模型版本升级时启用轻量迁移（`NSMigratePersistentStoresAutomaticallyOption` + `NSInferMappingModelAutomaticallyOption`），自动为存量 `WordEntry` 填充新增属性默认值（`orderIndex` 0、`sourceLineNumber` 0）。
 
 #### Scenario: 模型版本升级自动迁移
 - **WHEN** 应用启动时检测到 Core Data store 使用旧版模型
-- **THEN** 系统 SHALL 使用轻量迁移自动升级 store，存量词条的 `orderIndex` 填充为 0，不丢失任何数据
+- **THEN** 系统 SHALL 使用轻量迁移自动升级 store，存量词条的新增属性填充默认值 0，不丢失任何数据
+
+#### Scenario: 迁移后行号可用
+- **WHEN** 迁移完成后用户重新导入单词本
+- **THEN** 新导入的词条 SHALL 正确记录 `sourceLineNumber`，预览视图正常显示行号
 
 ### Requirement: 词条变更通知
 系统 SHALL 仅在单词本内容发生成功落盘的变更时发送 `.wordbookContentDidChange` 通知：触发点为词条更新完成、词条删除完成、词库导入完成后（各操作仅发送一次，批量操作不逐条发送）。通知 SHALL 在主线程发送，且 userInfo SHALL 携带变更所属的 `wordbookId`。无实际变更的路径（如 wordId 不存在）SHALL 不发送。导入链路同时触发收藏同步时，本通知 SHALL 晚于 `.favoritesDidChange` 发送（两者均经主线程队列按派发顺序派发）。
@@ -193,4 +197,61 @@
 #### Scenario: 删除词条但其他词本包含同词
 - **WHEN** 用户删除一个已收藏词条，但另一单词本仍包含相同 sourceWord
 - **THEN** 对应收藏记录 SHALL 保留
+
+### Requirement: 词条原始 TXT 行号记录
+系统 SHALL 在 TXT 词库导入时为每个词条记录其在原文件中的真实行号（从 1 起计），含被跳过的空行。该信息 SHALL 持久化到 `WordEntry.sourceLineNumber` 字段，不随词条编辑或删除而改变其他词条的行号。
+
+#### Scenario: 成功导入时记录行号
+- **WHEN** 用户导入一个 UTF-8 TXT 文件，文件中第 1 行为 `apple ...`，第 2 行为空行，第 3 行为 `banana ...`
+- **THEN** 系统 SHALL 将 apple 的 `sourceLineNumber` 设为 1，banana 的 `sourceLineNumber` 设为 3
+
+#### Scenario: 行号含被跳过的空行
+- **WHEN** TXT 文件包含空行
+- **THEN** 空行 SHALL 继续占据行号计数，后续词条的行号反映其在原文件中的真实位置
+
+#### Scenario: 重新导入覆盖行号
+- **WHEN** 用户对已有词条的单词本再次导入新词库
+- **THEN** 系统 SHALL 用新文件中每个词条的行号完全替换旧的 `sourceLineNumber`，与 `orderIndex` 同步重置
+
+#### Scenario: 编辑词条不影响行号
+- **WHEN** 用户在预览视图中内联编辑某词条的单词 / 音标 / 词性 / 释义
+- **THEN** 该词条的 `sourceLineNumber` SHALL 保持不变
+
+#### Scenario: 删除词条不影响其他行号
+- **WHEN** 用户在预览视图中删除某词条
+- **THEN** 其他词条的 `sourceLineNumber` SHALL 保持不变
+
+### Requirement: 预览视图行号列
+单词本预览视图 SHALL 在表格最左侧显示"行号"列，展示每个词条的 `sourceLineNumber`。列宽 50pt，数字右对齐，使用等宽数字字体。
+
+#### Scenario: 正常显示行号
+- **WHEN** 用户打开单词本预览，词条存在且 `sourceLineNumber > 0`
+- **THEN** 行号列 SHALL 显示该词条的原始 TXT 行号（整数）
+
+#### Scenario: 老数据行号缺失
+- **WHEN** 用户打开单词本预览，词条为 v0.1 已导入的老数据（`sourceLineNumber == 0`）
+- **THEN** 行号列 SHALL 显示为 `-`，提示行号信息不可用
+
+#### Scenario: 行号列表头
+- **WHEN** 预览视图表头渲染
+- **THEN** SHALL 显示为 `[ 行号 | 单词 | 音标 | 释义 | ⌫ ]`，行号列为第一列
+
+### Requirement: 预览多组释义展示与编辑
+预览视图的释义列 SHALL 将词条的全部释义组（最多 3 组）以 " / " 拼接展示，每组格式为"词性 释义"（与悬浮窗释义区展示格式一致）。释义列 SHALL 支持内联编辑：编辑文本按 " / " 拆组、每组内首个空格分隔词性与释义，保存时解析回 `pos1-3` / `meaning1-3` 字段；超过 3 组时仅保留前 3 组。
+
+#### Scenario: 多组释义完整展示
+- **WHEN** 词条包含 3 组释义（pos1-3 均非空），用户打开预览
+- **THEN** 释义列 SHALL 显示 `v. 跑 / n. 奔跑 / n. 运转` 格式的拼接文本，而非仅第 1 组
+
+#### Scenario: 编辑多组释义
+- **WHEN** 用户将释义列编辑为 `v. 跑 / n. 奔跑` 并失焦保存
+- **THEN** 系统 SHALL 解析回 pos1=v.、meaning1=跑、pos2=n.、meaning2=奔跑、第 3 组清空，悬浮窗展示同步更新
+
+#### Scenario: 编辑文本解析容错
+- **WHEN** 用户输入的某组释义无词性（如仅 `跑`）
+- **THEN** 系统 SHALL 将该组整体存为释义，词性留空
+
+#### Scenario: 行号列与分页协同
+- **WHEN** 用户切换到第 2 页（第 101-200 条词条）
+- **THEN** 行号列 SHALL 显示这些词条在原 TXT 文件中的真实行号，不是页内序号（如 103、107、109... 而非 101、102、103...，中间跳跃反映空行的存在）
 

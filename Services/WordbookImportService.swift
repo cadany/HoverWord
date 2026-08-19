@@ -48,6 +48,8 @@ class WordbookImportService {
         let meaning2: String?
         let pos3: String?
         let meaning3: String?
+        /// 在原 TXT 文件中的真实行号（从 1 起计，含被跳过的空行），供预览溯源
+        let lineNumber: Int
     }
 
     // MARK: - 公开接口
@@ -119,7 +121,8 @@ class WordbookImportService {
                 pos2: pos2,
                 meaning2: meaning2,
                 pos3: pos3,
-                meaning3: meaning3
+                meaning3: meaning3,
+                lineNumber: lineNumber
             ))
         }
 
@@ -175,6 +178,7 @@ class WordbookImportService {
                 entry.wordId = UUID().uuidString
                 entry.sectionIndex = sectionIndex
                 entry.orderIndex = Int32(index)
+                entry.sourceLineNumber = Int32(parsed.lineNumber)
                 entry.sourceWord = parsed.sourceWord
                 entry.phonetic = parsed.phonetic
                 entry.pos1 = parsed.pos1

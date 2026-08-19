@@ -14,8 +14,18 @@ struct HoverWordApp: App {
     var body: some Scene {
         // 不通过 SwiftUI Scene 创建任何窗口。
         // 所有窗口（主设置窗口 + 悬浮窗）由 AppDelegate 使用 AppKit 管理。
+        // 保留 Settings scene 以生成标准应用菜单，但重写其默认设置项：
+        // ⌘, 与菜单栏"HoverWord 设置…"均打开 AppKit 管理的设置窗口。
         Settings {
             EmptyView()
+        }
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button(L10n.t("menu.appSettings")) {
+                    AppDelegate.shared.showSettingsWindow()
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
     }
 }

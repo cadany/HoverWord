@@ -61,4 +61,13 @@ extension Notification.Name {
     /// FloatContentView（刷新按钮/完成态文案）
     /// 触发方：通用设置页语言切换。必须在主线程发送。
     static let appLanguageDidChange = Notification.Name("appLanguageDidChange")
+
+    /// 发音播放状态已变化（开始 / 结束 / 被打断）
+    ///
+    /// userInfo：isSpeaking（Bool，回调时刻 synthesizer 状态）、
+    /// isPreview（Bool，是否为设置页试听播放）、voiceLanguage（String，播放语音 locale）。
+    /// 监听方：SpeechSettingsView（试听按钮状态精确恢复，替代固定延时；
+    /// 仅响应 isPreview == true 的通知，悬浮窗自动/手动播报不更新试听按钮）
+    /// 触发方：SpeechService 的 AVSpeechSynthesizer 回调（已切主线程发送）。
+    static let speechPlaybackStateDidChange = Notification.Name("speechPlaybackStateDidChange")
 }

@@ -121,7 +121,7 @@ struct AppearanceView: View {
                     HStack {
                         Text(L10n.t("appearance.opacity"))
                             .font(.system(size: 13))
-                        Slider(value: $backgroundOpacity, in: 0...1)
+                        Slider(value: $backgroundOpacity, in: 0...1, step: 0.05)
                             .onChange(of: backgroundOpacity) { _ in saveAppearance() }
                         Text("\(Int(backgroundOpacity * 100))%")
                             .font(.system(size: 12))
@@ -295,11 +295,12 @@ private struct FontPickerField: View {
                 Text(selection)
                     .font(rowFont(selection))
                     .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
             }
-            .frame(minWidth: 170, alignment: .leading)
+            .frame(minWidth: 170, alignment: .trailing)
             .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)

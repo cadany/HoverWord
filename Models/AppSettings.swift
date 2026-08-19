@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 import Combine
 
@@ -62,8 +63,12 @@ class AppSettings {
     /// 自动播放开关，默认开启
     var autoPlaySpeech: Bool = true
 
-    /// 发音类型：true=美式，false=英式，默认美式
-    var useAmericanAccent: Bool = true
+    /// 按语言键控的语音选择（language code → voice name）
+    /// 语种无关设计：新增语种单词本时自动出现对应配置，无需改动数据层
+    var voiceNameByLanguage: [String: String] = [:]
+
+    /// 全局语速倍率（0.5 – 1.5），1.0 = 系统默认语速，作用于所有语言
+    var speechRateMultiplier: Double = 1.0
 
     // MARK: - 通用
 
@@ -100,7 +105,8 @@ class AppSettings {
             meaningFontSize: meaningFontSize,
             textColorHex: textColorHex,
             autoPlaySpeech: autoPlaySpeech,
-            useAmericanAccent: useAmericanAccent,
+            voiceNameByLanguage: voiceNameByLanguage,
+            speechRateMultiplier: speechRateMultiplier,
             uiLanguage: uiLanguage
         )
         if let data = try? JSONEncoder().encode(stored) {
@@ -149,7 +155,10 @@ class AppSettings {
         var meaningFontSize: Double
         var textColorHex: String?
         var autoPlaySpeech: Bool
-        var useAmericanAccent: Bool
+        var voiceNameByLanguage: [String: String]?
+        var speechRateMultiplier: Double?
+        /// v0.1 旧字段，仅用于一次性迁移读取，不再写入
+        var useAmericanAccent: Bool?
         var uiLanguage: String?
     }
 
@@ -170,8 +179,46 @@ class AppSettings {
         // 向后兼容：旧用户无此字段时使用默认值
         textColorHex = stored.textColorHex ?? Constants.defaultTextColorHex
         autoPlaySpeech = stored.autoPlaySpeech
-        useAmericanAccent = stored.useAmericanAccent
+        speechRateMultiplier = stored.speechRateMultiplier ?? 1.0
+
+        // 语音配置：优先读新字段；v0.1 老用户一次性迁移 useAmericanAccent
+        var didMigrateVoiceConfig = false
+        if let voices = stored.voiceNameByLanguage, !voices.isEmpty {
+            voiceNameByLanguage = voices
+        } else if let oldAmerican = stored.useAmericanAccent {
+            voiceNameByLanguage = ["en": migratedEnglishVoice(preferAmerican: oldAmerican)]
+            didMigrateVoiceConfig = true
+        } else {
+            voiceNameByLanguage = [:]
+        }
+
         // 向后兼容：旧版本无界面语言字段时保持"跟随系统"
         uiLanguage = stored.uiLanguage ?? L10n.systemLanguage
+
+        // 迁移即落盘：否则未改动设置的用户每次启动都会在主线程重复执行
+        // migratedEnglishVoice 的 speechVoices() 枚举开销。
+        // 须在全部字段回填完成后执行，避免中途快照覆盖其他 stored 值
+        if didMigrateVoiceConfig {
+            save()
+        }
+    }
+
+    /// v0.1 → v0.1.1 一次性迁移：旧口音布尔 → 具体英语语音名
+    ///
+    /// 优先取目标语音（美式 Samantha / 英式 Daniel），
+    /// 系统不存在时退而取该口音分区首个语音，均无则返回空串（由 SpeechService 走系统默认）。
+    private func migratedEnglishVoice(preferAmerican: Bool) -> String {
+        let englishVoices = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language.hasPrefix("en") }
+        let preferredLocale = preferAmerican ? "en-US" : "en-GB"
+        let preferredName = preferAmerican ? "Samantha" : "Daniel"
+
+        if englishVoices.contains(where: { $0.name == preferredName }) {
+            return preferredName
+        }
+        if let first = englishVoices.first(where: { $0.language == preferredLocale })?.name {
+            return first
+        }
+        return ""
     }
 }

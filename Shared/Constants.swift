@@ -220,6 +220,28 @@ enum Constants {
     /// 避免高频切词路径上 speechVoices() 的磁盘/服务开销。
     static let voiceListRefreshInterval: TimeInterval = 60
 
+    // MARK: - 发音设置
+
+    /// 语速倍率最小值（0.5x = 半速慢放）
+    static let speechRateMin: Double = 0.5
+
+    /// 语速倍率最大值（1.5x）
+    static let speechRateMax: Double = 1.5
+
+    /// 语速滑块步进
+    static let speechRateStep: Double = 0.1
+
+    /// 语速默认倍率（1.0x = 系统默认语速）
+    static let speechRateDefault: Double = 1.0
+
+    /// 试听示例句（足够长以体现语音的节奏与连读特征）
+    static let speechPreviewSentence = "Hello, this is a preview."
+
+    // MARK: - 单词本预览
+
+    /// 预览行号列宽度（pt）
+    static let previewLineNumberColumnWidth: CGFloat = 50
+
     // MARK: - 系统收藏夹
 
     /// 系统收藏夹单词本名称

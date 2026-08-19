@@ -231,6 +231,8 @@ struct WordbookTabView: View {
         Binding(
             get: { wb.isEnabled },
             set: { newValue in
+                // macOS 列表惯例：点击 checkbox 视为对该行的交互，同步选中
+                selection = wb.id
                 let context = DataStack.shared.viewContext
                 let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
                 request.predicate = NSPredicate(format: "wordbookId == %@", wb.id)
@@ -317,7 +319,7 @@ struct WordbookTabView: View {
 ///
 /// 交互拆分：左侧 checkbox（Toggle）负责启用/禁用，
 /// 右侧文本区（Button .plain）负责选中单词本。
-/// 避免整行 onTapGesture 抢占 checkbox 点击事件。
+/// 点击 checkbox 时同步选中该行（macOS 列表惯例：点行内任意处均选中）。
 private struct WordbookRow: View {
     let wordbook: WordbookTabView.WordbookInfo
     let isOn: Binding<Bool>
@@ -332,7 +334,9 @@ private struct WordbookRow: View {
                 .toggleStyle(.checkbox)
                 .disabled(wordbook.wordCount == 0 && !wordbook.isSystem)
 
-            // 文本区：Button(.plain) 负责行选中，不干扰 Toggle
+            // 文本区：Button(.plain) 负责行选中。
+            // padding 与背景移入 Button 内部 + contentShape，
+            // 使点击热区覆盖整行视觉区域（含留白与背景），而非仅文本
             Button(action: onSelect) {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -356,15 +360,19 @@ private struct WordbookRow: View {
 
                     Spacer()
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .frame(minHeight: 36)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(backgroundColor)
+                )
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(backgroundColor)
-        )
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
         .onHover { hovering in isHovering = hovering }
         .animation(.easeOut(duration: 0.15), value: isHovering)
     }

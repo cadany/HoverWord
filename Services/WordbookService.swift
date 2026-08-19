@@ -291,7 +291,12 @@ class WordbookService {
         sourceWord: String,
         phonetic: String?,
         pos1: String?,
-        meaning1: String?
+        meaning1: String?,
+        pos2: String? = nil,
+        meaning2: String? = nil,
+        pos3: String? = nil,
+        meaning3: String? = nil,
+        replaceSecondaryMeanings: Bool = false
     ) {
         let context = DataStack.shared.viewContext
         let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
@@ -304,6 +309,14 @@ class WordbookService {
         entry.phonetic = phonetic?.isEmpty == true ? nil : phonetic
         entry.pos1 = pos1?.isEmpty == true ? nil : pos1
         entry.meaning1 = meaning1?.isEmpty == true ? nil : meaning1
+        // 第 2/3 组释义仅在调用方显式要求整体替换时回写（预览编辑场景），
+        // 其他调用方传 nil 保持原值不被清空
+        if replaceSecondaryMeanings {
+            entry.pos2 = pos2?.isEmpty == true ? nil : pos2
+            entry.meaning2 = meaning2?.isEmpty == true ? nil : meaning2
+            entry.pos3 = pos3?.isEmpty == true ? nil : pos3
+            entry.meaning3 = meaning3?.isEmpty == true ? nil : meaning3
+        }
 
         // 收藏一致性：同步关联收藏的 sourceWord 与 wordDetail 快照
         let favoritesChanged = syncFavoriteAfterEdit(of: entry, oldSourceWord: oldSourceWord)

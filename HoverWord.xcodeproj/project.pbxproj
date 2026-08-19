@@ -93,6 +93,7 @@
 		98978A8AC8CAB2C325E45DB7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A2EC286B9BACE07DD8309438 /* Favorite+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Favorite+CoreDataClass.swift"; sourceTree = "<group>"; };
 		AA01B2C3D4E5F60718293A4B /* HoverWord v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "HoverWord v2.xcdatamodel"; sourceTree = "<group>"; };
+		AA01B2C3D4E5F60718293A4C /* HoverWord v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "HoverWord v3.xcdatamodel"; sourceTree = "<group>"; };
 		AAA000000000000000000001 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		AAA000000000000000000003 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		AAA000000000000000000005 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
@@ -664,8 +665,9 @@
 			children = (
 				CAD082B4F9D365B1EC28AA85 /* HoverWord.xcdatamodel */,
 				AA01B2C3D4E5F60718293A4B /* HoverWord v2.xcdatamodel */,
+				AA01B2C3D4E5F60718293A4C /* HoverWord v3.xcdatamodel */,
 			);
-			currentVersion = AA01B2C3D4E5F60718293A4B /* HoverWord v2.xcdatamodel */;
+			currentVersion = AA01B2C3D4E5F60718293A4C /* HoverWord v3.xcdatamodel */;
 			path = HoverWord.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

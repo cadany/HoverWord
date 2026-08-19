@@ -19,6 +19,7 @@ class FloatContentView: NSView {
     var onKnowTap: (() -> Void)?
     var onUnknownTap: (() -> Void)?
     var onFavoriteTap: (() -> Void)?
+    var onSpeakTap: (() -> Void)?
     var onRightClick: ((NSEvent) -> Void)?
 
     // MARK: - UI 组件
@@ -36,6 +37,7 @@ class FloatContentView: NSView {
     private let buttonStack = NSStackView()
 
     private let favoriteButton = NSButton()
+    private let speakButton = NSButton()
     private let knowButton = NSButton()
     private let unknownButton = NSButton()
     private let completedLabel = NSTextField(labelWithString: L10n.t("float.completed"))
@@ -140,6 +142,7 @@ class FloatContentView: NSView {
         // 按钮背景色
         let bgColor = buttonColor.withAlphaComponent(buttonAlpha).cgColor
         favoriteButton.layer?.backgroundColor = bgColor
+        speakButton.layer?.backgroundColor = bgColor
         knowButton.layer?.backgroundColor = bgColor
         unknownButton.layer?.backgroundColor = bgColor
     }
@@ -276,15 +279,23 @@ class FloatContentView: NSView {
         configureButton(favoriteButton, title: "♡", action: #selector(favoriteTapped))
         favoriteButton.target = self
 
-        // 认识按钮
-        configureButton(knowButton, title: L10n.t("float.button.know"), action: #selector(knowTapped))
+        // 播报按钮：重听当前单词发音
+        configureButton(speakButton, title: "▶", action: #selector(speakTapped))
+        speakButton.toolTip = L10n.t("float.button.speak")
+        speakButton.target = self
+
+        // 认识按钮（图标 + toolTip 补足语义）
+        configureButton(knowButton, title: "✓", action: #selector(knowTapped))
+        knowButton.toolTip = L10n.t("float.button.know")
         knowButton.target = self
 
         // 不认识按钮
-        configureButton(unknownButton, title: L10n.t("float.button.unknown"), action: #selector(unknownTapped))
+        configureButton(unknownButton, title: "✗", action: #selector(unknownTapped))
+        unknownButton.toolTip = L10n.t("float.button.unknown")
         unknownButton.target = self
 
         buttonStack.addArrangedSubview(favoriteButton)
+        buttonStack.addArrangedSubview(speakButton)
         buttonStack.addArrangedSubview(knowButton)
         buttonStack.addArrangedSubview(unknownButton)
 
@@ -379,9 +390,9 @@ class FloatContentView: NSView {
     private func visibleButtons() -> [NSButton] {
         switch currentMode {
         case .memoryFeedback:
-            return [favoriteButton, knowButton, unknownButton]
+            return [favoriteButton, speakButton, knowButton, unknownButton]
         case .carousel:
-            return [favoriteButton]
+            return [favoriteButton, speakButton]
         }
     }
 
@@ -408,6 +419,11 @@ class FloatContentView: NSView {
     @objc private func favoriteTapped() {
         animateButtonClick(favoriteButton)
         onFavoriteTap?()
+    }
+
+    @objc private func speakTapped() {
+        animateButtonClick(speakButton)
+        onSpeakTap?()
     }
 
     /// 按钮点击态动效：微缩 + 亮度降低，0.1s 后恢复
@@ -522,6 +538,7 @@ class FloatContentView: NSView {
             self.knowButton.isHidden = true
             self.unknownButton.isHidden = true
             self.favoriteButton.isHidden = true
+            self.speakButton.isHidden = true
 
             // 淡入"已学完"文字
             NSAnimationContext.runAnimationGroup({ ctx in

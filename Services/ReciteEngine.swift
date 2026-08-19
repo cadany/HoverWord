@@ -340,9 +340,9 @@ class ReciteEngine {
         startTimer()
         delegate?.engineDidAdvanceToWord(word)
 
-        // 自动播放发音
+        // 自动播放发音（语种取自当前词条所属单词本的 sourceLang）
         if AppSettings.shared.autoPlaySpeech {
-            SpeechService.shared.speak(word.sourceWord)
+            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? "en")
         }
     }
 
