@@ -116,7 +116,7 @@
 - **THEN** 当前活跃窗口为全屏的应用时，悬浮窗 SHALL 自动隐藏；退出全屏后自动恢复
 
 ### Requirement: 外观设置 Tab
-系统 SHALL 提供外观设置 Tab 页，包含预设主题一键切换、背景色取色器、文字颜色取色器、背景透明度滑块、单词/释义字体与字号设置。配置修改实时反映到悬浮窗，无需预览区。
+系统 SHALL 提供外观设置 Tab 页，由 4 个独立玻璃卡片组成，按顺序为：悬浮窗口（背景色取色器、文字颜色取色器、背景透明度滑块）、单词（字体、字号）、注音（字号、显示模式）、释义（字体、字号、显示模式）。包含预设主题一键切换。配置修改实时反映到悬浮窗，无需预览区。
 
 #### Scenario: 应用预设主题
 - **WHEN** 用户点击"浅色""深色"或"护眼绿"预设主题
@@ -149,6 +149,55 @@
 #### Scenario: 修改字体与字号
 - **WHEN** 用户修改单词字体/字号或释义字体/字号
 - **THEN** 悬浮窗 SHALL 实时反映字体与字号变化
+
+### Requirement: 注音卡片
+管理注音字号与显示模式配置。
+
+#### Scenario: 注音字号调整
+- **WHEN** 用户调整注音字号（8-14pt）
+- **THEN** 悬浮窗注音 SHALL 以新字号渲染
+
+#### Scenario: 注音显示模式切换
+- **WHEN** 用户切换注音显示模式（Segmented Control）
+- **THEN** 悬浮窗 SHALL 立即应用新的显示规则
+
+#### Scenario: 显示模式 Segmented Control
+- **WHEN** 渲染注音显示模式控件
+- **THEN** SHALL 使用 Segmented Control，选项为：总是显示 / 悬停显示 / 隐藏
+
+### Requirement: 释义卡片
+管理释义字体、字号与显示模式配置。
+
+#### Scenario: 释义字体选择
+- **WHEN** 用户选择释义字体
+- **THEN** 悬浮窗释义 SHALL 以新字体渲染
+
+#### Scenario: 释义字号调整
+- **WHEN** 用户调整释义字号（10-24pt）
+- **THEN** 悬浮窗释义 SHALL 以新字号渲染
+
+#### Scenario: 释义显示模式切换
+- **WHEN** 用户切换释义显示模式（Segmented Control）
+- **THEN** 悬浮窗 SHALL 立即应用新的显示规则
+
+#### Scenario: 显示模式 Segmented Control
+- **WHEN** 渲染释义显示模式控件
+- **THEN** SHALL 使用 Segmented Control，选项为：总是显示 / 悬停显示 / 隐藏
+
+### Requirement: 设置保存与通知
+配置变更保存到 AppSettings 并发送外观变更通知。
+
+#### Scenario: 保存注音配置
+- **WHEN** 用户修改注音字号或显示模式
+- **THEN** SHALL 调用 `AppSettings.shared.postAppearanceChange()`
+
+#### Scenario: 保存释义配置
+- **WHEN** 用户修改释义字体、字号或显示模式
+- **THEN** SHALL 调用 `AppSettings.shared.postAppearanceChange()`
+
+#### Scenario: 避免冗余保存
+- **WHEN** 配置值未发生变化（如 sidebar 切换触发 onAppear）
+- **THEN** SHALL 跳过保存与通知
 
 ### Requirement: 设置实时生效
 设置界面修改的所有外观参数 SHALL 实时同步到悬浮窗，无需预览区域，无需重启应用。

@@ -7,15 +7,28 @@ import XCTest
 /// 以及语言切换通知发出后查词结果即时变化（即时刷新链路的基础）。
 final class L10nTests: XCTestCase {
 
-    private var originalLanguage: String!
+    /// 测试宿主与真实应用共享同一 UserDefaults 域（com.hoverword.app），
+    /// postLanguageChange() 会触发 save() 落盘，须备份还原防止污染真实设置；
+    /// key 须与 AppSettings.storageKey 保持一致
+    private let settingsKey = "HoverWordAppSettings"
+    private var originalSettingsData: Data?
 
     override func setUp() {
         super.setUp()
-        originalLanguage = AppSettings.shared.uiLanguage
+        // 备份用户真实配置，tearDown 原样还原
+        originalSettingsData = UserDefaults.standard.data(forKey: settingsKey)
     }
 
     override func tearDown() {
-        AppSettings.shared.uiLanguage = originalLanguage
+        // 还原用户真实配置：有备份则写回，无备份（用户从未保存过设置）则删除 key
+        if let data = originalSettingsData {
+            UserDefaults.standard.set(data, forKey: settingsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: settingsKey)
+        }
+        // 同步内存单例，避免残留测试语言影响同进程后续测试
+        AppSettings.shared.load()
+        originalSettingsData = nil
         super.tearDown()
     }
 

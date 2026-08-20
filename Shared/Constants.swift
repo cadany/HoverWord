@@ -69,6 +69,13 @@ enum Constants {
     /// 音标字号
     static let phoneticFontSize: CGFloat = 10
 
+    /// 注音字号可配置范围（外观设置滑块）
+    static let phoneticFontSizeMin: Double = 8
+    static let phoneticFontSizeMax: Double = 14
+
+    /// 次级文字（注音）透明度：保证浅色背景可读性，同时保持与主文字的层级差异
+    static let secondaryTextAlpha: CGFloat = 0.85
+
     /// 词性 + 释义字号
     static let meaningFontSize: CGFloat = 12
 

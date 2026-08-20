@@ -13,6 +13,9 @@ struct AppearanceView: View {
     @State private var wordFontSize: Double = Double(Constants.wordFontSize)
     @State private var meaningFontName: String = "System Default"
     @State private var meaningFontSize: Double = Double(Constants.meaningFontSize)
+    @State private var phoneticFontSize: Double = Double(Constants.phoneticFontSize)
+    @State private var phoneticVisibility: ContentVisibility = .always
+    @State private var meaningVisibility: ContentVisibility = .always
 
     /// 可选字体族列表：static 只枚举一次。
     /// NSFontManager.availableFontFamilies 每次调用都查询字体服务，
@@ -160,6 +163,45 @@ struct AppearanceView: View {
                 }
                 .glassCard()
 
+                // 注音样式卡片
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L10n.t("appearance.phoneticStyle"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text(L10n.t("appearance.fontSize"))
+                            .font(.system(size: 13))
+                        Slider(
+                            value: $phoneticFontSize,
+                            in: Constants.phoneticFontSizeMin...Constants.phoneticFontSizeMax,
+                            step: 1
+                        )
+                        .onChange(of: phoneticFontSize) { _ in saveAppearance() }
+                        Text("\(Int(phoneticFontSize))pt")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .frame(width: 40, alignment: .trailing)
+                    }
+
+                    Divider()
+
+                    HStack {
+                        Text(L10n.t("appearance.displayMode"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $phoneticVisibility) {
+                            ForEach(ContentVisibility.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                        .onChange(of: phoneticVisibility) { _ in saveAppearance() }
+                    }
+                }
+                .glassCard()
+
                 // 释义样式卡片
                 VStack(alignment: .leading, spacing: 12) {
                     Text(L10n.t("appearance.meaningStyle"))
@@ -186,6 +228,22 @@ struct AppearanceView: View {
                             .foregroundColor(.secondary)
                             .frame(width: 40, alignment: .trailing)
                     }
+
+                    Divider()
+
+                    HStack {
+                        Text(L10n.t("appearance.displayMode"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $meaningVisibility) {
+                            ForEach(ContentVisibility.allCases, id: \.self) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                        .onChange(of: meaningVisibility) { _ in saveAppearance() }
+                    }
                 }
                 .glassCard()
 
@@ -208,6 +266,9 @@ struct AppearanceView: View {
         let storedMeaningFont = AppSettings.shared.meaningFontName
         meaningFontName = (storedMeaningFont.isEmpty || storedMeaningFont == "San Francisco") ? "System Default" : storedMeaningFont
         meaningFontSize = AppSettings.shared.meaningFontSize
+        phoneticFontSize = AppSettings.shared.phoneticFontSize
+        phoneticVisibility = AppSettings.shared.phoneticVisibility
+        meaningVisibility = AppSettings.shared.meaningVisibility
         if let color = NSColor(hex: AppSettings.shared.textColorHex) {
             textColor = Color(color)
         } else {
@@ -243,6 +304,9 @@ struct AppearanceView: View {
         let newWordSize = wordFontSize
         let newMeaningFont = (meaningFontName == "System Default") ? "" : meaningFontName
         let newMeaningSize = meaningFontSize
+        let newPhoneticSize = phoneticFontSize
+        let newPhoneticVisibility = phoneticVisibility
+        let newMeaningVisibility = meaningVisibility
         let newBgHex = hexString(from: customColor)
         let newFgHex = hexString(from: textColor)
 
@@ -253,6 +317,9 @@ struct AppearanceView: View {
             || s.wordFontSize != newWordSize
             || s.meaningFontName != newMeaningFont
             || s.meaningFontSize != newMeaningSize
+            || s.phoneticFontSize != newPhoneticSize
+            || s.phoneticVisibility != newPhoneticVisibility
+            || s.meaningVisibility != newMeaningVisibility
             || s.backgroundColorHex != newBgHex
             || s.textColorHex != newFgHex
         else { return }
@@ -263,6 +330,9 @@ struct AppearanceView: View {
         s.wordFontSize = newWordSize
         s.meaningFontName = newMeaningFont
         s.meaningFontSize = newMeaningSize
+        s.phoneticFontSize = newPhoneticSize
+        s.phoneticVisibility = newPhoneticVisibility
+        s.meaningVisibility = newMeaningVisibility
         s.backgroundColorHex = newBgHex
         s.textColorHex = newFgHex
         s.postAppearanceChange()

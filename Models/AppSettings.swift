@@ -55,6 +55,15 @@ class AppSettings {
     /// 释义字号，默认 12
     var meaningFontSize: Double = Double(Constants.meaningFontSize)
 
+    /// 注音字号，默认 10
+    var phoneticFontSize: Double = Double(Constants.phoneticFontSize)
+
+    /// 注音显示模式，默认始终显示
+    var phoneticVisibility: ContentVisibility = .always
+
+    /// 释义显示模式，默认始终显示
+    var meaningVisibility: ContentVisibility = .always
+
     /// 文字颜色（hex），默认黑色
     var textColorHex: String = Constants.defaultTextColorHex
 
@@ -103,6 +112,9 @@ class AppSettings {
             wordFontSize: wordFontSize,
             meaningFontName: meaningFontName,
             meaningFontSize: meaningFontSize,
+            phoneticFontSize: phoneticFontSize,
+            phoneticVisibility: phoneticVisibility,
+            meaningVisibility: meaningVisibility,
             textColorHex: textColorHex,
             autoPlaySpeech: autoPlaySpeech,
             voiceNameByLanguage: voiceNameByLanguage,
@@ -153,6 +165,9 @@ class AppSettings {
         var wordFontSize: Double
         var meaningFontName: String
         var meaningFontSize: Double
+        var phoneticFontSize: Double?
+        var phoneticVisibility: ContentVisibility?
+        var meaningVisibility: ContentVisibility?
         var textColorHex: String?
         var autoPlaySpeech: Bool
         var voiceNameByLanguage: [String: String]?
@@ -176,6 +191,10 @@ class AppSettings {
         wordFontSize = stored.wordFontSize
         meaningFontName = stored.meaningFontName == "San Francisco" ? "" : stored.meaningFontName
         meaningFontSize = stored.meaningFontSize
+        // 向后兼容：旧版本无注音/释义显示配置时使用默认值
+        phoneticFontSize = stored.phoneticFontSize ?? Double(Constants.phoneticFontSize)
+        phoneticVisibility = stored.phoneticVisibility ?? .always
+        meaningVisibility = stored.meaningVisibility ?? .always
         // 向后兼容：旧用户无此字段时使用默认值
         textColorHex = stored.textColorHex ?? Constants.defaultTextColorHex
         autoPlaySpeech = stored.autoPlaySpeech

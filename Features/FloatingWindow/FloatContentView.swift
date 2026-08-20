@@ -67,6 +67,9 @@ class FloatContentView: NSView {
         setupTrackingArea()
         applyAppearanceSettings()
         updateTextColors()
+        // 初始化即应用显示模式（无动画，避免启动闪烁）
+        updatePhoneticVisibility(animated: false)
+        updateMeaningVisibility(animated: false)
 
         // 监听外观设置变更
         NotificationCenter.default.addObserver(
@@ -106,6 +109,9 @@ class FloatContentView: NSView {
             self.applyAppearanceSettings()
             self.updateTextColors()
         })
+        // 显示模式变更立即应用（不依赖上面的动效分组，用自身淡入淡出）
+        updatePhoneticVisibility()
+        updateMeaningVisibility()
     }
 
     @objc private func handleLanguageChange() {
@@ -130,8 +136,8 @@ class FloatContentView: NSView {
         // 单词标签
         wordLabel.textColor = baseColor
 
-        // 音标标签（使用基础色 alpha 0.65，保持层级差异）
-        phoneticLabel.textColor = baseColor.withAlphaComponent(0.65)
+        // 音标标签（次级文字透明度，保持层级差异同时保证可读性）
+        phoneticLabel.textColor = baseColor.withAlphaComponent(Constants.secondaryTextAlpha)
 
         // 已学完标签
         completedLabel.textColor = baseColor
@@ -168,8 +174,11 @@ class FloatContentView: NSView {
         }
         wordLabel.font = wordFont
 
-        // 更新音标字体（音标字号不可配置，直接使用默认值）
-        phoneticLabel.font = NSFont.systemFont(ofSize: Constants.phoneticFontSize, weight: .regular)
+        // 更新音标字体（字号可在外观设置中配置）
+        phoneticLabel.font = NSFont.systemFont(
+            ofSize: CGFloat(AppSettings.shared.phoneticFontSize),
+            weight: .regular
+        )
 
         // 更新释义字体
         let meaningSize = CGFloat(AppSettings.shared.meaningFontSize)
@@ -236,7 +245,7 @@ class FloatContentView: NSView {
         // 第 2 列：音标标签
         phoneticLabel.font = NSFont.systemFont(ofSize: Constants.phoneticFontSize, weight: .regular)
         phoneticLabel.alignment = .left
-        phoneticLabel.textColor = NSColor.black.withAlphaComponent(0.65)
+        phoneticLabel.textColor = NSColor.black.withAlphaComponent(Constants.secondaryTextAlpha)
         phoneticLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         phoneticLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
         rootStack.addArrangedSubview(phoneticLabel)
@@ -334,15 +343,59 @@ class FloatContentView: NSView {
         isMouseInside = true
         // 按当前状态显示对应按钮（完成态无按钮，此调用为空操作）
         setButtonsHidden(false)
+        // hover 显示模式：悬停淡入
+        updatePhoneticVisibility()
+        updateMeaningVisibility()
     }
 
     override func mouseExited(with event: NSEvent) {
         isMouseInside = false
         animateButtonsOut()
+        // hover 显示模式：离开淡出
+        updatePhoneticVisibility()
+        updateMeaningVisibility()
     }
 
     override func rightMouseDown(with event: NSEvent) {
         onRightClick?(event)
+    }
+
+    // MARK: - 注音/释义显示模式
+
+    /// 显示模式对应的目标 alpha（hover 模式依赖鼠标是否在悬浮窗内）
+    private func visibilityAlpha(for mode: ContentVisibility) -> CGFloat {
+        switch mode {
+        case .always: return 1
+        case .hidden: return 0
+        case .hover: return isMouseInside ? 1 : 0
+        }
+    }
+
+    /// 按配置更新注音显示
+    ///
+    /// 仅用 alpha 过渡、保留占位空间（不用 isHidden），
+    /// 避免模式切换或单词切换时窗口宽度跳动。
+    private func updatePhoneticVisibility(animated: Bool = true) {
+        let target = visibilityAlpha(for: AppSettings.shared.phoneticVisibility)
+        applyAlpha(target, to: phoneticLabel, animated: animated)
+    }
+
+    /// 按配置更新释义显示（策略同注音）
+    private func updateMeaningVisibility(animated: Bool = true) {
+        let target = visibilityAlpha(for: AppSettings.shared.meaningVisibility)
+        applyAlpha(target, to: meaningLabel, animated: animated)
+    }
+
+    private func applyAlpha(_ alpha: CGFloat, to view: NSView, animated: Bool) {
+        guard animated else {
+            view.alphaValue = alpha
+            return
+        }
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(Constants.buttonFadeDuration)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
+        view.alphaValue = alpha
+        CATransaction.commit()
     }
 
     // MARK: - 按钮显隐
@@ -479,7 +532,8 @@ class FloatContentView: NSView {
         wordLabel.isHidden = false
         phoneticLabel.isHidden = (word.phonetic == nil)
         meaningLabel.isHidden = false
-        meaningLabel.alphaValue = 1
+        // 释义按显示模式决定初始可见性（hover 且鼠标在外时保持隐藏）
+        meaningLabel.alphaValue = visibilityAlpha(for: AppSettings.shared.meaningVisibility)
 
         // 更新收藏状态
         updateFavoriteState(isFavorite: isFavorite)
@@ -504,14 +558,15 @@ class FloatContentView: NSView {
         phoneticLabel.layer?.opacity = 0
         CATransaction.commit()
 
-        // 淡入 + 回到正常位置
+        // 淡入 + 回到正常位置（注音按显示模式决定目标透明度）
+        let phoneticTarget = visibilityAlpha(for: AppSettings.shared.phoneticVisibility)
         CATransaction.begin()
         CATransaction.setAnimationDuration(Constants.wordSwitchDuration)
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
         wordLabel.layer?.transform = CATransform3DIdentity
         phoneticLabel.layer?.transform = CATransform3DIdentity
         wordLabel.layer?.opacity = 1
-        phoneticLabel.layer?.opacity = 1
+        phoneticLabel.layer?.opacity = Float(phoneticTarget)
         CATransaction.commit()
     }
 

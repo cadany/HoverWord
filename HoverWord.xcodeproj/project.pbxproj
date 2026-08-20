@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		09A835E4F3FE19AE384EC331 /* HoverWordApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8282B3A66D9D2B76EE910EA5 /* HoverWordApp.swift */; };
 		12875BD2AA7F5C1269EFE394 /* PlayOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08506151F055E3FC60E7BD3C /* PlayOrder.swift */; };
+		CC0123456789ABCDEF000002 /* ContentVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0123456789ABCDEF000001 /* ContentVisibility.swift */; };
 		1D03693445B2C197896245DD /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A87F4D760AF6E35D872AB0 /* AppSettings.swift */; };
 		2881DC19D25C4E8399AA31BE /* WordbookPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8F085298284D63BDECEFA2 /* WordbookPreviewView.swift */; };
 		3555B0EDA5555F31F2DD84D5 /* Favorite+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C4BA77D767A3DC090A911 /* Favorite+CoreDataProperties.swift */; };
@@ -43,6 +44,7 @@
 		E92C050A70827A7656A48E72 /* FloatContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56555BC6631E0F2785DE3B1A /* FloatContentView.swift */; };
 		F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A93660EF34F8AC686402D5B /* WordbookService.swift */; };
 		F6A8CDC3AC51F613C60339DD /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22013F19BE9C8AB85F67CCB /* AppSettingsTests.swift */; };
+		CC0123456789ABCDEF000004 /* ContentVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0123456789ABCDEF000003 /* ContentVisibilityTests.swift */; };
 		F6D5EE3012941D3B93E5C76B /* HoverWord.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E001F28E3114ACA6BA7E6414 /* HoverWord.xcdatamodeld */; };
 		FA5D6EE62FF0E96C2F926A9C /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9600E0E70C13324E5A62F2A6 /* SettingsWindowController.swift */; };
 		FD57476FB4A77F6C4CA68848 /* SpeechSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86BB2B0F71619949DBD3ABAB /* SpeechSettingsView.swift */; };
@@ -64,6 +66,7 @@
 /* Begin PBXFileReference section */
 		07DBC51654076F72F333DDFB /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
 		08506151F055E3FC60E7BD3C /* PlayOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayOrder.swift; sourceTree = "<group>"; };
+		CC0123456789ABCDEF000001 /* ContentVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentVisibility.swift; sourceTree = "<group>"; };
 		09AB58E24A17305B4802F89D /* WordEntry+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WordEntry+CoreDataClass.swift"; sourceTree = "<group>"; };
 		0EB157AEDF8C24AC099AB5A7 /* ReciteSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteSettingsView.swift; sourceTree = "<group>"; };
 		10AE12D078A4B6FE706BCCB1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		CCA4E4A165BD908A7E8D9F01 /* GlassBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackgroundView.swift; sourceTree = "<group>"; };
 		D102E9C253542A91FF6AE7C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D22013F19BE9C8AB85F67CCB /* AppSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsTests.swift; sourceTree = "<group>"; };
+		CC0123456789ABCDEF000003 /* ContentVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentVisibilityTests.swift; sourceTree = "<group>"; };
 		D3690945B618D6972DF60E1E /* FloatWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatWindowController.swift; sourceTree = "<group>"; };
 		E1272A8141F56E87E813F8A2 /* Wordbook+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wordbook+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		E183DC35C70AB0B2F1AACBEC /* ReciteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngine.swift; sourceTree = "<group>"; };
@@ -171,6 +175,7 @@
 			children = (
 				08506151F055E3FC60E7BD3C /* PlayOrder.swift */,
 				714110DE24AB04E5204838B6 /* ReciteMode.swift */,
+				CC0123456789ABCDEF000001 /* ContentVisibility.swift */,
 			);
 			path = Enums;
 			sourceTree = "<group>";
@@ -257,6 +262,7 @@
 			isa = PBXGroup;
 			children = (
 				D22013F19BE9C8AB85F67CCB /* AppSettingsTests.swift */,
+				CC0123456789ABCDEF000003 /* ContentVisibilityTests.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -366,6 +372,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F6A8CDC3AC51F613C60339DD /* AppSettingsTests.swift in Sources */,
+				CC0123456789ABCDEF000004 /* ContentVisibilityTests.swift in Sources */,
 				58DB3D9F2D3A26BC7E28E899 /* ReciteEngineTests.swift in Sources */,
 				FDEC27D40F1046649CFFD44B /* ReciteEngineProgressTests.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */,
@@ -394,6 +401,7 @@
 				A6C53DB162D903EB1EE539C8 /* GlassBackgroundView.swift in Sources */,
 				F6D5EE3012941D3B93E5C76B /* HoverWord.xcdatamodeld in Sources */,
 				09A835E4F3FE19AE384EC331 /* HoverWordApp.swift in Sources */,
+				CC0123456789ABCDEF000002 /* ContentVisibility.swift in Sources */,
 				BA6F6248EC0585158A97648C /* NotificationNames.swift in Sources */,
 				12875BD2AA7F5C1269EFE394 /* PlayOrder.swift in Sources */,
 				B955CAC648ABD95084F681B7 /* ReciteEngine.swift in Sources */,

@@ -6,13 +6,15 @@ import XCTest
 /// 对应任务 2.6：首次启动使用默认设置、设置持久化重启后恢复。
 final class AppSettingsTests: XCTestCase {
 
-    private let testSuiteName = "HoverWordTestSettings"
+    /// 测试宿主与真实应用共享同一 UserDefaults 域（com.hoverword.app），
+    /// key 须与 AppSettings.storageKey 保持一致
+    private let settingsKey = "HoverWordAppSettings"
+    private var originalSettingsData: Data?
 
     override func setUp() {
         super.setUp()
-        // 清除测试用的 UserDefaults
-        UserDefaults.standard.removePersistentDomain(forName: testSuiteName)
-        UserDefaults.standard.synchronize()
+        // 备份用户真实配置，tearDown 原样还原（防止测试值污染真实设置）
+        originalSettingsData = UserDefaults.standard.data(forKey: settingsKey)
 
         // 重置 AppSettings 单例到默认值
         resetAppSettingsToDefaults()
@@ -30,12 +32,22 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.speechRateMultiplier = 1.0
         AppSettings.shared.backgroundOpacity = Double(Constants.defaultBackgroundOpacity)
         AppSettings.shared.fullscreenAutoHide = false
+        AppSettings.shared.phoneticFontSize = Double(Constants.phoneticFontSize)
+        AppSettings.shared.phoneticVisibility = .always
+        AppSettings.shared.meaningVisibility = .always
         AppSettings.shared.save()
     }
 
     override func tearDown() {
-        UserDefaults.standard.removePersistentDomain(forName: testSuiteName)
-        UserDefaults.standard.synchronize()
+        // 还原用户真实配置：有备份则写回，无备份（用户从未保存过设置）则删除 key
+        if let data = originalSettingsData {
+            UserDefaults.standard.set(data, forKey: settingsKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: settingsKey)
+        }
+        // 同步内存单例，避免残留测试值影响同进程后续测试
+        AppSettings.shared.load()
+        originalSettingsData = nil
         super.tearDown()
     }
 
@@ -86,6 +98,18 @@ final class AppSettingsTests: XCTestCase {
                        "默认背景透明度应为 \(Constants.defaultBackgroundOpacity)")
     }
 
+    func testDefaultContentVisibility() {
+        // 默认注音/释义始终显示，注音字号为常量默认值
+        XCTAssertEqual(AppSettings.shared.phoneticVisibility, .always,
+                       "默认注音显示模式应为 always")
+        XCTAssertEqual(AppSettings.shared.meaningVisibility, .always,
+                       "默认释义显示模式应为 always")
+        XCTAssertEqual(AppSettings.shared.phoneticFontSize,
+                       Double(Constants.phoneticFontSize),
+                       accuracy: 0.01,
+                       "默认注音字号应为 \(Constants.phoneticFontSize)")
+    }
+
     // MARK: - 持久化验证
 
     func testSettingsSaveAndRestore() {
@@ -99,6 +123,9 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.voiceNameByLanguage = ["en": "TestVoice"]
         AppSettings.shared.speechRateMultiplier = 1.5
         AppSettings.shared.backgroundOpacity = 0.5
+        AppSettings.shared.phoneticFontSize = 12
+        AppSettings.shared.phoneticVisibility = .hover
+        AppSettings.shared.meaningVisibility = .hidden
 
         // 保存
         AppSettings.shared.save()
@@ -107,6 +134,8 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.reciteMode = .memoryFeedback
         AppSettings.shared.carouselLoopCount = 3
         AppSettings.shared.stayDuration = 5
+        AppSettings.shared.phoneticVisibility = .always
+        AppSettings.shared.meaningVisibility = .always
 
         // 重新加载
         AppSettings.shared.load()
@@ -121,6 +150,9 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertEqual(AppSettings.shared.voiceNameByLanguage["en"], "TestVoice")
         XCTAssertEqual(AppSettings.shared.speechRateMultiplier, 1.5)
         XCTAssertEqual(AppSettings.shared.backgroundOpacity, 0.5, accuracy: 0.01)
+        XCTAssertEqual(AppSettings.shared.phoneticFontSize, 12)
+        XCTAssertEqual(AppSettings.shared.phoneticVisibility, .hover)
+        XCTAssertEqual(AppSettings.shared.meaningVisibility, .hidden)
     }
 
     func testPostDidChangeSavesSettings() {
