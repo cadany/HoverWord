@@ -14,6 +14,8 @@
 		2881DC19D25C4E8399AA31BE /* WordbookPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8F085298284D63BDECEFA2 /* WordbookPreviewView.swift */; };
 		3555B0EDA5555F31F2DD84D5 /* Favorite+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C4BA77D767A3DC090A911 /* Favorite+CoreDataProperties.swift */; };
 		385BD9D0DF1181ABDDB5135B /* WordbookImportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 940E6376250A2BFAB9CF56C1 /* WordbookImportServiceTests.swift */; };
+		AA11BB22CC33DD44EE55FF12 /* ReciteEngineHoverPauseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF11 /* ReciteEngineHoverPauseTests.swift */; };
+		AA11BB22CC33DD44EE55FF04 /* WordbookExportServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF03 /* WordbookExportServiceTests.swift */; };
 		3C433EC6693EDFAD6DAE7A65 /* Favorite+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC286B9BACE07DD8309438 /* Favorite+CoreDataClass.swift */; };
 		3C67EECA2EEF790942FAE44F /* WordEntry+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09AB58E24A17305B4802F89D /* WordEntry+CoreDataClass.swift */; };
 		3DB097932E62A3B0F5FFA68B /* ReciteMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714110DE24AB04E5204838B6 /* ReciteMode.swift */; };
@@ -41,6 +43,7 @@
 		D1AB2577EDB06AE17A08A716 /* WordbookTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FDF219946B48B880F21C928 /* WordbookTabView.swift */; };
 		DF5150E01E3985ADD95B1AF0 /* Wordbook+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1272A8141F56E87E813F8A2 /* Wordbook+CoreDataProperties.swift */; };
 		E366F85E25572E4A049C910A /* WordbookImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509875D5B7E4A4676ECB984E /* WordbookImportService.swift */; };
+		AA11BB22CC33DD44EE55FF02 /* WordbookExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF01 /* WordbookExportService.swift */; };
 		E92C050A70827A7656A48E72 /* FloatContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56555BC6631E0F2785DE3B1A /* FloatContentView.swift */; };
 		F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A93660EF34F8AC686402D5B /* WordbookService.swift */; };
 		F6A8CDC3AC51F613C60339DD /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D22013F19BE9C8AB85F67CCB /* AppSettingsTests.swift */; };
@@ -81,6 +84,7 @@
 		4FDF219946B48B880F21C928 /* WordbookTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookTabView.swift; sourceTree = "<group>"; };
 		5049174FD409C7C705C94BBA /* Wordbook+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wordbook+CoreDataClass.swift"; sourceTree = "<group>"; };
 		509875D5B7E4A4676ECB984E /* WordbookImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookImportService.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF01 /* WordbookExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookExportService.swift; sourceTree = "<group>"; };
 		56555BC6631E0F2785DE3B1A /* FloatContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatContentView.swift; sourceTree = "<group>"; };
 		620C4BA77D767A3DC090A911 /* Favorite+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Favorite+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		6542EAFD71253420F6397B33 /* DataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStack.swift; sourceTree = "<group>"; };
@@ -92,6 +96,8 @@
 		890EBBBB9E6E42C1A20562AF /* WordbookPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookPreviewTests.swift; sourceTree = "<group>"; };
 		8A1E78EE8AE99BBB0367883B /* HoverWordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HoverWordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		940E6376250A2BFAB9CF56C1 /* WordbookImportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookImportServiceTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF11 /* ReciteEngineHoverPauseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngineHoverPauseTests.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF03 /* WordbookExportServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookExportServiceTests.swift; sourceTree = "<group>"; };
 		9600E0E70C13324E5A62F2A6 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		98978A8AC8CAB2C325E45DB7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A2EC286B9BACE07DD8309438 /* Favorite+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Favorite+CoreDataClass.swift"; sourceTree = "<group>"; };
@@ -133,6 +139,7 @@
 				E183DC35C70AB0B2F1AACBEC /* ReciteEngine.swift */,
 				07DBC51654076F72F333DDFB /* SpeechService.swift */,
 				509875D5B7E4A4676ECB984E /* WordbookImportService.swift */,
+				AA11BB22CC33DD44EE55FF01 /* WordbookExportService.swift */,
 				3A93660EF34F8AC686402D5B /* WordbookService.swift */,
 			);
 			path = Services;
@@ -275,6 +282,8 @@
 				F2E1D0C9B8A7F6E5D4C3B2A1 /* WordbookServiceFavoritesTests.swift */,
 				C0FFEE1234567890ABCDEF01 /* WordbookContentChangeTests.swift */,
 				940E6376250A2BFAB9CF56C1 /* WordbookImportServiceTests.swift */,
+				AA11BB22CC33DD44EE55FF11 /* ReciteEngineHoverPauseTests.swift */,
+				AA11BB22CC33DD44EE55FF03 /* WordbookExportServiceTests.swift */,
 				890EBBBB9E6E42C1A20562AF /* WordbookPreviewTests.swift */,
 				AAA000000000000000000007 /* L10nTests.swift */,
 			);
@@ -378,6 +387,8 @@
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* WordbookServiceFavoritesTests.swift in Sources */,
 				C0FFEE1234567890ABCDEF02 /* WordbookContentChangeTests.swift in Sources */,
 				385BD9D0DF1181ABDDB5135B /* WordbookImportServiceTests.swift in Sources */,
+				AA11BB22CC33DD44EE55FF12 /* ReciteEngineHoverPauseTests.swift in Sources */,
+				AA11BB22CC33DD44EE55FF04 /* WordbookExportServiceTests.swift in Sources */,
 				41C6D8842FFB4E0F9072BD4C /* WordbookPreviewTests.swift in Sources */,
 				AAA000000000000000000008 /* L10nTests.swift in Sources */,
 			);
@@ -415,6 +426,7 @@
 				B4586ACDAE98251056F217F0 /* Wordbook+CoreDataClass.swift in Sources */,
 				DF5150E01E3985ADD95B1AF0 /* Wordbook+CoreDataProperties.swift in Sources */,
 				E366F85E25572E4A049C910A /* WordbookImportService.swift in Sources */,
+				AA11BB22CC33DD44EE55FF02 /* WordbookExportService.swift in Sources */,
 				F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */,
 				D1AB2577EDB06AE17A08A716 /* WordbookTabView.swift in Sources */,
 				2881DC19D25C4E8399AA31BE /* WordbookPreviewView.swift in Sources */,

@@ -101,6 +101,42 @@ final class WordbookServiceFavoritesTests: XCTestCase {
         XCTAssertEqual(appleEntry?.meaning1, "苹果")
     }
 
+    /// 收藏夹预览分页：按收藏时间排序分页返回游离词条快照
+    func testFavoritesPaginatedPreview() {
+        for i in 0..<5 {
+            addFavorite(sourceWord: "word\(i)", phonetic: "/f\(i)/", meaning: "释义\(i)")
+        }
+
+        guard let favoritesWordbook = WordbookService.shared.getFavoritesWordbook() else {
+            XCTFail("系统收藏夹单词本不存在")
+            return
+        }
+
+        // pageSize=2：5 条 → 3 页（2+2+1）
+        let page0 = WordbookService.shared.getEntriesPaginated(for: favoritesWordbook, page: 0, pageSize: 2)
+        XCTAssertEqual(page0.totalCount, 5, "总条数应为 5")
+        XCTAssertEqual(page0.totalPages, 3, "总页数应为 3")
+        XCTAssertEqual(page0.entries.count, 2, "首页应有 2 条")
+
+        let page1 = WordbookService.shared.getEntriesPaginated(for: favoritesWordbook, page: 1, pageSize: 2)
+        let page2 = WordbookService.shared.getEntriesPaginated(for: favoritesWordbook, page: 2, pageSize: 2)
+        XCTAssertEqual(page1.entries.count, 2, "第二页应有 2 条")
+        XCTAssertEqual(page2.entries.count, 1, "末页应有 1 条")
+
+        // 三页合计 5 条、无重复（顺序按 collectedAt，不依赖时间精度断言具体顺序）
+        let all = page0.entries + page1.entries + page2.entries
+        XCTAssertEqual(all.count, 5)
+        XCTAssertEqual(Set(all.map { $0.sourceWord }), Set((0..<5).map { "word\($0)" }), "三页应覆盖全部 5 条收藏且无重复")
+
+        // 游离态与快照字段解码
+        for entry in all {
+            XCTAssertNil(entry.wordbook, "预览词条应保持游离状态（不挂载 wordbook 关系）")
+        }
+        let sample = all.first { $0.sourceWord == "word3" }
+        XCTAssertEqual(sample?.phonetic, "/f3/")
+        XCTAssertEqual(sample?.meaning1, "释义3")
+    }
+
     /// 收藏 0 个单词时，启用收藏夹单词本应返回 false
     func testFavoritesWordbookEnableWithEmpty() {
         // 确保收藏夹为空

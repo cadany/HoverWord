@@ -13,10 +13,14 @@ final class WordbookImportServiceTests: XCTestCase {
         super.setUp()
         DataStack.shared.initialize()
         clearAllData()
+        // 错误文案断言依赖中文本地化：固定语言，
+        // 隔离测试宿主进程从 UserDefaults 载入的用户界面语言设置
+        AppSettings.shared.uiLanguage = "zh-Hans"
     }
 
     override func tearDown() {
         clearAllData()
+        AppSettings.shared.uiLanguage = L10n.systemLanguage
         super.tearDown()
     }
 

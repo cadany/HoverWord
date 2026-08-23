@@ -1,10 +1,11 @@
 import SwiftUI
+import AppKit
 
 /// 单词本管理 Tab 视图
 ///
-/// 展示单词本列表（名称、单词总数、Section 数量、启用勾选框），
-/// 支持新建 / 删除 / 重命名 / 导入操作，以及全局 Section 大小设置。
-/// 使用玻璃卡片分组样式。
+/// 展示单词本列表（名称、单词总数、Section 数量、启用勾选框）。
+/// 行内操作（悬停/选中时行尾浮现）：预览直达 + `...` 菜单（导入/重命名/删除，删除带确认）；
+/// "新建"入口位于列表标题行右侧。使用玻璃卡片分组样式。
 struct WordbookTabView: View {
     @State private var wordbooks: [WordbookInfo] = []
     @State private var selection: String?
@@ -17,6 +18,10 @@ struct WordbookTabView: View {
     @State private var importError: String?
     /// 空收藏夹启用时的行内提示文字（2 秒自动淡出）
     @State private var enableHint: String?
+    /// 待确认删除的单词本（非 nil 时弹确认对话框）
+    @State private var pendingDeleteWordbook: WordbookInfo?
+    /// 导出失败信息（非 nil 时弹 alert）
+    @State private var exportError: String?
     /// 缓存当前选中单词本的 Core Data 对象，避免每次 body 重绘都 fetch
     @State private var cachedPreviewWordbook: Wordbook?
     @State private var cachedPreviewWordbookId: String?
@@ -36,9 +41,21 @@ struct WordbookTabView: View {
 
                 // 单词本列表卡片
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(L10n.t("sidebar.wordbook"))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Text(L10n.t("sidebar.wordbook"))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button {
+                            showingNewPanel = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .glassButtonStyle()
+                        .help(L10n.t("wordbook.toolbar.new"))
+                    }
+                    .padding(.bottom, 6)
 
                     ScrollView {
                         LazyVStack(spacing: 0) {
@@ -47,13 +64,43 @@ struct WordbookTabView: View {
                                     wordbook: wb,
                                     isOn: binding(for: wb),
                                     isSelected: selection == wb.id,
-                                    onSelect: { selection = wb.id }
+                                    onSelect: { selection = wb.id },
+                                    // 预览对全部词本开放（收藏夹为只读预览）
+                                    onPreview: {
+                                        selection = wb.id
+                                        showingPreviewPanel = true
+                                    },
+                                    onImport: wb.isSystem ? nil : {
+                                        selection = wb.id
+                                        showingImportPanel = true
+                                    },
+                                    onExport: {
+                                        selection = wb.id
+                                        exportWordbook(wb)
+                                    },
+                                    onRename: wb.isSystem ? nil : {
+                                        selection = wb.id
+                                        showingRenamePanel = true
+                                    },
+                                    onDelete: wb.isSystem ? nil : {
+                                        selection = wb.id
+                                        pendingDeleteWordbook = wb
+                                    }
                                 )
                             }
                         }
                         .padding(.vertical, 4)
                     }
                     .frame(minHeight: 200)
+                    // 导出失败 alert 挂在列表子树，与删除确认/导入失败 alert 分离
+                    .alert(L10n.t("wordbook.export.failed"), isPresented: Binding(
+                        get: { exportError != nil },
+                        set: { if !$0 { exportError = nil } }
+                    )) {
+                        Button(L10n.t("common.ok"), role: .cancel) { exportError = nil }
+                    } message: {
+                        Text(exportError ?? "")
+                    }
 
                     // 行内提示
                     if let hint = enableHint {
@@ -70,31 +117,23 @@ struct WordbookTabView: View {
                     }
                 }
                 .glassCard()
-
-                // 操作栏卡片
-                HStack(spacing: 6) {
-                    Button(L10n.t("wordbook.toolbar.new")) { showingNewPanel = true }
-                        .glassButtonStyle()
-                        .fixedSize()
-                    Button(L10n.t("wordbook.toolbar.import")) { showingImportPanel = true }
-                        .glassButtonStyle()
-                        .fixedSize()
-                        .disabled(selection == nil)
-                    Button(L10n.t("wordbook.toolbar.rename")) { showingRenamePanel = true }
-                        .glassButtonStyle()
-                        .fixedSize()
-                        .disabled(selection == nil)
-                    Button(L10n.t("wordbook.toolbar.preview")) { showingPreviewPanel = true }
-                        .glassButtonStyle()
-                        .fixedSize()
-                        .disabled(selection == nil || isSystemSelected)
-                    Button(L10n.t("wordbook.toolbar.delete")) { deleteSelected() }
-                        .glassButtonStyle()
-                        .fixedSize()
-                        .disabled(selection == nil || isSystemSelected)
-                    Spacer()
+                // 删除确认挂在列表子树，与外层导入失败 alert 分离，避免同节点多 alert 冲突
+                .alert(
+                    L10n.t("wordbook.delete.confirm.title"),
+                    isPresented: Binding(
+                        get: { pendingDeleteWordbook != nil },
+                        set: { if !$0 { pendingDeleteWordbook = nil } }
+                    )
+                ) {
+                    Button(L10n.t("common.cancel"), role: .cancel) {}
+                    Button(L10n.t("wordbook.toolbar.delete"), role: .destructive) {
+                        confirmDelete()
+                    }
+                } message: {
+                    if let pending = pendingDeleteWordbook {
+                        Text(L10n.t("wordbook.delete.confirm.message", pending.name, pending.wordCount))
+                    }
                 }
-                .glassCard()
 
                 Spacer()
             }
@@ -134,11 +173,6 @@ struct WordbookTabView: View {
     }
 
     // MARK: - Subviews
-
-    private var isSystemSelected: Bool {
-        guard let sel = selection else { return true }
-        return wordbooks.first(where: { $0.id == sel })?.isSystem ?? true
-    }
 
     private var selectedWordbookName: String {
         guard let sel = selection else { return "" }
@@ -251,16 +285,40 @@ struct WordbookTabView: View {
         )
     }
 
-    private func deleteSelected() {
-        guard let sel = selection else { return }
+    /// 确认删除待删单词本（由删除确认 alert 的destructive 按钮触发）
+    private func confirmDelete() {
+        guard let pending = pendingDeleteWordbook else { return }
         let context = DataStack.shared.viewContext
         let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
-        request.predicate = NSPredicate(format: "wordbookId == %@", sel)
+        request.predicate = NSPredicate(format: "wordbookId == %@", pending.id)
         request.fetchLimit = 1
         if let wordbook = (try? context.fetch(request))?.first {
             _ = WordbookService.shared.deleteWordbook(wordbook)
-            selection = nil
-            refreshList()
+        }
+        selection = nil
+        pendingDeleteWordbook = nil
+        refreshList()
+    }
+
+    /// 导出单词本：保存面板确认后后台序列化写文件，失败弹 alert（成功无提示）
+    private func exportWordbook(_ wb: WordbookInfo) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        let baseName = wb.isSystem ? L10n.t("wordbook.favorites.name") : wb.name
+        panel.nameFieldStringValue = WordbookExportService.sanitizedFileName(from: baseName) + ".txt"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            do {
+                let data = try await WordbookExportService.export(wordbookId: wb.id)
+                try data.write(to: url)
+            } catch {
+                await MainActor.run {
+                    exportError = error.localizedDescription
+                }
+            }
         }
     }
 
@@ -318,14 +376,30 @@ struct WordbookTabView: View {
 /// 单词本列表行视图
 ///
 /// 交互拆分：左侧 checkbox（Toggle）负责启用/禁用，
-/// 右侧文本区（Button .plain）负责选中单词本。
-/// 点击 checkbox 时同步选中该行（macOS 列表惯例：点行内任意处均选中）。
+/// 中部文本区（Button .plain）负责选中单词本，
+/// 右侧行内操作区（悬停/选中时浮现）负责预览、导入、重命名、删除。
+/// 点行内操作时同步选中该行（macOS 列表惯例：点行内任意处均选中）。
 private struct WordbookRow: View {
     let wordbook: WordbookTabView.WordbookInfo
     let isOn: Binding<Bool>
     let isSelected: Bool
     let onSelect: () -> Void
+    /// 行内操作回调，nil 表示该词本不提供此操作（系统词本全 nil，不渲染操作区）
+    let onPreview: (() -> Void)?
+    let onImport: (() -> Void)?
+    let onExport: (() -> Void)?
+    let onRename: (() -> Void)?
+    let onDelete: (() -> Void)?
     @State private var isHovering = false
+
+    /// 是否存在任一行内操作（决定操作区是否可出现）
+    private var hasActions: Bool {
+        onPreview != nil || onImport != nil || onExport != nil || onRename != nil || onDelete != nil
+    }
+
+    private var showActions: Bool {
+        hasActions && (isHovering || isSelected)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -336,7 +410,9 @@ private struct WordbookRow: View {
 
             // 文本区：Button(.plain) 负责行选中。
             // padding 与背景移入 Button 内部 + contentShape，
-            // 使点击热区覆盖整行视觉区域（含留白与背景），而非仅文本
+            // 使点击热区覆盖整行视觉区域（含留白与背景），而非仅文本。
+            // 行内操作区以 overlay 叠加在行尾（Spacer 区域），
+            // 不嵌套进本 Button，避免嵌套按钮手势冲突，也不引起行宽跳动。
             Button(action: onSelect) {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -358,7 +434,7 @@ private struct WordbookRow: View {
                             )
                     }
 
-                    Spacer()
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -370,11 +446,118 @@ private struct WordbookRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .overlay(alignment: .trailing) {
+                if showActions {
+                    rowActions
+                        .transition(.opacity)
+                        .padding(.trailing, 4)
+                }
+            }
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
         .onHover { hovering in isHovering = hovering }
         .animation(.easeOut(duration: 0.15), value: isHovering)
+        .animation(.easeOut(duration: 0.15), value: isSelected)
+    }
+
+    // MARK: - 行内操作区
+
+    /// 预览直达图标 + `...` 菜单（导入 / 重命名 / 删除）
+    private var rowActions: some View {
+        HStack(spacing: Constants.rowActionSpacing) {
+            if let onPreview {
+                Button(action: onPreview) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: Constants.rowActionIconSize, weight: .medium))
+                        .foregroundColor(Color.primary.opacity(Constants.rowActionIconAlpha))
+                        .frame(width: Constants.rowActionHitSize, height: Constants.rowActionHitSize)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("wordbook.toolbar.preview"))
+            }
+
+            if onImport != nil || onExport != nil || onRename != nil || onDelete != nil {
+                // SwiftUI Menu 的 borderless 样式在 macOS 26 上不渲染自定义 label，
+                // 改用 Button + NSMenu 原生弹出（Button 自定义 label 渲染可靠）
+                Button(action: showMoreMenu) {
+                    VStack(spacing: 3) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            Circle()
+                                .fill(Color.primary.opacity(Constants.rowActionIconAlpha))
+                                .frame(width: 3, height: 3)
+                        }
+                    }
+                    .frame(width: Constants.rowActionHitSize, height: Constants.rowActionHitSize)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - 更多操作菜单
+
+    /// 闭包包装为 NSMenuItem 的 target/action 载体
+    private final class MenuActionTarget: NSObject {
+        let handler: () -> Void
+        init(_ handler: @escaping () -> Void) {
+            self.handler = handler
+            super.init()
+        }
+        @objc func menuActionFired() { handler() }
+    }
+
+    /// 在鼠标位置弹出"更多"操作菜单（导入 / 重命名 / 删除）
+    ///
+    /// popUp 为同步阻塞调用，局部 targets 数组在菜单追踪期间保持强引用，生命周期安全
+    private func showMoreMenu() {
+        // 点操作即选中该行（与 checkbox/预览行为一致）
+        onSelect()
+
+        let menu = NSMenu()
+        var targets: [MenuActionTarget] = []
+
+        func addMenuItem(_ title: String, handler: @escaping () -> Void) {
+            let target = MenuActionTarget(handler)
+            targets.append(target)
+            let item = NSMenuItem(title: title, action: #selector(MenuActionTarget.menuActionFired), keyEquivalent: "")
+            item.target = target
+            menu.addItem(item)
+        }
+
+        if let onImport {
+            addMenuItem(L10n.t("wordbook.toolbar.import"), handler: onImport)
+        }
+        if let onExport {
+            let target = MenuActionTarget(onExport)
+            targets.append(target)
+            let item = NSMenuItem(title: L10n.t("wordbook.toolbar.export"), action: #selector(MenuActionTarget.menuActionFired), keyEquivalent: "")
+            item.target = target
+            // 空词本导出项禁用（避免导出空文件）
+            item.isEnabled = wordbook.wordCount > 0
+            menu.addItem(item)
+        }
+        if let onRename {
+            addMenuItem(L10n.t("wordbook.toolbar.rename"), handler: onRename)
+        }
+        if let onDelete {
+            menu.addItem(.separator())
+            let target = MenuActionTarget(onDelete)
+            targets.append(target)
+            let deleteTitle = L10n.t("wordbook.toolbar.delete")
+            let item = NSMenuItem(title: deleteTitle, action: #selector(MenuActionTarget.menuActionFired), keyEquivalent: "")
+            item.target = target
+            // destructive 样式：红色文字（对齐 SwiftUI Menu 的 role: .destructive 视觉）
+            item.attributedTitle = NSAttributedString(
+                string: deleteTitle,
+                attributes: [.foregroundColor: NSColor.systemRed]
+            )
+            menu.addItem(item)
+        }
+
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
     private var backgroundColor: Color {

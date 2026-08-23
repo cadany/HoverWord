@@ -77,7 +77,7 @@ class GlassBackgroundView: NSVisualEffectView {
         strokeLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
         layer?.addSublayer(strokeLayer)
 
-        // 初始圆角（悬浮窗用 16px，设置窗口可设为 12px）
+        // 初始圆角（8pt，见 Constants.floatWindowCornerRadius；调用方可按需覆盖）
         setCornerRadius(Constants.floatWindowCornerRadius)
         updateStrokeColor()
     }

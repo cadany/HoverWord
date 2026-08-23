@@ -249,6 +249,21 @@ enum Constants {
     /// 预览行号列宽度（pt）
     static let previewLineNumberColumnWidth: CGFloat = 50
 
+    // MARK: - 单词本列表行内操作
+
+    /// 行内操作图标字号（pt）
+    static let rowActionIconSize: CGFloat = 12
+
+    /// 行内操作点击热区边长（pt）
+    static let rowActionHitSize: CGFloat = 22
+
+    /// 行内操作按钮间距（pt）
+    static let rowActionSpacing: CGFloat = 2
+
+    /// 行内操作图标统一前景色不透明度（预览符号与竖三点共用，
+    /// 显式 primary+opacity 避免语义色 .secondary 在符号与形状上解析不一致）
+    static let rowActionIconAlpha: Double = 0.55
+
     // MARK: - 系统收藏夹
 
     /// 系统收藏夹单词本名称

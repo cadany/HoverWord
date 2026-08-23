@@ -21,6 +21,8 @@ class FloatContentView: NSView {
     var onFavoriteTap: (() -> Void)?
     var onSpeakTap: (() -> Void)?
     var onRightClick: ((NSEvent) -> Void)?
+    /// 鼠标进出悬浮窗（true=进入，false=离开），控制器转发引擎暂停/恢复计时
+    var onHoverStateChanged: ((Bool) -> Void)?
 
     // MARK: - UI 组件
 
@@ -118,10 +120,14 @@ class FloatContentView: NSView {
         refreshLocalizedTexts()
     }
 
-    /// 按当前界面语言刷新静态文案（按钮标题、完成态文字）
+    /// 按当前界面语言刷新静态文案（toolTip 与完成态文字）
+    ///
+    /// 按钮常态为图标字符（✓ ✗ ▶ ♡），不随语言变化；
+    /// 本地化语义只体现在 toolTip 与"已学完"文案
     private func refreshLocalizedTexts() {
-        knowButton.title = L10n.t("float.button.know")
-        unknownButton.title = L10n.t("float.button.unknown")
+        knowButton.toolTip = L10n.t("float.button.know")
+        unknownButton.toolTip = L10n.t("float.button.unknown")
+        speakButton.toolTip = L10n.t("float.button.speak")
         completedLabel.stringValue = L10n.t("float.completed")
     }
 
@@ -346,6 +352,8 @@ class FloatContentView: NSView {
         // hover 显示模式：悬停淡入
         updatePhoneticVisibility()
         updateMeaningVisibility()
+        // 悬停暂停计时
+        onHoverStateChanged?(true)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -354,6 +362,21 @@ class FloatContentView: NSView {
         // hover 显示模式：离开淡出
         updatePhoneticVisibility()
         updateMeaningVisibility()
+        // 恢复计时（从剩余时长继续）
+        onHoverStateChanged?(false)
+    }
+
+    /// 重置悬停状态为"鼠标不在窗内"（窗口隐藏路径调用）
+    ///
+    /// orderOut 时 AppKit 不保证补发 mouseExited，isMouseInside 残留 true 会
+    /// 导致计时永久暂停；隐藏前统一调用本方法归位 UI 并通知引擎恢复计时
+    func resetHoverState() {
+        guard isMouseInside else { return }
+        isMouseInside = false
+        animateButtonsOut()
+        updatePhoneticVisibility()
+        updateMeaningVisibility()
+        onHoverStateChanged?(false)
     }
 
     override func rightMouseDown(with event: NSEvent) {

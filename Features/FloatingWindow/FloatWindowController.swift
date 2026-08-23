@@ -127,6 +127,10 @@ class FloatWindowController: NSWindowController {
         contentViewContainer.onRightClick = { [weak self] event in
             self?.showContextMenu(event: event)
         }
+        contentViewContainer.onHoverStateChanged = { [weak self] inside in
+            // 鼠标在悬浮窗内时暂停切词计时，离开后从剩余时长继续
+            self?.engine.setHoverPaused(inside)
+        }
         contentViewContainer.onSpeakTap = { [weak self] in
             guard let word = self?.engine.currentWord() else { return }
             // 语种取自当前词条所属单词本的 sourceLang，与引擎自动播报一致
@@ -176,6 +180,11 @@ class FloatWindowController: NSWindowController {
             return
         }
         guard panel.isVisible, panel.alphaValue > 0 else { return }
+
+        // orderOut 不保证补发 mouseExited：隐藏前重置悬停状态并恢复计时，
+        // 防止 isMouseInside 残留导致背记永久暂停
+        contentViewContainer.resetHoverState()
+        engine.setHoverPaused(false)
 
         visibilityAnimationToken += 1
         let token = visibilityAnimationToken

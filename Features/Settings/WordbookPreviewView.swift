@@ -9,7 +9,8 @@ import CoreData
 /// - 逐条删除
 /// - 空状态提示
 ///
-/// 不支持系统收藏夹单词本（仅用于普通单词本的导入词条预览）。
+/// 系统收藏夹单词本为只读预览：仅展示收藏快照（按收藏时间排序），
+/// 不提供编辑与删除（收藏词条的编辑在源单词本进行，快照自动同步）。
 struct WordbookPreviewView: View {
 
     let wordbook: Wordbook
@@ -22,6 +23,9 @@ struct WordbookPreviewView: View {
     @State private var isEmpty: Bool = false
 
     private let pageSize = 100
+
+    /// 系统收藏夹：词条为游离对象，编辑/删除服务匹配不到实体，呈只读态
+    private var isReadOnly: Bool { wordbook.isSystem }
 
     /// 表格行数据（值类型快照，避免持有 NSManagedObject 引用）
     struct EntryItem: Identifiable {
@@ -156,6 +160,7 @@ struct WordbookPreviewView: View {
                 ForEach(entries) { entry in
                     EntryRowView(
                         entry: entry,
+                        isReadOnly: isReadOnly,
                         onSave: { item in saveEntry(item) },
                         onDelete: { item in deleteEntry(item) }
                     )
@@ -272,8 +277,10 @@ struct WordbookPreviewView: View {
 ///
 /// 三个 TextField 分别对应单词 / 音标 / 释义（多组释义以 " / " 拼接编辑，
 /// 保存时解析回 3 组词性+释义字段），回车或失焦时自动保存。右侧一个删除按钮。
+/// 只读态（系统收藏夹）渲染纯文本、无删除按钮。
 private struct EntryRowView: View {
     let entry: WordbookPreviewView.EntryItem
+    let isReadOnly: Bool
     let onSave: (WordbookPreviewView.EntryItem) -> Void
     let onDelete: (WordbookPreviewView.EntryItem) -> Void
 
@@ -286,37 +293,47 @@ private struct EntryRowView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            // 原 TXT 行号（不可编辑；0 表示老数据缺失）
+            // 原 TXT 行号（不可编辑；0 表示老数据缺失/收藏词条无行号）
             Text(entry.lineNumber == 0 ? "-" : "\(entry.lineNumber)")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
                 .frame(width: Constants.previewLineNumberColumnWidth, alignment: .trailing)
 
-            TextField("", text: $editWord, onCommit: save)
-                .textFieldStyle(.plain)
-                .frame(width: 140)
-                .focused($focusedField, equals: .word)
+            if isReadOnly {
+                Text(entry.sourceWord)
+                    .frame(width: 140, alignment: .leading)
+                Text(entry.phonetic)
+                    .foregroundColor(.secondary)
+                    .frame(width: 110, alignment: .leading)
+                Text(entry.joinedMeaning)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                TextField("", text: $editWord, onCommit: save)
+                    .textFieldStyle(.plain)
+                    .frame(width: 140)
+                    .focused($focusedField, equals: .word)
 
-            TextField("", text: $editPhonetic, onCommit: save)
-                .textFieldStyle(.plain)
-                .frame(width: 110)
-                .focused($focusedField, equals: .phonetic)
+                TextField("", text: $editPhonetic, onCommit: save)
+                    .textFieldStyle(.plain)
+                    .frame(width: 110)
+                    .focused($focusedField, equals: .phonetic)
 
-            TextField("", text: $editMeaning, onCommit: save)
-                .textFieldStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .focused($focusedField, equals: .meaning)
-                .help(L10n.t("preview.meaning.editHint"))
+                TextField("", text: $editMeaning, onCommit: save)
+                    .textFieldStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .focused($focusedField, equals: .meaning)
+                    .help(L10n.t("preview.meaning.editHint"))
 
-            Button {
-                onDelete(currentSnapshot())
-            } label: {
-                Image(systemName: "trash")
-                    .font(.system(size: 12))
-                    .foregroundColor(.red.opacity(0.7))
+                Button {
+                    onDelete(currentSnapshot())
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .frame(width: 32)
             }
-            .buttonStyle(.plain)
-            .frame(width: 32)
         }
         .font(.system(size: 13))
         .padding(.horizontal, 12)

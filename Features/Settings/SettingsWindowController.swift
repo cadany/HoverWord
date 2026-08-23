@@ -6,7 +6,7 @@ import SwiftUI
 /// Liquid Glass 玻璃材质 + sidebar 导航设计。
 /// 使用 NavigationSplitView 实现左侧 sidebar + 右侧内容区布局。
 /// 包含 5 个导航项：单词本 / 背记 / 外观 / 发音 / 通用。
-/// 持有 LanguageManager：界面语言切换时整树重建 + 窗口标题刷新。
+/// 持有 LanguageManager：界面语言切换时内容子树重建 + 窗口标题刷新。
 class SettingsWindowController: NSWindowController {
 
     private let languageManager = LanguageManager()
@@ -84,7 +84,11 @@ class SettingsWindowDelegate: NSObject, NSWindowDelegate {
 ///
 /// NavigationSplitView sidebar 布局：左侧导航 + 右侧内容。
 /// 整窗 Liquid Glass 材质。语言切换时以 `.id(languageManager.current)`
-/// 强制重建子树，所有 L10n 查词随重建生效（选中项等父层状态保持）。
+/// 重建 sidebar 与详情两棵子树（所有 L10n 查词随重建生效，选中项等父层状态保持）。
+///
+/// 注意：`.id` 必须挂在子树而非 NavigationSplitView 本体——后者持有窗口
+/// 标题栏集成（sidebar 工具栏挂载），整树重建会重装标题栏 chrome，
+/// 导致语言切换后标题栏样式异常（变成独立不透明条带）。
 struct SettingsRootView: View {
     @ObservedObject var languageManager: LanguageManager
     @State private var selectedItemId: String = SidebarItem.wordbook.id
@@ -108,6 +112,8 @@ struct SettingsRootView: View {
                 ideal: Constants.settingsSidebarWidth,
                 max: Constants.settingsSidebarWidth
             )
+            // 语言切换时仅重建含 L10n 文本的子树（见 body 末尾说明）
+            .id(languageManager.current)
         } detail: {
             // 内容区：所有已访问页叠放，仅当前页可见（懒加载 + 常驻）
             ZStack {
@@ -131,10 +137,10 @@ struct SettingsRootView: View {
                     visited.insert(item.id)
                 }
             }
+            .id(languageManager.current)
         }
         .navigationSplitViewStyle(.balanced)
         .environmentObject(languageManager)
-        .id(languageManager.current)
         .frame(
             minWidth: Constants.settingsWindowMinWidth,
             minHeight: Constants.settingsWindowMinHeight

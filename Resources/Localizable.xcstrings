@@ -1611,6 +1611,40 @@
         }
       }
     },
+    "wordbook.delete.confirm.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Are you sure you want to delete \"%@\"? It contains %d words. This cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定要删除“%@”吗？包含 %d 个单词，此操作不可恢复。"
+          }
+        }
+      }
+    },
+    "wordbook.delete.confirm.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Wordbook"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除单词本"
+          }
+        }
+      }
+    },
     "wordbook.error.notFound" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1624,6 +1658,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "找不到目标单词本"
+          }
+        }
+      }
+    },
+    "wordbook.export.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出失败"
           }
         }
       }
@@ -1760,6 +1811,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重命名单词本"
+          }
+        }
+      }
+    },
+    "wordbook.toolbar.export" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出"
           }
         }
       }

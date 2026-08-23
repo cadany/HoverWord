@@ -246,7 +246,9 @@ class WordbookService {
 
     /// 分页获取单词本词条
     ///
-    /// 不支持系统收藏夹单词本（返回空结果）。
+    /// 对系统收藏夹单词本，查询 Favorite 并按收藏时间（collectedAt 升序）分页，
+    /// 通过 `favoriteToWordEntry` 转换为游离 WordEntry（仅供预览展示；
+    /// 编辑/删除服务按 wordId 匹配不到实体，预览层对收藏夹呈只读态）。
     ///
     /// - Parameters:
     ///   - wordbook: 目标单词本
@@ -258,7 +260,20 @@ class WordbookService {
         page: Int,
         pageSize: Int
     ) -> (entries: [WordEntry], totalPages: Int, totalCount: Int) {
-        guard !isFavoritesWordbook(wordbook) else { return ([], 0, 0) }
+        if isFavoritesWordbook(wordbook) {
+            let context = DataStack.shared.viewContext
+            let request: NSFetchRequest<Favorite> = Favorite.fetchRequest()
+            request.sortDescriptors = [NSSortDescriptor(key: "collectedAt", ascending: true)]
+
+            let totalCount = (try? context.count(for: request)) ?? 0
+            let totalPages = pageSize > 0 ? max(1, (totalCount + pageSize - 1) / pageSize) : 1
+
+            request.fetchOffset = page * pageSize
+            request.fetchLimit = pageSize
+            let favorites = (try? context.fetch(request)) ?? []
+            let entries = favorites.compactMap { favoriteToWordEntry($0, sectionIndex: 0) }
+            return (entries, totalPages, totalCount)
+        }
 
         let context = DataStack.shared.viewContext
         let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()

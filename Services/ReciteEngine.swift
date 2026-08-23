@@ -64,6 +64,41 @@ class ReciteEngine {
 
     private var timer: Timer?
 
+    /// 鼠标悬停悬浮窗时暂停切词计时（两种背记模式一致生效，默认常开无设置开关）
+    private var isHoverPaused = false
+
+    /// 暂停时的剩余停留时长（nil 表示无暂停记录）
+    private var pausedRemaining: TimeInterval?
+
+    /// 设置/清除悬停暂停
+    ///
+    /// 暂停：记录当前单词剩余停留时长并停止计时器；
+    /// 恢复：按剩余时长重新调度（不重计整段）。
+    /// 仅 playing 态操作计时器；标志本身无条件记录——引擎可能随时被 start/restart，
+    /// 重启路径经 startTimer 的暂停分支保持暂停语义（新词整段时长入账）。
+    ///
+    /// 悬浮窗隐藏路径（orderOut 不保证补发 mouseExited）须以 false 调用本方法，
+    /// 防止暂停状态残留导致背记永久卡住。
+    func setHoverPaused(_ paused: Bool) {
+        guard isHoverPaused != paused else { return }
+        isHoverPaused = paused
+
+        guard state == .playing else { return }
+
+        if paused {
+            if let activeTimer = timer {
+                pausedRemaining = max(activeTimer.fireDate.timeIntervalSinceNow, 0)
+                stopTimer()
+            } else if pausedRemaining == nil {
+                // 防御性兜底：无活动计时也无既有记录时按整段时长入账
+                pausedRemaining = TimeInterval(AppSettings.shared.stayDuration)
+            }
+        } else if let remaining = pausedRemaining {
+            pausedRemaining = nil
+            scheduleTimer(after: max(remaining, 0.05))
+        }
+    }
+
     // MARK: - 公开接口
 
     /// 初始化引擎，监听设置变更
@@ -351,8 +386,20 @@ class ReciteEngine {
     private func startTimer() {
         stopTimer()
         let duration = TimeInterval(AppSettings.shared.stayDuration)
+
+        // 悬停暂停态：不启动计时，新词整段时长入账（恢复时从整段继续）。
+        // 该分支同时覆盖"暂停中手动切词"与"鼠标在窗内时引擎重启"两条路径
+        if isHoverPaused {
+            pausedRemaining = duration
+            return
+        }
+        pausedRemaining = nil
+        scheduleTimer(after: duration)
+    }
+
+    private func scheduleTimer(after interval: TimeInterval) {
         timer = Timer.scheduledTimer(
-            timeInterval: duration,
+            timeInterval: interval,
             target: self,
             selector: #selector(timerFired),
             userInfo: nil,
