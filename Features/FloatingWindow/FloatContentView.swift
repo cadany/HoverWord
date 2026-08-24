@@ -179,6 +179,7 @@ class FloatContentView: NSView {
             wordFont = NSFont.systemFont(ofSize: wordSize, weight: .semibold)
         }
         wordLabel.font = wordFont
+        completedLabel.font = wordFont
 
         // 更新音标字体（字号可在外观设置中配置）
         phoneticLabel.font = NSFont.systemFont(
@@ -196,9 +197,6 @@ class FloatContentView: NSView {
             meaningFont = NSFont.systemFont(ofSize: meaningSize, weight: .regular)
         }
         meaningLabel.font = meaningFont
-
-        // 字体变更后重新评估释义行数
-        updateMeaningLines()
 
         // 触发布局更新
         needsLayout = true
@@ -280,6 +278,16 @@ class FloatContentView: NSView {
         rootStack.setCustomSpacing(Constants.meaningToButtonSpacing, after: meaningLabel)
 
         // 第 4 列：按钮横排（在 setupButtons 中填充）
+
+        // 完成态用独立覆盖层而非 rootStack 第五列：完成时其余四列全部隐藏，
+        // stack 布局已无意义，居中约束不随列显隐塌缩（PRD 3.2.5）
+        completedLabel.isHidden = true
+        completedLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(completedLabel)
+        NSLayoutConstraint.activate([
+            completedLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
+            completedLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
     }
 
     private func setupButtons() {
@@ -472,10 +480,6 @@ class FloatContentView: NSView {
         }
     }
 
-    private func animateButtonsIn() {
-        setButtonsHidden(false)
-    }
-
     private func animateButtonsOut() {
         setButtonsHidden(true)
     }
@@ -522,20 +526,6 @@ class FloatContentView: NSView {
         )
         layer.opacity = 0.7
         CATransaction.commit()
-    }
-
-    // MARK: - 窗口尺寸变化响应
-
-    /// 监听视图尺寸变化，动态调整释义区行数
-    override func resize(withOldSuperviewSize oldSize: NSSize) {
-        super.resize(withOldSuperviewSize: oldSize)
-        updateMeaningLines()
-    }
-
-    /// 释义始终允许多行显示，宽度不足时自然换行。
-    /// maximumNumberOfLines 始终为 0，此方法保留用于未来可能的扩展。
-    private func updateMeaningLines() {
-        // 始终允许多行，无需动态调整
     }
 
     // MARK: - 公开：显示单词
@@ -605,6 +595,9 @@ class FloatContentView: NSView {
             phoneticLabel.animator().alphaValue = 0
             meaningLabel.animator().alphaValue = 0
         }, completionHandler: {
+            // 动画期间可能已被 showWord 接管（如淡出未结束即点"重新开始"），
+            // 回调无法取消，靠状态守卫避免隐藏新内容
+            guard self.isShowingCompleted else { return }
             // 隐藏单词内容，显示"已学完"
             self.wordLabel.isHidden = true
             self.phoneticLabel.isHidden = true

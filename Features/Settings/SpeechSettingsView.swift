@@ -291,6 +291,13 @@ struct SpeechSettingsView: View {
         return label
     }
 
+    /// 回退名称的显示 locale：跟随界面语言，避免英文界面下混入中文语言名
+    private static let zhDisplayLocale = Locale(identifier: "zh_CN")
+    private static let enDisplayLocale = Locale(identifier: "en_US")
+    private static var displayLocale: Locale {
+        L10n.effectiveLanguage == "zh-Hans" ? zhDisplayLocale : enDisplayLocale
+    }
+
     /// 口音分段选项文案：优先词条（如 "美式"），未来语种缺词条时回退
     /// 系统本地化地区名（"zh-CN" → "中国大陆"），仍取不到时回退 locale 代码
     private func accentTitle(for accent: String) -> String {
@@ -298,7 +305,7 @@ struct SpeechSettingsView: View {
         let title = L10n.t(key)
         if title != key { return title }
         if let region = accent.components(separatedBy: "-").last,
-           let regionName = Locale(identifier: "zh_CN").localizedString(forRegionCode: region) {
+           let regionName = Self.displayLocale.localizedString(forRegionCode: region) {
             return regionName
         }
         return accent
@@ -310,13 +317,16 @@ struct SpeechSettingsView: View {
         let key = "speech.language.\(language)"
         let title = L10n.t(key)
         if title != key { return title }
-        let zhName = Locale(identifier: "zh_CN").localizedString(forLanguageCode: language)
-        let enName = Locale(identifier: "en_US").localizedString(forLanguageCode: language)
-        switch (zhName, enName) {
-        case let (zh?, en?) where zh != en: return "\(zh) (\(en))"
-        case let (name?, _): return name
-        default: return language
+        guard let name = Self.displayLocale.localizedString(forLanguageCode: language) else {
+            return language
         }
+        // 中文界面追加英文对照名，与既有词条"英语 (English)"的格式保持一致
+        if L10n.effectiveLanguage == "zh-Hans",
+           let enName = Self.enDisplayLocale.localizedString(forLanguageCode: language),
+           enName != name {
+            return "\(name) (\(enName))"
+        }
+        return name
     }
 
     /// 高级折叠标签：展示当前生效语音名；口音下无可用语音时回退通用文案
