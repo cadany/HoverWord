@@ -3,8 +3,8 @@ import SwiftUI
 /// 发音设置 Tab 视图
 ///
 /// v0.1.1 配置项：自动播放开关、口音快捷分段（默认）、高级折叠区（具体语音选择 + 试听）、全局语速。
-/// 语言分区数据源为启用中单词本的 sourceLang（v0.1.1 实际仅英语），
-/// 底层以 language code 为键，未来新增语种单词本时自动出现对应分区。
+/// 语言分区数据源为启用中单词本的 sourceLang（启停/删除词本即时刷新，
+/// 底层以 language code 为键，语种无关），无启用词本时回退英语分区。
 struct SpeechSettingsView: View {
     @State private var autoPlay: Bool = true
     @State private var speechRate: Double = Constants.speechRateDefault
@@ -15,12 +15,20 @@ struct SpeechSettingsView: View {
     @State private var selectedAccentByLanguage: [String: String] = [:]
     @State private var selectedVoiceByLanguage: [String: String] = [:]
 
-    /// 参与设置的语言分区：启用中单词本的 sourceLang 去重；无启用词本时回退英语
-    private var activeLanguages: [String] {
+    /// 参与设置的语言分区：启用中单词本的 sourceLang 去重；无启用词本时回退英语。
+    /// 必须是 @State 而非计算属性——数据源是 Core Data 而非被观察状态，
+    /// 计算属性只随其它 @State 变化重算，词本启停后分区列表会冻结在旧值
+    @State private var activeLanguages: [String] = ["en"]
+
+    /// 重算语言分区集合（onAppear 与词本启停/删除通知时调用）
+    private func refreshActiveLanguages() {
         let languages = WordbookService.shared.getEnabledWordbooks()
             .map { $0.sourceLang }
         let unique = Array(Set(languages)).sorted()
-        return unique.isEmpty ? ["en"] : unique
+        let newValue = unique.isEmpty ? ["en"] : unique
+        if newValue != activeLanguages {
+            activeLanguages = newValue
+        }
     }
 
     var body: some View {
@@ -102,6 +110,17 @@ struct SpeechSettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .onAppear { loadSettings() }
+        .onReceive(NotificationCenter.default.publisher(for: .wordbookEnablementDidChange)) { _ in
+            // 词本启停/删除改变启用语言集合：即时刷新分区并回填新分区选中态
+            //（覆盖设置页常驻、onAppear 不再触发的场景）
+            refreshActiveLanguages()
+            loadSettings()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wordbookLanguageDidChange)) { _ in
+            // 词本语言对变更（导入自动识别 / 行内"语言…"编辑）：重算分区
+            refreshActiveLanguages()
+            loadSettings()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .speechPlaybackStateDidChange)) { note in
             // 通知已切主线程。只响应试听来源的播放：悬浮窗自动/手动播报与试听共用
             // synthesizer，无来源过滤的话每次切词播报都会让试听按钮闪烁"停止"
@@ -226,6 +245,7 @@ struct SpeechSettingsView: View {
     // MARK: - 数据与行为
 
     private func loadSettings() {
+        refreshActiveLanguages()
         autoPlay = AppSettings.shared.autoPlaySpeech
         speechRate = AppSettings.shared.speechRateMultiplier
         // 打开设置页时无条件刷新语音列表，纳入新下载的系统语音
@@ -271,16 +291,32 @@ struct SpeechSettingsView: View {
         return label
     }
 
-    /// 口音分段选项文案：优先词条（如 "美式"），未来语种缺词条时回退 locale 代码
+    /// 口音分段选项文案：优先词条（如 "美式"），未来语种缺词条时回退
+    /// 系统本地化地区名（"zh-CN" → "中国大陆"），仍取不到时回退 locale 代码
     private func accentTitle(for accent: String) -> String {
-        let title = L10n.t("speech.accent.\(accent)")
-        return title == "speech.accent.\(accent)" ? accent : title
+        let key = "speech.accent.\(accent)"
+        let title = L10n.t(key)
+        if title != key { return title }
+        if let region = accent.components(separatedBy: "-").last,
+           let regionName = Locale(identifier: "zh_CN").localizedString(forRegionCode: region) {
+            return regionName
+        }
+        return accent
     }
 
-    /// 分区标题：优先取词条（如 "英语 (English)"），未来语种缺词条时回退显示语言代码
+    /// 分区标题：优先取词条（如 "英语 (English)"），未来语种缺词条时回退
+    /// 系统本地化语言名（"ja" → "日语 (Japanese)"），仍取不到时显示原始语言代码
     private func sectionTitle(for language: String) -> String {
-        let title = L10n.t("speech.language.\(language)")
-        return title == "speech.language.\(language)" ? language : title
+        let key = "speech.language.\(language)"
+        let title = L10n.t(key)
+        if title != key { return title }
+        let zhName = Locale(identifier: "zh_CN").localizedString(forLanguageCode: language)
+        let enName = Locale(identifier: "en_US").localizedString(forLanguageCode: language)
+        switch (zhName, enName) {
+        case let (zh?, en?) where zh != en: return "\(zh) (\(en))"
+        case let (name?, _): return name
+        default: return language
+        }
     }
 
     /// 高级折叠标签：展示当前生效语音名；口音下无可用语音时回退通用文案

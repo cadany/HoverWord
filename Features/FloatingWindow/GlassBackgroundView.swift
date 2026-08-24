@@ -21,8 +21,14 @@ class GlassBackgroundView: NSVisualEffectView {
     /// tint 叠加层
     private let tintLayer = CALayer()
 
-    /// 内描边层
-    private let strokeLayer = CAShapeLayer()
+    /// 内描边渐变层
+    ///
+    /// 纵向渐变：顶部高光 → 底部收暗，模拟环境光自上而下的玻璃边缘反光
+    ///（对齐 macOS 26 真玻璃的 specular 高光特征），由描边形状 mask 限制显示范围
+    private let strokeGradientLayer = CAGradientLayer()
+
+    /// 描边形状 mask：1px 描边环，只让渐变沿边缘显示
+    private let strokeMaskLayer = CAShapeLayer()
 
     // MARK: - 初始化
 
@@ -54,7 +60,7 @@ class GlassBackgroundView: NSVisualEffectView {
     /// 设置圆角半径
     func setCornerRadius(_ radius: CGFloat) {
         layer?.cornerRadius = radius
-        strokeLayer.path = cornerPath(for: bounds, radius: radius)
+        strokeMaskLayer.path = cornerPath(for: bounds, radius: radius)
     }
 
     // MARK: - 私有：设置
@@ -71,15 +77,22 @@ class GlassBackgroundView: NSVisualEffectView {
         tintLayer.frame = bounds
         layer?.addSublayer(tintLayer)
 
-        // 内描边层
-        strokeLayer.fillColor = NSColor.clear.cgColor
-        strokeLayer.lineWidth = Constants.innerStrokeWidth
-        strokeLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
-        layer?.addSublayer(strokeLayer)
+        // 内描边：渐变层 + 描边形状 mask
+        strokeMaskLayer.fillColor = NSColor.clear.cgColor
+        // mask 按渲染输出取 alpha：描边环处不透明白色，其余透明
+        strokeMaskLayer.strokeColor = NSColor.white.cgColor
+        strokeMaskLayer.lineWidth = Constants.innerStrokeWidth
+        strokeMaskLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        // NSView 默认非翻转坐标系（原点左下），y=1 为顶部
+        strokeGradientLayer.startPoint = CGPoint(x: 0.5, y: 1)
+        strokeGradientLayer.endPoint = CGPoint(x: 0.5, y: 0)
+        strokeGradientLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        strokeGradientLayer.mask = strokeMaskLayer
+        layer?.addSublayer(strokeGradientLayer)
 
         // 初始圆角（8pt，见 Constants.floatWindowCornerRadius；调用方可按需覆盖）
         setCornerRadius(Constants.floatWindowCornerRadius)
-        updateStrokeColor()
+        updateStrokeGradient()
     }
 
     /// 根据系统版本选择材质
@@ -105,10 +118,14 @@ class GlassBackgroundView: NSVisualEffectView {
         tintLayer.backgroundColor = color.withAlphaComponent(tintAlpha).cgColor
     }
 
-    private func updateStrokeColor() {
+    private func updateStrokeGradient() {
         let isDark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let alpha: CGFloat = isDark ? Constants.darkInnerStrokeAlpha : Constants.lightInnerStrokeAlpha
-        strokeLayer.strokeColor = NSColor.white.withAlphaComponent(alpha).cgColor
+        let topAlpha = isDark ? Constants.darkInnerStrokeTopAlpha : Constants.lightInnerStrokeTopAlpha
+        let bottomAlpha = isDark ? Constants.darkInnerStrokeBottomAlpha : Constants.lightInnerStrokeBottomAlpha
+        strokeGradientLayer.colors = [
+            NSColor.white.withAlphaComponent(topAlpha).cgColor,
+            NSColor.white.withAlphaComponent(bottomAlpha).cgColor
+        ]
     }
 
     private func cornerPath(for rect: NSRect, radius: CGFloat) -> CGPath {
@@ -126,12 +143,13 @@ class GlassBackgroundView: NSVisualEffectView {
     override func layout() {
         super.layout()
         tintLayer.frame = bounds
-        strokeLayer.frame = bounds
-        strokeLayer.path = cornerPath(for: bounds, radius: layer?.cornerRadius ?? 0)
+        strokeGradientLayer.frame = bounds
+        strokeMaskLayer.frame = bounds
+        strokeMaskLayer.path = cornerPath(for: bounds, radius: layer?.cornerRadius ?? 0)
     }
 
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
-        updateStrokeColor()
+        updateStrokeGradient()
     }
 }

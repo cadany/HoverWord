@@ -145,8 +145,9 @@ enum Constants {
     /// 浅色模式按钮悬停填充不透明度
     static let lightButtonHoverAlpha: CGFloat = 0.40
 
-    /// 浅色模式内描边不透明度
-    static let lightInnerStrokeAlpha: CGFloat = 0.30
+    /// 浅色模式内描边渐变不透明度（顶部高光 → 底部收暗，模拟环境光自上而下的玻璃边缘反光）
+    static let lightInnerStrokeTopAlpha: CGFloat = 0.45
+    static let lightInnerStrokeBottomAlpha: CGFloat = 0.20
 
     // MARK: - 颜色（深色模式）
 
@@ -162,8 +163,9 @@ enum Constants {
     /// 深色模式按钮悬停填充不透明度
     static let darkButtonHoverAlpha: CGFloat = 0.30
 
-    /// 深色模式内描边不透明度
-    static let darkInnerStrokeAlpha: CGFloat = 0.15
+    /// 深色模式内描边渐变不透明度（顶部高光 → 底部收暗）
+    static let darkInnerStrokeTopAlpha: CGFloat = 0.30
+    static let darkInnerStrokeBottomAlpha: CGFloat = 0.10
 
     // MARK: - 玻璃材质
 
@@ -177,6 +179,24 @@ enum Constants {
 
     /// 默认单 Section 单词数
     static let defaultSectionSize: Int = 20
+
+    /// 词本语言对默认值（检测低置信度/无结果/新建词本的回退）
+    static let defaultSourceLang = "en"
+    static let defaultTargetLang = "zh-Hans"
+
+    /// 词本语言编辑下拉的可选语种注册表（BCP-47 代码，显示名走系统 Locale 本地化）。
+    /// 仅约束 UI 选项，不约束语言检测结果的存储（语种无关）
+    static let supportedWordLanguages: [String] = [
+        "en", "fr", "es", "de", "it", "pt", "ru", "ja", "ko", "zh-Hans", "zh-Hant"
+    ]
+
+    /// 语言检测样本条数（取词本前 N 条源词/释义拼接送检；单词检测不可靠，需多样本）
+    static let languageDetectionSampleCount = 20
+
+    /// 语言检测置信度阈值，低于该值回退默认语言对。
+    /// 实测校准（注册表约束后）：噪声误判峰值 0.63（英语基础词→it），
+    /// 真实检测 0.88-0.99，取 0.7 分隔
+    static let languageDetectionConfidenceThreshold = 0.7
 
     /// 默认文字颜色（hex）
     static let defaultTextColorHex: String = "#000000"

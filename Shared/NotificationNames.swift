@@ -62,6 +62,12 @@ extension Notification.Name {
     /// 触发方：通用设置页语言切换。必须在主线程发送。
     static let appLanguageDidChange = Notification.Name("appLanguageDidChange")
 
+    /// 单词本语言对（sourceLang/targetLang）已变更
+    ///
+    /// 监听方：SpeechSettingsView（重算发音语言分区）
+    /// 触发方：导入后自动识别回写、行内"语言…"编辑保存。必须在主线程发送。
+    static let wordbookLanguageDidChange = Notification.Name("wordbookLanguageDidChange")
+
     /// 发音播放状态已变化（开始 / 结束 / 被打断）
     ///
     /// userInfo：isSpeaking（Bool，回调时刻 synthesizer 状态）、

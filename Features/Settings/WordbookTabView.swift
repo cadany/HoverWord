@@ -22,6 +22,11 @@ struct WordbookTabView: View {
     @State private var pendingDeleteWordbook: WordbookInfo?
     /// 导出失败信息（非 nil 时弹 alert）
     @State private var exportError: String?
+    /// 语言编辑中的单词本（非 nil 时弹编辑 Sheet）
+    @State private var languageEditingWordbook: WordbookInfo?
+    /// 语言编辑 Sheet 的源/目标选择值
+    @State private var langSource: String = Constants.defaultSourceLang
+    @State private var langTarget: String = Constants.defaultTargetLang
     /// 缓存当前选中单词本的 Core Data 对象，避免每次 body 重绘都 fetch
     @State private var cachedPreviewWordbook: Wordbook?
     @State private var cachedPreviewWordbookId: String?
@@ -33,6 +38,8 @@ struct WordbookTabView: View {
         var sectionCount: Int
         var isEnabled: Bool
         var isSystem: Bool
+        var sourceLang: String
+        var targetLang: String
     }
 
     var body: some View {
@@ -81,6 +88,10 @@ struct WordbookTabView: View {
                                     onRename: wb.isSystem ? nil : {
                                         selection = wb.id
                                         showingRenamePanel = true
+                                    },
+                                    onEditLanguage: wb.isSystem ? nil : {
+                                        selection = wb.id
+                                        languageEditingWordbook = wb
                                     },
                                     onDelete: wb.isSystem ? nil : {
                                         selection = wb.id
@@ -149,6 +160,12 @@ struct WordbookTabView: View {
         }
         .sheet(isPresented: $showingRenamePanel) {
             renameWordbookSheet
+        }
+        .sheet(isPresented: Binding(
+            get: { languageEditingWordbook != nil },
+            set: { if !$0 { languageEditingWordbook = nil } }
+        )) {
+            languageEditorSheet
         }
         .sheet(isPresented: $showingPreviewPanel) {
             if let wordbook = selectedWordbookObject {
@@ -261,6 +278,91 @@ struct WordbookTabView: View {
 
     // MARK: - Logic
 
+    /// 语言编辑 Sheet：源/目标下拉（注册表 + 系统 Locale 显示名）+ 自动检测回填
+    private var languageEditorSheet: some View {
+        VStack(spacing: 14) {
+            Text(L10n.t("wordbook.language.title")).font(.headline)
+            if let wb = languageEditingWordbook {
+                Text(wb.name)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+
+                languagePicker(titleKey: "wordbook.language.source", selection: $langSource)
+                languagePicker(titleKey: "wordbook.language.target", selection: $langTarget)
+
+                Button(L10n.t("wordbook.language.autodetect")) {
+                    autodetectLanguages(for: wb)
+                }
+                .glassButtonStyle()
+            }
+
+            HStack {
+                Button(L10n.t("common.cancel")) { languageEditingWordbook = nil }
+                    .glassButtonStyle()
+                Button(L10n.t("common.ok")) { saveLanguages() }
+                    .glassButtonStyle()
+            }
+        }
+        .padding(24)
+        .frame(width: 320)
+        .onAppear {
+            if let wb = languageEditingWordbook {
+                langSource = wb.sourceLang
+                langTarget = wb.targetLang
+            }
+        }
+    }
+
+    private func languagePicker(titleKey: String, selection: Binding<String>) -> some View {
+        HStack {
+            Text(L10n.t(titleKey))
+                .font(.system(size: 13))
+            Spacer()
+            Picker("", selection: selection) {
+                ForEach(Constants.supportedWordLanguages, id: \.self) { code in
+                    Text(languageDisplayName(code)).tag(code)
+                }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+        }
+    }
+
+    /// 语种显示名：系统 Locale 本地化（语种无关，不新增词条）+ 代码后缀便于辨识
+    private func languageDisplayName(_ code: String) -> String {
+        let name = Locale.current.localizedString(forLanguageCode: code) ?? code
+        return "\(name) (\(code))"
+    }
+
+    /// 自动检测回填：按词本当前词条内容检测语言对
+    private func autodetectLanguages(for wb: WordbookInfo) {
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbookId == %@", wb.id)
+        request.fetchLimit = 1
+        guard let wordbook = (try? context.fetch(request))?.first,
+              let detected = WordbookService.shared.detectLanguages(for: wordbook) else { return }
+        langSource = detected.source
+        langTarget = detected.target
+    }
+
+    /// 保存语言对（后台上下文写入，变更时广播通知驱动发音分区刷新）
+    private func saveLanguages() {
+        guard let wb = languageEditingWordbook else { return }
+        let source = langSource
+        let target = langTarget
+        languageEditingWordbook = nil
+
+        Task {
+            await WordbookService.shared.updateWordbookLanguages(
+                wordbookId: wb.id,
+                sourceLang: source,
+                targetLang: target
+            )
+            await MainActor.run { refreshList() }
+        }
+    }
+
     private func binding(for wb: WordbookInfo) -> Binding<Bool> {
         Binding(
             get: { wb.isEnabled },
@@ -300,8 +402,18 @@ struct WordbookTabView: View {
         refreshList()
     }
 
-    /// 导出单词本：保存面板确认后后台序列化写文件，失败弹 alert（成功无提示）
+    /// 导出单词本：保存面板确认后写文件，失败弹 alert（成功无提示）
+    ///
+    /// 本方法可能从 NSMenu 菜单项 action 内触发（popUp 模态追踪中），
+    /// 直接 runModal 会嵌套模态会话（AppKit 脆弱点）——先退到下一轮
+    /// run loop 再弹面板，对齐悬浮窗右键菜单打开设置窗口的防御模式
     private func exportWordbook(_ wb: WordbookInfo) {
+        DispatchQueue.main.async {
+            self.presentExportPanel(for: wb)
+        }
+    }
+
+    private func presentExportPanel(for wb: WordbookInfo) {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.plainText]
         panel.canCreateDirectories = true
@@ -310,7 +422,9 @@ struct WordbookTabView: View {
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        Task {
+        // 序列化在服务层后台上下文完成；文件写盘显式放后台执行，
+        // 错误回主线程弹 alert（成功按 spec 静默）
+        Task.detached(priority: .userInitiated) {
             do {
                 let data = try await WordbookExportService.export(wordbookId: wb.id)
                 try data.write(to: url)
@@ -330,7 +444,9 @@ struct WordbookTabView: View {
                 wordCount: WordbookService.shared.getEntryCount(for: wb),
                 sectionCount: WordbookService.shared.getSectionCount(for: wb),
                 isEnabled: wb.isEnabled,
-                isSystem: wb.isSystem
+                isSystem: wb.isSystem,
+                sourceLang: wb.sourceLang,
+                targetLang: wb.targetLang
             )
         }
     }
@@ -389,12 +505,14 @@ private struct WordbookRow: View {
     let onImport: (() -> Void)?
     let onExport: (() -> Void)?
     let onRename: (() -> Void)?
+    let onEditLanguage: (() -> Void)?
     let onDelete: (() -> Void)?
     @State private var isHovering = false
 
     /// 是否存在任一行内操作（决定操作区是否可出现）
     private var hasActions: Bool {
-        onPreview != nil || onImport != nil || onExport != nil || onRename != nil || onDelete != nil
+        onPreview != nil || onImport != nil || onExport != nil
+            || onRename != nil || onEditLanguage != nil || onDelete != nil
     }
 
     private var showActions: Bool {
@@ -478,7 +596,7 @@ private struct WordbookRow: View {
                 .help(L10n.t("wordbook.toolbar.preview"))
             }
 
-            if onImport != nil || onExport != nil || onRename != nil || onDelete != nil {
+            if onImport != nil || onExport != nil || onRename != nil || onEditLanguage != nil || onDelete != nil {
                 // SwiftUI Menu 的 borderless 样式在 macOS 26 上不渲染自定义 label，
                 // 改用 Button + NSMenu 原生弹出（Button 自定义 label 渲染可靠）
                 Button(action: showMoreMenu) {
@@ -541,6 +659,9 @@ private struct WordbookRow: View {
         }
         if let onRename {
             addMenuItem(L10n.t("wordbook.toolbar.rename"), handler: onRename)
+        }
+        if let onEditLanguage {
+            addMenuItem(L10n.t("wordbook.menu.language"), handler: onEditLanguage)
         }
         if let onDelete {
             menu.addItem(.separator())

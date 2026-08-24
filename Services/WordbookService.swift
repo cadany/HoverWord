@@ -467,6 +467,15 @@ class WordbookService {
         // 导入后同步收藏夹
         syncFavoritesAfterImport(wordbook: wordbook, importedSourceWords: Set(entries.map { $0.sourceWord }))
 
+        // 全量覆盖导入的内容即真相：按导入内容自动识别并回写语言对
+        let detectedSource = LanguageDetectionService.sourceLanguage(from: entries.map { $0.sourceWord })
+        let detectedTarget = LanguageDetectionService.targetLanguage(from: entries.map { $0.meaning1 })
+        await applyLanguagesToWordbook(
+            wordbookId: wordbook.wordbookId,
+            sourceLang: detectedSource,
+            targetLang: detectedTarget
+        )
+
         // 内容变更通知经主线程队列派发：syncFavoritesAfterImport 内的
         // favoritesDidChange 已先行入队，同队列 FIFO 保证 content 通知最后到达，
         // 引擎以最新数据收尾
@@ -477,6 +486,62 @@ class WordbookService {
                 object: nil,
                 userInfo: ["wordbookId": wordbookId]
             )
+        }
+    }
+
+    // MARK: - 语言对
+
+    /// 手动设置词本语言对（行内"语言…"编辑保存路径，按 ID 定位，任意线程可调）
+    func updateWordbookLanguages(wordbookId: String, sourceLang: String, targetLang: String) async {
+        await applyLanguagesToWordbook(
+            wordbookId: wordbookId,
+            sourceLang: sourceLang,
+            targetLang: targetLang
+        )
+    }
+
+    /// 按词本当前词条内容检测语言对（语言编辑页"自动检测"按钮）
+    ///
+    /// - Returns: (source, target)；空词本返回 nil
+    func detectLanguages(for wordbook: Wordbook) -> (source: String, target: String)? {
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbook.wordbookId == %@", wordbook.wordbookId)
+        request.sortDescriptors = [NSSortDescriptor(key: "orderIndex", ascending: true)]
+        request.fetchLimit = Constants.languageDetectionSampleCount
+        let entries = (try? context.fetch(request)) ?? []
+        guard !entries.isEmpty else { return nil }
+        return (
+            LanguageDetectionService.sourceLanguage(from: entries.map { $0.sourceWord ?? "" }),
+            LanguageDetectionService.targetLanguage(from: entries.map { $0.meaning1 ?? "" })
+        )
+    }
+
+    /// 按 ID 定位词本并回写语言对（后台上下文，任意线程可调）；
+    /// 有实际变化时保存并在主线程广播 `.wordbookLanguageDidChange`
+    private func applyLanguagesToWordbook(wordbookId: String, sourceLang: String, targetLang: String) async {
+        let context = DataStack.shared.newBackgroundContext()
+        let changed: Bool = await context.perform {
+            let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
+            request.predicate = NSPredicate(format: "wordbookId == %@", wordbookId)
+            request.fetchLimit = 1
+            guard let wordbook = (try? context.fetch(request))?.first else { return false }
+            guard wordbook.sourceLang != sourceLang || wordbook.targetLang != targetLang else { return false }
+
+            wordbook.sourceLang = sourceLang
+            wordbook.targetLang = targetLang
+            do {
+                try context.save()
+                return true
+            } catch {
+                NSLog("[WordbookService] Failed to save language pair: \(error)")
+                return false
+            }
+        }
+        if changed {
+            await MainActor.run {
+                NotificationCenter.default.post(name: .wordbookLanguageDidChange, object: nil)
+            }
         }
     }
 
