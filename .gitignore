@@ -38,3 +38,6 @@ Coverage/
 
 # Claude Code 本地配置（工作流定义共享，本地设置忽略）
 .claude/settings*.json
+
+# zcode settings
+.zcode/
