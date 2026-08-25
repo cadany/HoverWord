@@ -134,7 +134,7 @@ class FloatWindowController: NSWindowController {
         contentViewContainer.onSpeakTap = { [weak self] in
             guard let word = self?.engine.currentWord() else { return }
             // 语种取自当前词条所属单词本的 sourceLang，与引擎自动播报一致
-            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? "en")
+            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? Constants.defaultSourceLang)
         }
     }
 
@@ -186,6 +186,13 @@ class FloatWindowController: NSWindowController {
         contentViewContainer.resetHoverState()
         engine.setHoverPaused(false)
 
+        // 全屏静音：切词进度继续，仅停掉在播语音并挂起后续自动发音，
+        // 避免用户全屏观影/演示时被朗读打扰
+        if AppSettings.shared.muteSpeechInFullscreen {
+            SpeechService.shared.stopSpeaking()
+            engine.setSpeechSuppressed(true)
+        }
+
         visibilityAnimationToken += 1
         let token = visibilityAnimationToken
 
@@ -218,6 +225,9 @@ class FloatWindowController: NSWindowController {
     func showWindowWithAnimation() {
         guard let panel = window as? NSPanel else { return }
         guard !(panel.isVisible && panel.alphaValue >= 1.0) else { return }
+
+        // 退出全屏恢复显示：解除发音挂起（若静音未开启，隐藏时也未曾挂起，重复置 false 幂等）
+        engine.setSpeechSuppressed(false)
 
         visibilityAnimationToken += 1
         let token = visibilityAnimationToken

@@ -982,6 +982,23 @@
         }
       }
     },
+    "recite.muteInFullscreen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mute speech while hidden in fullscreen"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全屏隐藏时静音发音"
+          }
+        }
+      }
+    },
     "recite.mode" : {
       "extractionState" : "manual",
       "localizations" : {

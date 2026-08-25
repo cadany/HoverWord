@@ -23,6 +23,8 @@ class WordbookImportService {
         case formatError(lineNumber: Int, reason: String)
         /// 文件为空
         case emptyFile
+        /// 目标单词本不存在（导入面板打开期间被删除的竞态）
+        case wordbookMissing
 
         var errorDescription: String? {
             switch self {
@@ -32,6 +34,8 @@ class WordbookImportService {
                 return L10n.t("import.error.line.format", line, reason)
             case .emptyFile:
                 return L10n.t("import.error.empty")
+            case .wordbookMissing:
+                return L10n.t("import.error.wordbookMissing")
             }
         }
     }
@@ -158,7 +162,7 @@ class WordbookImportService {
             request.fetchLimit = 1
 
             guard let targetWordbook = try context.fetch(request).first else {
-                throw ImportError.formatError(lineNumber: 0, reason: L10n.t("import.error.wordbookMissing"))
+                throw ImportError.wordbookMissing
             }
 
             // 2. 清空旧词条（级联删除由 Core Data 处理）

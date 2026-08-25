@@ -30,6 +30,12 @@ class AppSettings {
     /// 全屏自动隐藏开关，默认关闭
     var fullscreenAutoHide: Bool = false
 
+    /// 全屏隐藏悬浮窗期间静音自动发音，默认开启
+    ///
+    /// 引擎在全屏期间继续切词保进度，仅挂起 TTS 播报，
+    /// 避免用户全屏观影/演示时被单词朗读打扰
+    var muteSpeechInFullscreen: Bool = true
+
     // MARK: - 单词本
 
     /// 单 Section 单词数，默认 20，最小值 1
@@ -90,11 +96,14 @@ class AppSettings {
 
     /// 从 UserDefaults 加载设置，若无历史配置则使用默认值
     func load() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let settings = try? JSONDecoder().decode(StoredSettings.self, from: data) else {
-            return
+        guard let data = UserDefaults.standard.data(forKey: storageKey) else { return }
+        do {
+            apply(stored: try JSONDecoder().decode(StoredSettings.self, from: data))
+        } catch {
+            // 配置损坏被静默重置后，一次 save 即不可逆覆盖，
+            // 至少留下诊断线索（区别于"无历史数据"的正常路径）
+            NSLog("[AppSettings] 设置解码失败，使用默认值: \(error)")
         }
-        apply(stored: settings)
     }
 
     /// 将当前设置持久化到 UserDefaults
@@ -105,6 +114,7 @@ class AppSettings {
             playOrder: playOrder,
             stayDuration: stayDuration,
             fullscreenAutoHide: fullscreenAutoHide,
+            muteSpeechInFullscreen: muteSpeechInFullscreen,
             sectionSize: sectionSize,
             backgroundColorHex: backgroundColorHex,
             backgroundOpacity: backgroundOpacity,
@@ -158,6 +168,7 @@ class AppSettings {
         var playOrder: PlayOrder
         var stayDuration: Int
         var fullscreenAutoHide: Bool
+        var muteSpeechInFullscreen: Bool?
         var sectionSize: Int
         var backgroundColorHex: String
         var backgroundOpacity: Double
@@ -183,6 +194,8 @@ class AppSettings {
         playOrder = stored.playOrder
         stayDuration = stored.stayDuration
         fullscreenAutoHide = stored.fullscreenAutoHide
+        // 向后兼容：旧版本无全屏静音配置时默认开启
+        muteSpeechInFullscreen = stored.muteSpeechInFullscreen ?? true
         sectionSize = stored.sectionSize
         backgroundColorHex = stored.backgroundColorHex
         backgroundOpacity = stored.backgroundOpacity

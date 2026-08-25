@@ -57,9 +57,6 @@ class ReciteEngine {
     /// 走马灯模式：当前 Section 已完成的轮次
     private var completedLoops: Int = 0
 
-    /// 当前轮次中已播放的单词数
-    private var wordsPlayedInCurrentLoop: Int = 0
-
     // MARK: - Timer
 
     private var timer: Timer?
@@ -69,6 +66,17 @@ class ReciteEngine {
 
     /// 暂停时的剩余停留时长（nil 表示无暂停记录）
     private var pausedRemaining: TimeInterval?
+
+    /// 挂起自动发音（全屏隐藏静音路径）
+    ///
+    /// 仅拦新播报、不暂停切词进度：窗口隐藏期间引擎照常流转，
+    /// 显示恢复后下一个单词自然恢复发音
+    private var isSpeechSuppressed = false
+
+    /// 设置/清除发音挂起（隐藏前调用方须同时停止在播语音）
+    func setSpeechSuppressed(_ suppressed: Bool) {
+        isSpeechSuppressed = suppressed
+    }
 
     /// 设置/清除悬停暂停
     ///
@@ -227,16 +235,13 @@ class ReciteEngine {
         let wordbooks = WordbookService.shared.getEnabledWordbooks()
 
         for wordbook in wordbooks {
-            let sectionCount = WordbookService.shared.getSectionCount(for: wordbook)
-            for sectionIndex in 0..<sectionCount {
-                let entries = WordbookService.shared.getEntries(for: wordbook, sectionIndex: sectionIndex)
-                if !entries.isEmpty {
-                    sectionQueue.append((
-                        wordbookId: wordbook.wordbookId,
-                        sectionIndex: sectionIndex,
-                        entries: entries
-                    ))
-                }
+            let sections = WordbookService.shared.getAllEntriesGroupedBySection(for: wordbook)
+            for (sectionIndex, entries) in sections.enumerated() where !entries.isEmpty {
+                sectionQueue.append((
+                    wordbookId: wordbook.wordbookId,
+                    sectionIndex: sectionIndex,
+                    entries: entries
+                ))
             }
         }
     }
@@ -247,7 +252,6 @@ class ReciteEngine {
     private func prepareCurrentSection() {
         feedbackSet.removeAll()
         completedLoops = 0
-        wordsPlayedInCurrentLoop = 0
         rebuildWordOrder()
     }
 
@@ -341,13 +345,11 @@ class ReciteEngine {
 
     /// 走马灯模式的单词推进
     private func advanceCarousel(section: (wordbookId: String, sectionIndex: Int, entries: [WordEntry])) {
-        wordsPlayedInCurrentLoop += 1
         currentWordIndex += 1
 
         if currentWordIndex >= currentWordOrder.count {
             // 当前轮次结束
             completedLoops += 1
-            wordsPlayedInCurrentLoop = 0
 
             if completedLoops >= AppSettings.shared.carouselLoopCount {
                 // Section 完成
@@ -375,9 +377,10 @@ class ReciteEngine {
         startTimer()
         delegate?.engineDidAdvanceToWord(word)
 
-        // 自动播放发音（语种取自当前词条所属单词本的 sourceLang）
-        if AppSettings.shared.autoPlaySpeech {
-            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? "en")
+        // 自动播放发音（语种取自当前词条所属单词本的 sourceLang）；
+        // 全屏静音挂起期间跳过
+        if AppSettings.shared.autoPlaySpeech, !isSpeechSuppressed {
+            SpeechService.shared.speak(word.sourceWord, language: word.wordbook?.sourceLang ?? Constants.defaultSourceLang)
         }
     }
 

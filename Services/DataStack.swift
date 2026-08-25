@@ -6,9 +6,6 @@ import CoreData
 /// - NSPersistentContainer 初始化与生命周期
 /// - 提供主上下文与后台上下文
 /// - 统一的保存与错误处理
-///
-/// 当前为骨架实现，Core Data 模型文件尚未创建。
-/// 任务 2.1 创建 xcdatamodeld 后，此处将自动加载模型。
 class DataStack {
     static let shared = DataStack()
 
@@ -20,13 +17,31 @@ class DataStack {
         if let description = container.persistentStoreDescriptions.first {
             description.setOption(NSNumber(value: true), forKey: NSMigratePersistentStoresAutomaticallyOption)
             description.setOption(NSNumber(value: true), forKey: NSInferMappingModelAutomaticallyOption)
+            // 同步加载：让损坏时的自愈重试在 initialize() 返回前完成
+            description.shouldAddStoreAsynchronously = false
         }
 
+        var loadError: NSError?
         container.loadPersistentStores { _, error in
-            if let error = error as NSError? {
-                fatalError("Core Data 栈加载失败: \(error), \(error.userInfo)")
+            loadError = error as NSError?
+        }
+
+        // 自愈：store 损坏/迁移失败时销毁重建（词库丢失但应用可用），
+        // 否则每次启动命中同一损坏 store，形成永久崩溃循环
+        if let error = loadError {
+            NSLog("[DataStack] store 加载失败，销毁重建: \(error), \(error.userInfo)")
+            if let url = container.persistentStoreDescriptions.first?.url {
+                try? container.persistentStoreCoordinator.destroyPersistentStore(
+                    at: url, ofType: NSSQLiteStoreType, options: nil
+                )
+            }
+            container.loadPersistentStores { _, retryError in
+                if let retryError = retryError as NSError? {
+                    fatalError("Core Data 栈重建后仍加载失败: \(retryError), \(retryError.userInfo)")
+                }
             }
         }
+
         container.viewContext.automaticallyMergesChangesFromParent = true
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         return container

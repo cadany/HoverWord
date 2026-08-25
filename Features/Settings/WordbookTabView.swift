@@ -438,11 +438,13 @@ struct WordbookTabView: View {
 
     private func refreshList() {
         wordbooks = WordbookService.shared.getAllWordbooks().map { wb in
-            WordbookInfo(
+            // 合并查询：收藏夹的词条数与 Section 数同源，避免重复 count
+            let stats = WordbookService.shared.getStats(for: wb)
+            return WordbookInfo(
                 id: wb.wordbookId,
                 name: wb.name,
-                wordCount: WordbookService.shared.getEntryCount(for: wb),
-                sectionCount: WordbookService.shared.getSectionCount(for: wb),
+                wordCount: stats.entryCount,
+                sectionCount: stats.sectionCount,
                 isEnabled: wb.isEnabled,
                 isSystem: wb.isSystem,
                 sourceLang: wb.sourceLang,

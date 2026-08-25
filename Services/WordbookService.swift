@@ -32,8 +32,8 @@ class WordbookService {
         let favorites = Wordbook(context: context)
         favorites.wordbookId = UUID().uuidString
         favorites.name = Constants.favoritesWordbookName
-        favorites.sourceLang = "en"
-        favorites.targetLang = "zh-Hans"
+        favorites.sourceLang = Constants.defaultSourceLang
+        favorites.targetLang = Constants.defaultTargetLang
         favorites.isEnabled = false
         favorites.isSystem = true
         favorites.createdAt = Date()
@@ -79,8 +79,8 @@ class WordbookService {
         let wordbook = Wordbook(context: context)
         wordbook.wordbookId = UUID().uuidString
         wordbook.name = name
-        wordbook.sourceLang = "en"
-        wordbook.targetLang = "zh-Hans"
+        wordbook.sourceLang = Constants.defaultSourceLang
+        wordbook.targetLang = Constants.defaultTargetLang
         wordbook.isEnabled = false
         wordbook.isSystem = false
         wordbook.createdAt = Date()
@@ -91,16 +91,40 @@ class WordbookService {
 
     /// 删除单词本
     ///
+    /// 收藏一致性对齐 deleteEntry：级联删除词条后，无其他单词本
+    /// 包含相同 sourceWord 的收藏一并移除，避免收藏夹残留孤儿词条
+    ///
     /// - Parameter wordbook: 要删除的单词本
     /// - Returns: 是否删除成功（系统单词本不可删除，返回 false）
     func deleteWordbook(_ wordbook: Wordbook) -> Bool {
         guard !wordbook.isSystem else { return false }
 
         let context = DataStack.shared.viewContext
+
+        // 级联删除后词条不可再查，先收集 sourceWord 快照
+        let entryRequest: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        entryRequest.predicate = NSPredicate(format: "wordbook.wordbookId == %@", wordbook.wordbookId)
+        let sourceWords = Set(((try? context.fetch(entryRequest)) ?? []).map { $0.sourceWord })
+
         context.delete(wordbook)
+
+        var favoritesChanged = false
+        for sourceWord in sourceWords {
+            if !anyOtherWordbookContains(
+                sourceWord: sourceWord,
+                excludingWordbookId: wordbook.wordbookId,
+                context: context
+            ) {
+                favoritesChanged = removeFavorites(sourceWord: sourceWord, in: context) || favoritesChanged
+            }
+        }
+
         DataStack.shared.saveContext()
 
         NotificationCenter.default.post(name: .wordbookEnablementDidChange, object: nil)
+        if favoritesChanged {
+            NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
+        }
         return true
     }
 
@@ -210,6 +234,20 @@ class WordbookService {
         return Int(maxEntry.sectionIndex) + 1
     }
 
+    /// 一次返回单词本 (词条数, Section 数)——列表刷新场景使用
+    ///
+    /// 收藏夹两条数据本就同源（均为 Favorite count），合并后单次查询，
+    /// 消除 getEntryCount + getSectionCount 成对调用时的重复 count
+    func getStats(for wordbook: Wordbook) -> (entryCount: Int, sectionCount: Int) {
+        if isFavoritesWordbook(wordbook) {
+            let favoriteCount = getFavoriteCount()
+            let sectionSize = AppSettings.shared.sectionSize
+            return (favoriteCount, favoriteCount == 0 ? 0 : (favoriteCount + sectionSize - 1) / sectionSize)
+        }
+        let entryCount = getEntryCount(for: wordbook)
+        return (entryCount, getSectionCount(for: wordbook))
+    }
+
     /// 获取单词本指定 Section 的所有词条（按 sectionIndex 排序）
     ///
     /// 对系统收藏夹单词本，查询 Favorite 并按 section 分页，
@@ -240,6 +278,48 @@ class WordbookService {
             NSSortDescriptor(key: "sourceWord", ascending: true)  // 平局兜底
         ]
         return (try? context.fetch(request)) ?? []
+    }
+
+    /// 一次查询取出单词本全部词条并按 Section 分组（供引擎构建队列）
+    ///
+    /// 对比逐 Section 调用 getEntries 的 N+1 模式（万级词库 500+ 次主线程
+    /// fetch，设置变更/收藏切换均会触发），单次查询 + 内存分组消除瓶颈。
+    /// 排序口径与 getEntries 一致（sectionIndex → orderIndex → sourceWord）。
+    func getAllEntriesGroupedBySection(for wordbook: Wordbook) -> [[WordEntry]] {
+        if isFavoritesWordbook(wordbook) {
+            let sectionSize = max(AppSettings.shared.sectionSize, 1)
+            let context = DataStack.shared.viewContext
+            let request: NSFetchRequest<Favorite> = Favorite.fetchRequest()
+            request.sortDescriptors = [NSSortDescriptor(key: "collectedAt", ascending: true)]
+
+            guard let favorites = try? context.fetch(request) else { return [] }
+            let entries = favorites.enumerated().compactMap { index, favorite in
+                favoriteToWordEntry(favorite, sectionIndex: index / sectionSize)
+            }
+            return stride(from: 0, to: entries.count, by: sectionSize).map {
+                Array(entries[$0..<min($0 + sectionSize, entries.count)])
+            }
+        }
+
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<WordEntry> = WordEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbook.wordbookId == %@", wordbook.wordbookId)
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "sectionIndex", ascending: true),
+            NSSortDescriptor(key: "orderIndex", ascending: true),
+            NSSortDescriptor(key: "sourceWord", ascending: true)  // 平局兜底
+        ]
+
+        let entries = (try? context.fetch(request)) ?? []
+        var grouped: [[WordEntry]] = []
+        for entry in entries {
+            let section = Int(entry.sectionIndex)
+            while grouped.count <= section {
+                grouped.append([])
+            }
+            grouped[section].append(entry)
+        }
+        return grouped
     }
 
     // MARK: - 词条预览（分页 CRUD）
@@ -464,8 +544,8 @@ class WordbookService {
 
         try await WordbookImportService.importEntries(entries, to: wordbook, sectionSize: sectionSize)
 
-        // 导入后同步收藏夹
-        syncFavoritesAfterImport(wordbook: wordbook, importedSourceWords: Set(entries.map { $0.sourceWord }))
+        // 导入后同步收藏夹（await 完成，保证收藏删除落库后才进入后续通知链路）
+        await syncFavoritesAfterImport(wordbook: wordbook, importedSourceWords: Set(entries.map { $0.sourceWord }))
 
         // 全量覆盖导入的内容即真相：按导入内容自动识别并回写语言对
         let detectedSource = LanguageDetectionService.sourceLanguage(from: entries.map { $0.sourceWord })
@@ -553,10 +633,13 @@ class WordbookService {
     /// - 新导入词条与历史收藏匹配的保留收藏
     /// - 历史收藏但新导入不存在的自动移除
     /// - 仅检查源自该单词本的收藏（按单词本范围隔离）
-    private func syncFavoritesAfterImport(wordbook: Wordbook, importedSourceWords: Set<String>) {
+    ///
+    /// 通知时序约束：favoritesDidChange 必须晚于收藏删除落库，
+    /// 否则引擎重建队列会读到过期收藏（已删词条继续被背诵）
+    private func syncFavoritesAfterImport(wordbook: Wordbook, importedSourceWords: Set<String>) async {
         let context = DataStack.shared.newBackgroundContext()
 
-        context.perform {
+        await context.perform {
             // 获取该单词本导入前的所有 source_word（此时已为新数据）
             // 收藏夹同步基于：收藏中的 source_word 是否还存在于导入后的数据中
             let favRequest: NSFetchRequest<Favorite> = Favorite.fetchRequest()
@@ -590,8 +673,8 @@ class WordbookService {
             }
         }
 
-        // context.perform 在后台上下文队列执行，通知引擎必须回到主线程
-        DispatchQueue.main.async {
+        // 落库完成后再通知（主线程），引擎重建时读到的是已删除后的收藏
+        await MainActor.run {
             NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
         }
     }

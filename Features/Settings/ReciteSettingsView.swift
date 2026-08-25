@@ -11,6 +11,7 @@ struct ReciteSettingsView: View {
     @State private var playOrder: PlayOrder = .sequential
     @State private var stayDuration: Double = Double(Constants.defaultStayDuration)
     @State private var fullscreenAutoHide: Bool = false
+    @State private var muteSpeechInFullscreen: Bool = true
 
     var body: some View {
         ScrollView {
@@ -115,6 +116,15 @@ struct ReciteSettingsView: View {
                             AppSettings.shared.fullscreenAutoHide = newValue
                             AppSettings.shared.postTimingChange()
                         }
+                    // 仅在启用全屏隐藏时生效：隐藏期间挂起自动发音，进度不受影响
+                    Toggle(L10n.t("recite.muteInFullscreen"), isOn: $muteSpeechInFullscreen)
+                        .disabled(!fullscreenAutoHide)
+                        .opacity(fullscreenAutoHide ? 1.0 : 0.5)
+                        .onChange(of: muteSpeechInFullscreen) { newValue in
+                            guard AppSettings.shared.muteSpeechInFullscreen != newValue else { return }
+                            AppSettings.shared.muteSpeechInFullscreen = newValue
+                            AppSettings.shared.postTimingChange()
+                        }
                 }
                 .glassCard()
 
@@ -135,6 +145,7 @@ struct ReciteSettingsView: View {
         playOrder = AppSettings.shared.playOrder
         stayDuration = Double(AppSettings.shared.stayDuration)
         fullscreenAutoHide = AppSettings.shared.fullscreenAutoHide
+        muteSpeechInFullscreen = AppSettings.shared.muteSpeechInFullscreen
     }
 
     private func saveReciteMode() {
