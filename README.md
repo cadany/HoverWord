@@ -1,95 +1,103 @@
 # HoverWord
 
-macOS 桌面端轻量悬浮式单词闪记应用。通过桌面悬浮窗高频视觉曝光，帮助你在办公 / 学习场景下无感碎片化背记英文单词。
+HoverWord — A lightweight floating word-flashcard app for macOS. It keeps a small, always-on-top window on your desktop, reinforcing vocabulary through high-frequency visual repetition without demanding extra focus time. Wordbooks are language-agnostic by design, supporting vocabulary import across multiple languages, and the app interface itself is available in both English and Chinese.
 
-## 为什么用悬浮窗背单词
+## Core Features
 
-传统背单词需要专门打开 App、进入学习界面、集中注意力。HoverWord 把背记融入日常工作环境——一个始终置顶在桌面的小窗口，在你目光扫过的瞬间完成一次曝光，不打断心流，也不占用专门时间。
+### Floating Recite Window
 
-## 核心功能
+- Frameless Liquid Glass window, always-on-top, non-intrusive
+- Freely draggable to any screen position, resizable
+- Persists position and size across launches
+- Multi-display support
 
-### 悬浮背记窗口
+### Four-Column Layout
 
-- 无边框玻璃质感窗口，全局置顶，不遮挡其他工作区域
-- 支持自由拖拽到任意屏幕位置，窗口大小可缩放
-- 自动记忆窗口位置与尺寸，重启后恢复
-- 支持多显示器
+From left to right: **Word | Phonetic | Meaning | Actions**
 
-### 横向四列布局
+- Word in bold, phonetic in smaller type below (auto-hidden when unavailable)
+- Multiple meaning groups joined by " / ", vertically centered, auto-wrapping
+- Action buttons hidden by default, smoothly fade in on hover
 
-窗口内容从左到右依次为：**单词 | 音标 | 释义 | 操作按钮**
+### Two Recite Modes
 
-- 单词加粗展示，音标小号跟随，无音标时自动隐藏
-- 多组释义用" / "拼接，垂直居中，超出宽度自动换行
-- 操作按钮默认隐藏，鼠标悬停时平滑浮现
+- **Memory Feedback** — Tap "Know" or "Don't Know" after seeing each word; the engine adapts progress based on your feedback
+- **Carousel** — Set a dwell interval; words cycle automatically at your chosen pace, hands-free
 
-### 两种背记模式
+### Speech
 
-- **记忆反馈模式** — 看到单词后点击"认识"或"不认识"，系统根据你的反馈推进进度
-- **走马灯模式** — 设定停留时长，单词按节奏自动切换，无需手动操作，适合快速刷词
+- Automatic word pronunciation with British / American accent toggle
+- Powered by macOS system TTS, fully offline, no network required
 
-### 发音
+### Multi-Language Support
 
-- 单词自动发音，支持英式 / 美式切换
-- 基于系统语音引擎，离线可用，无需网络
+HoverWord is designed language-agnostic from the ground up. While the default workflow is English → Chinese, the architecture supports any language pair.
 
-### 单词本管理
+- **Auto Language Detection** — On import, HoverWord analyzes the first 20 entries using `NLLanguageRecognizer` (NaturalLanguage framework, offline) to identify source and target languages. Confidence threshold of 0.7; falls back to defaults (en / zh-Hans) on ambiguity.
+- **Manual Language Override** — Each wordbook's `...` menu offers a "Language…" editor to set source/target languages explicitly, covering detection edge cases and existing wordbooks.
+- **Speech Partitioning** — The Speech settings page automatically creates one pronunciation panel per enabled language, each with its own accent and voice selection. Panels appear and disappear in real time as wordbooks are enabled, disabled, or re-labeled.
+- **Supported Languages** — English, French, Spanish, German, Japanese, Korean, Chinese (Simplified), Italian, Portuguese, Russian. The registry is centralized in `Constants.swift` and extensible without code changes elsewhere.
+- **RTL-Ready** — UI layout reserves entry points for right-to-left adaptation when non-LTR languages are added.
 
-- 导入 TXT 格式词库，支持自定义单词本
-- 多单词本可勾选启用，灵活组合背记内容
-- 收藏功能，标记难点单词集中复习
+### Wordbook Management
 
-#### 导入格式
+- Import UTF-8 TXT wordbooks (Tab-delimited, up to 3 meaning groups per entry)
+- Multiple wordbooks can be enabled simultaneously and combined into one recite queue
+- Favorites for flagging difficult words, with a dedicated system wordbook for focused review
 
-TXT 文件编码必须为 **UTF-8**，每行一个词条，字段以 **Tab（`\t`）** 分隔，顺序固定：
+#### Import Format
 
-```
-源语言词条	注音	词性1	释义1	词性2	释义2	词性3	释义3
-```
-
-- **必填字段**：源语言词条、释义1
-- **可选字段**：注音、词性2/释义2、词性3/释义3（缺失时留空即可）
-- 多余空行自动跳过，格式错误会报告具体行号
-
-示例：
+TXT files must be **UTF-8** encoded. One entry per line, fields separated by **Tab (`\t`)**, in fixed order:
 
 ```
-abandon	/əˈbændən/	v.	放弃，抛弃
-ambition	/æmˈbʃən/	n.	野心，抱负	v.	渴望
+source_word	phonetic	pos1	meaning1	pos2	meaning2	pos3	meaning3
 ```
 
-### 外观自定义
+- **Required**: source word, meaning 1
+- **Optional**: phonetic, pos2/meaning2, pos3/meaning3 (leave blank if absent)
+- Blank lines are skipped; format errors report the exact line number
 
-- 预设主题一键切换（浅色 / 深色 / 护眼绿）
-- 背景色、文字颜色、透明度、字体字号均可调节
-- 自动跟随系统深色 / 浅色模式
-- 设置窗口内置悬浮窗实时预览
+Example:
 
-## 使用场景
+```
+abandon	/əˈbændən/	v.	to give up, to abandon
+ambition	/æmˈbʃən/	n.	ambition, aspiration	v.	to desire
+```
 
-- 写代码时瞥一眼新单词
-- 开会间隙刷一组词
-- 阅读邮件时顺便复习昨天收藏的单词
-- 任何需要"看一眼就记住"的碎片时刻
+### Appearance
 
-## 系统要求
+- Preset themes (Light / Dark / Eye-care Green)
+- Fully customizable: background color, text color, opacity, font family and size
+- Automatically follows system light/dark mode
+- Live floating-window preview inside the Settings window
 
-  仅支持macOS，没有Windows版本。
+## Use Cases
 
-## 界面截图
+- Glance at a new word while coding
+- Review a set during a meeting break
+- Revisit yesterday's favorites while reading email
+- Any "one look, one memory" micro-moment
 
-上边都是废话，单词本要根据自己的学习范围来自行整理，不提供默认单词本。
+## System Requirements
 
-![HoverWord 界面截图](docs/imgs/TOP.png)
+- macOS 14.0 (Sonoma) or later
+- Intel and Apple Silicon supported
+- No third-party dependencies; built entirely with system frameworks
 
-![HoverWord 界面截图](docs/imgs/A.png)
+## Screenshots
 
-![HoverWord 界面截图](docs/imgs/B.png)
+![HoverWord](docs/imgs/TOP.png)
 
-![HoverWord 界面截图](docs/imgs/C.png)
+![HoverWord](docs/imgs/A.png)
 
-![HoverWord 界面截图](docs/imgs/D.png)
+![HoverWord](docs/imgs/B.png)
 
-![HoverWord 界面截图](docs/imgs/E1.png)
+![HoverWord](docs/imgs/C.png)
 
-![HoverWord 界面截图](docs/imgs/E2.png)
+![HoverWord](docs/imgs/D.png)
+
+![HoverWord](docs/imgs/E.png)
+
+![HoverWord](docs/imgs/F1.png)
+
+![HoverWord](docs/imgs/F2.png)
