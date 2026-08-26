@@ -36,7 +36,7 @@
 - [x] 4.3 实现动效执行失败的 fallback（catch 错误，立即显示新单词）
 - [x] 4.4 添加 `.previewTransitionEffect` 通知监听，支持预览功能
 - [x] 4.5 在预览时暂停背记引擎（复用 hover 暂停机制）
-- [ ] 4.6 编写悬浮窗动效集成的集成测试
+- [x] 4.6 编写悬浮窗动效集成的集成测试
 
 ## 5. 设置界面
 
@@ -46,7 +46,7 @@
 - [x] 5.4 在 `ExperienceSettingsView` 中实现 [预览] 按钮，发送 `.previewTransitionEffect` 通知
 - [x] 5.5 在 `SettingsWindowController.swift` 中添加"体验" Tab（SF Symbols "wand.and.stars" 图标）
 - [x] 5.6 在 `NotificationNames.swift` 中添加 `.previewTransitionEffect` 通知名
-- [ ] 5.7 编写设置界面的 UI 测试（动效选择、参数调整、预览触发）
+- [x] 5.7 编写设置界面的 UI 测试（动效选择、参数调整、预览触发）
 
 ## 6. 常量与配置
 
@@ -61,7 +61,7 @@
 
 ## 8. 文档与示例
 
-- [ ] 8.1 更新 README.md，说明动效系统的扩展方式（如何实现新动效）
+（8.1 更新 README.md 说明动效扩展方式——用户决策取消：v0.1.2 不更新 README）
 - [x] 8.2 为每个内置动效添加注释，说明效果描述和参数含义
 
 ## 9. 集成后 review 修复（2026-08-26 验证反馈）
