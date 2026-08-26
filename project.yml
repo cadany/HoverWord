@@ -2,25 +2,24 @@ name: HoverWord
 options:
   bundleIdPrefix: com.hoverword
   deploymentTarget:
-    macOS: "12.0"
+    macOS: "14.0"
   xcodeVersion: "15.0"
   createIntermediateGroups: true
   groupSortPosition: top
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    MACOSX_DEPLOYMENT_TARGET: "12.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
 targets:
   HoverWord:
     type: application
     platform: macOS
     sources:
       - path: App
+      - path: Features
       - path: Models
       - path: Services
-      - path: Controllers
-      - path: Views
-      - path: Utils
+      - path: Shared
       - path: Resources
     settings:
       base:

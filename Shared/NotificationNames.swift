@@ -76,4 +76,11 @@ extension Notification.Name {
     /// 仅响应 isPreview == true 的通知，悬浮窗自动/手动播报不更新试听按钮）
     /// 触发方：SpeechService 的 AVSpeechSynthesizer 回调（已切主线程发送）。
     static let speechPlaybackStateDidChange = Notification.Name("speechPlaybackStateDidChange")
+
+    /// 预览转场动效（设置页面点击预览时发送）
+    ///
+    /// userInfo：effectId（String）、parameters（TransitionParameters）。
+    /// 监听方：FloatContentView（执行一次预览动效）。
+    /// 触发方：ExperienceSettingsView 预览按钮。
+    static let previewTransitionEffect = Notification.Name("previewTransitionEffect")
 }

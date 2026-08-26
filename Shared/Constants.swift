@@ -225,6 +225,44 @@ enum Constants {
     /// Section 单词数最大值
     static let maxSectionSize: Int = 500
 
+    // MARK: - 转场动效
+
+    /// 默认转场动效 ID
+    static let defaultTransitionId: String = "classic-fade"
+
+    /// BounceIn 动效强度取值范围
+    static let bounceInIntensityRange: ClosedRange<Double> = 0.5...2.0
+
+    /// BounceIn 动效默认强度
+    static let bounceInDefaultIntensity: Double = 1.0
+
+    /// CardFlip 动效时长取值范围（秒）
+    static let cardFlipDurationRange: ClosedRange<Double> = 0.2...0.5
+
+    /// CardFlip 动效默认时长（秒）
+    static let cardFlipDefaultDuration: Double = 0.35
+
+    /// Typewriter 动效字符间隔取值范围（秒）
+    static let typewriterIntervalRange: ClosedRange<Double> = 0.03...0.1
+
+    /// Typewriter 动效默认字符间隔（秒）
+    static let typewriterDefaultInterval: Double = 0.06
+
+    /// LetterMorph 动效字母数量阈值（超过此值回退为淡入）
+    static let letterMorphMaxLetterCount: Int = 10
+
+    /// 转场动效定位 tag：单词标签（动效实现通过 viewWithTag 查找，缺一不可）
+    static let transitionWordLabelTag: Int = 1001
+
+    /// 转场动效定位 tag：音标标签
+    static let transitionPhoneticLabelTag: Int = 1002
+
+    /// 动效预览示例内容（hello → world，演示一次完整过渡）
+    static let transitionPreviewOldWord = "hello"
+    static let transitionPreviewOldPhonetic = "/həˈloʊ/"
+    static let transitionPreviewNewWord = "world"
+    static let transitionPreviewNewPhonetic = "/wɜːrld/"
+
     // MARK: - 性能约束
 
     /// 后台常驻内存上限（MB）

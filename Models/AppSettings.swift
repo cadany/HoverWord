@@ -73,6 +73,14 @@ class AppSettings {
     /// 文字颜色（hex），默认黑色
     var textColorHex: String = Constants.defaultTextColorHex
 
+    // MARK: - 体验
+
+    /// 当前选中的转场动效 ID
+    var selectedTransitionId: String = Constants.defaultTransitionId
+
+    /// 转场动效可调参数
+    var transitionParameters: TransitionParameters = TransitionParameters()
+
     // MARK: - 发音
 
     /// 自动播放开关，默认开启
@@ -129,7 +137,9 @@ class AppSettings {
             autoPlaySpeech: autoPlaySpeech,
             voiceNameByLanguage: voiceNameByLanguage,
             speechRateMultiplier: speechRateMultiplier,
-            uiLanguage: uiLanguage
+            uiLanguage: uiLanguage,
+            selectedTransitionId: selectedTransitionId,
+            transitionParameters: transitionParameters
         )
         if let data = try? JSONEncoder().encode(stored) {
             UserDefaults.standard.set(data, forKey: storageKey)
@@ -186,6 +196,8 @@ class AppSettings {
         /// v0.1 旧字段，仅用于一次性迁移读取，不再写入
         var useAmericanAccent: Bool?
         var uiLanguage: String?
+        var selectedTransitionId: String?
+        var transitionParameters: TransitionParameters?
     }
 
     private func apply(stored: StoredSettings) {
@@ -226,6 +238,10 @@ class AppSettings {
 
         // 向后兼容：旧版本无界面语言字段时保持"跟随系统"
         uiLanguage = stored.uiLanguage ?? L10n.systemLanguage
+
+        // 向后兼容：旧版本无转场动效配置时使用默认值
+        selectedTransitionId = stored.selectedTransitionId ?? Constants.defaultTransitionId
+        transitionParameters = stored.transitionParameters ?? TransitionParameters()
 
         // 迁移即落盘：否则未改动设置的用户每次启动都会在主线程重复执行
         // migratedEnglishVoice 的 speechVoices() 枚举开销。
