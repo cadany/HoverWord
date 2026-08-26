@@ -7,11 +7,15 @@ Change-Sub-Version: v0-1-2-feat01
 ## ADDED Requirements
 
 ### Requirement: 动效协议定义
-系统提供 `WordTransitionEffect` 协议，所有动效必须实现统一接口，包括唯一标识、显示名称、分类、缩略图预览、以及执行动画的核心方法。
+系统提供 `WordTransitionEffect` 协议，所有动效必须实现统一接口，包括唯一标识、显示名称、分类、可调参数、以及执行动画的核心方法。
 
 #### Scenario: 协议接口
 - **WHEN** 实现一个新的动效
-- **THEN** 该动效 SHALL 实现 `WordTransitionEffect` 协议，提供 `id`、`displayName`、`category`、`previewThumbnail`、`animate(from:to:in:completion:)` 方法
+- **THEN** 该动效 SHALL 实现 `WordTransitionEffect` 协议，提供 `id`、`displayName`、`category`、`adjustableParameters`、`animate(from:to:in:parameters:completion:)` 成员
+
+#### Scenario: 显示名称本地化
+- **WHEN** 界面语言切换
+- **THEN** 动效显示名称与参数名称 SHALL 实时跟随新语言，SHALL NOT 冻结于首次访问时的语言
 
 ### Requirement: 动效注册表
 系统提供 `TransitionRegistry` 单例，管理所有可用动效的注册与发现。
@@ -34,6 +38,17 @@ Change-Sub-Version: v0-1-2-feat01
 #### Scenario: 分类枚举
 - **WHEN** 定义动效分类
 - **THEN** SHALL 支持 `.minimal`（简约）、`.playful`（趣味）、`.immersive`（沉浸）三种分类
+
+### Requirement: 无动效选项
+动效选择 SHALL 提供"无"选项，选中后切换单词时不执行任何过渡动画。
+
+#### Scenario: 选择"无"
+- **WHEN** 用户选择"无"动效并切换单词
+- **THEN** 单词 SHALL 立即切换为新内容，不执行任何过渡动画
+
+#### Scenario: 列表展示
+- **WHEN** 设置界面渲染动效下拉列表
+- **THEN** "无" SHALL 置顶显示为第一项，且 SHALL NOT 归入任何分类分组
 
 ### Requirement: 内置动效：经典淡入
 提供"经典淡入"动效，作为默认选项，保持与当前行为一致。
@@ -127,7 +142,7 @@ Change-Sub-Version: v0-1-2-feat01
 
 #### Scenario: 点击预览
 - **WHEN** 用户在设置界面点击某动效的 [预览] 按钮
-- **THEN** 悬浮窗 SHALL 执行一次该动效的演示（使用示例单词），预览期间不影响正常背记流程
+- **THEN** 悬浮窗 SHALL 执行一次该动效的演示，演示 SHALL 优先使用悬浮窗当前正在显示的单词；无当前单词时 SHALL 回退使用内置示例词对，预览期间不影响正常背记流程
 
 #### Scenario: 预览完成
 - **WHEN** 动效预览完成
