@@ -1,4 +1,5 @@
 import AppKit
+import ObjectiveC
 
 /// 打字机动效（Typewriter）
 ///
@@ -7,7 +8,10 @@ import AppKit
 /// 营造出打字的节奏感。
 ///
 /// ## 技术实现
-/// - **字符间隔**: 使用 `DispatchQueue.main.asyncAfter` 按时间调度每个字符
+/// - **字符间隔**: `DispatchWorkItem` 按时间调度每个字符，可取消
+/// - **接管即哑化**: 双保险——新一轮 `animate` 先取消上一轮任务（接管路径）；
+///   每个任务写入前校验 label 内容仍等于当前字符流（覆盖不经 `animate` 的
+///   接管方，如 `applyWordContent` 直接换词、其它动效中点改写）
 /// - **旧内容**: 立即清空（0ms）
 /// - **新内容**: 逐字符追加，每个字符间隔可调
 /// - **光标效果**: 未实现（简化版），可通过扩展添加闪烁光标
@@ -26,24 +30,29 @@ import AppKit
 /// - 建议：对于超长单词可考虑降级为其他动效
 ///
 /// ## 注意事项
+/// - 空词条（无字符可打）直接回调 completion，不调度任务
 /// - 当前实现仅动画化单词，注音（phonetic）未参与动画
-/// - 可通过修改代码扩展注音和释义的打字效果
 struct TypewriterEffect: WordTransitionEffect {
     let id = "typewriter"
-    let displayName: String = {
+    var displayName: String {
         return L10n.t("settings.transition.effect.typewriter")
-    }()
+    }
     let category: TransitionCategory = .playful
 
-    let adjustableParameters = [
-        TransitionParameter(
-            id: "interval",
-            displayName: L10n.t("settings.transition.parameter.interval"),
-            range: Constants.typewriterIntervalRange,
-            defaultValue: Constants.typewriterDefaultInterval,
-            step: 0.01
-        )
-    ]
+    var adjustableParameters: [TransitionParameter] {
+        return [
+            TransitionParameter(
+                id: "interval",
+                displayName: L10n.t("settings.transition.parameter.interval"),
+                range: Constants.typewriterIntervalRange,
+                defaultValue: Constants.typewriterDefaultInterval,
+                step: 0.01
+            )
+        ]
+    }
+
+    /// 挂在 containerView 上的待执行任务存储键（动效本身无状态，任务挂在容器上）
+    private static var pendingTasksKey: UInt8 = 0
 
     func animate(
         from oldContent: TransitionContent,
@@ -54,20 +63,34 @@ struct TypewriterEffect: WordTransitionEffect {
     ) {
         let interval = parameters.get("interval", defaultValue: Constants.typewriterDefaultInterval)
 
-        guard let wordLabel = containerView.viewWithTag(1001) as? NSTextField else {
+        guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField else {
             completion()
             return
         }
 
+        // 接管即取消：新一轮动效开始，上一轮残留的字符流立即哑化
+        Self.cancelPendingTasks(on: containerView)
+
         // 立即清空
         wordLabel.stringValue = ""
 
-        // 逐字符显示
         let characters = Array(newContent.word)
+
+        // 空词条：无字符可打，直接完成（否则 completion 永不回调）
+        guard !characters.isEmpty else {
+            completion()
+            return
+        }
+
         var currentText = ""
+        var tasks: [DispatchWorkItem] = []
 
         for (index, char) in characters.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + interval * Double(index)) {
+            let task = DispatchWorkItem {
+                // 内容校验：label 已被其它接管方改写（applyWordContent 换词 /
+                // 其它动效中点设置新词）时，本字符流不再属于当前显示，立即哑化
+                guard wordLabel.stringValue == currentText else { return }
+
                 currentText.append(char)
                 wordLabel.stringValue = currentText
 
@@ -76,6 +99,17 @@ struct TypewriterEffect: WordTransitionEffect {
                     completion()
                 }
             }
+            tasks.append(task)
+            DispatchQueue.main.asyncAfter(deadline: .now() + interval * Double(index), execute: task)
         }
+
+        // 任务列表挂到容器上，供下一轮 animate 取消
+        objc_setAssociatedObject(containerView, &Self.pendingTasksKey, tasks, .OBJC_ASSOCIATION_RETAIN)
+    }
+
+    /// 取消容器上挂着的上一轮打字任务
+    private static func cancelPendingTasks(on containerView: NSView) {
+        let pending = objc_getAssociatedObject(containerView, &pendingTasksKey) as? [DispatchWorkItem]
+        pending?.forEach { $0.cancel() }
     }
 }

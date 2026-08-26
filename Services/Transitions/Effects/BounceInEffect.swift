@@ -33,20 +33,22 @@ import AppKit
 /// - 弹簧参数（mass/stiffness/damping）固定，不可调
 struct BounceInEffect: WordTransitionEffect {
     let id = "bounce-in"
-    let displayName: String = {
+    var displayName: String {
         return L10n.t("settings.transition.effect.bounce-in")
-    }()
+    }
     let category: TransitionCategory = .playful
 
-    let adjustableParameters = [
-        TransitionParameter(
-            id: "intensity",
-            displayName: L10n.t("settings.transition.parameter.intensity"),
-            range: Constants.bounceInIntensityRange,
-            defaultValue: Constants.bounceInDefaultIntensity,
-            step: 0.1
-        )
-    ]
+    var adjustableParameters: [TransitionParameter] {
+        return [
+            TransitionParameter(
+                id: "intensity",
+                displayName: L10n.t("settings.transition.parameter.intensity"),
+                range: Constants.bounceInIntensityRange,
+                defaultValue: Constants.bounceInDefaultIntensity,
+                step: 0.1
+            )
+        ]
+    }
 
     func animate(
         from oldContent: TransitionContent,
@@ -57,16 +59,16 @@ struct BounceInEffect: WordTransitionEffect {
     ) {
         let intensity = parameters.get("intensity", defaultValue: Constants.bounceInDefaultIntensity)
 
-        guard let wordLabel = containerView.viewWithTag(1001) as? NSTextField else {
+        guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField else {
             completion()
             return
         }
 
         wordLabel.wantsLayer = true
 
-        // 淡出旧内容
+        // 淡出旧内容（显式动画；layer-backed 视图无隐式动画，见协议扩展说明）
+        let fadeOut = CABasicAnimation(keyPath: "opacity", from: 1.0, to: 0.0, duration: 0.1, timing: .linear)
         CATransaction.begin()
-        CATransaction.setAnimationDuration(0.1)
         CATransaction.setCompletionBlock {
             // 更新内容
             wordLabel.stringValue = newContent.word
@@ -104,6 +106,7 @@ struct BounceInEffect: WordTransitionEffect {
             wordLabel.layer?.opacity = 1
             CATransaction.commit()
         }
+        wordLabel.layer?.add(fadeOut, forKey: "transition.opacity")
         wordLabel.layer?.opacity = 0
         CATransaction.commit()
     }

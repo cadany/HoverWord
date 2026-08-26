@@ -33,6 +33,6 @@ extension SidebarItem {
     static let general = SidebarItem(id: "general", labelKey: "sidebar.general", icon: "gearshape")
     static let experience = SidebarItem(id: "experience", labelKey: "sidebar.experience", icon: "wand.and.stars")
 
-    /// 全部导航项，按显示顺序排列
-    static let allItems: [SidebarItem] = [.wordbook, .recite, .appearance, .speech, .general, .experience]
+    /// 全部导航项，按显示顺序排列（体验在发音后、通用垫后，见 change spec settings-window）
+    static let allItems: [SidebarItem] = [.wordbook, .recite, .appearance, .speech, .experience, .general]
 }

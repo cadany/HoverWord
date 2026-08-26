@@ -540,6 +540,23 @@
         }
       }
     },
+    "experience.transition.type" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effect Type"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "动效类型"
+          }
+        }
+      }
+    },
     "float.button.know" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1369,6 +1386,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "液体融合"
+          }
+        }
+      }
+    },
+    "settings.transition.effect.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无"
           }
         }
       }

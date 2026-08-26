@@ -227,6 +227,9 @@ enum Constants {
 
     // MARK: - 转场动效
 
+    /// "无动效"选项 ID（设置页置顶项，切词时不执行任何动画）
+    static let noneTransitionId: String = "none"
+
     /// 默认转场动效 ID
     static let defaultTransitionId: String = "classic-fade"
 

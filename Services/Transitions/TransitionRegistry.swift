@@ -9,7 +9,9 @@ enum TransitionRegistry {
     /// 所有已注册的动效
     ///
     /// 新增动效只需在此数组中添加实例即可。
+    /// NoTransitionEffect（无动效）置顶，与设置页下拉的置顶展示对应。
     static let all: [any WordTransitionEffect] = [
+        NoTransitionEffect(),
         ClassicFadeEffect(),
         CardFlipEffect(),
         TypewriterEffect(),

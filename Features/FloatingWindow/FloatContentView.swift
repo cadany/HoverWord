@@ -640,7 +640,10 @@ class FloatContentView: NSView {
 
     // MARK: - 动效预览
 
-    /// 播放一次设置页发起的动效演示：暂停背记 → 示例单词过渡 → 恢复当前内容
+    /// 播放一次设置页发起的动效演示：暂停背记 → 单词过渡 → 恢复当前内容
+    ///
+    /// 用当前正在显示的单词演示（from/to 同词，动画照放不影响观看效果）；
+    /// 刚启动等无当前词时回退内置示例词对。
     @objc private func handlePreviewTransition(_ notification: Notification) {
         guard !isPreviewing,
               let userInfo = notification.userInfo,
@@ -660,27 +663,42 @@ class FloatContentView: NSView {
             meaningLabel.isHidden = false
         }
 
-        // 先呈现示例旧词，保证"from → to"完整可见；释义/注音临时全量显示
-        let oldMeaning = L10n.t("experience.preview.example.old.meaning")
-        wordLabel.stringValue = Constants.transitionPreviewOldWord
-        updatePhonetic(Constants.transitionPreviewOldPhonetic)
-        meaningLabel.stringValue = oldMeaning
-        meaningLabel.alphaValue = 1
-        phoneticLabel.alphaValue = 1
-
         transitionGeneration += 1
         let generation = transitionGeneration
 
-        let oldContent = TransitionContent(
-            word: Constants.transitionPreviewOldWord,
-            phonetic: Constants.transitionPreviewOldPhonetic,
-            meaning: oldMeaning
-        )
-        let newContent = TransitionContent(
-            word: Constants.transitionPreviewNewWord,
-            phonetic: Constants.transitionPreviewNewPhonetic,
-            meaning: L10n.t("experience.preview.example.new.meaning")
-        )
+        // 优先当前词：走 applyWordContent 保证图层状态干净（中断中的动效
+        // 可能残留透明度/变换）；释义/注音临时全量显示
+        var oldContent: TransitionContent
+        var newContent: TransitionContent
+        if let currentEntry = currentWordEntry {
+            applyWordContent(currentEntry)
+            updateMeanings(word: currentEntry)
+            meaningLabel.alphaValue = 1
+            phoneticLabel.alphaValue = 1
+
+            let content = TransitionContent.from(wordEntry: currentEntry)
+            oldContent = content
+            newContent = content
+        } else {
+            // 回退示例词对：先呈现示例旧词，保证"from → to"完整可见
+            let oldMeaning = L10n.t("experience.preview.example.old.meaning")
+            wordLabel.stringValue = Constants.transitionPreviewOldWord
+            updatePhonetic(Constants.transitionPreviewOldPhonetic)
+            meaningLabel.stringValue = oldMeaning
+            meaningLabel.alphaValue = 1
+            phoneticLabel.alphaValue = 1
+
+            oldContent = TransitionContent(
+                word: Constants.transitionPreviewOldWord,
+                phonetic: Constants.transitionPreviewOldPhonetic,
+                meaning: oldMeaning
+            )
+            newContent = TransitionContent(
+                word: Constants.transitionPreviewNewWord,
+                phonetic: Constants.transitionPreviewNewPhonetic,
+                meaning: L10n.t("experience.preview.example.new.meaning")
+            )
+        }
 
         effect.animate(from: oldContent, to: newContent, in: self, parameters: parameters) { [weak self] in
             // 预览被切词打断（代际失效或标志清除）时不做恢复

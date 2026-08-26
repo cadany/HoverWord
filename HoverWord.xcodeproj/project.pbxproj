@@ -41,6 +41,7 @@
 		605C372C8CEFA28D7C4B275C /* TransitionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BA833E0AE3D951480410498 /* TransitionRegistry.swift */; };
 		61035099A4B9211D259B8E17 /* ReciteEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BD190A34FDBB7250BE786C /* ReciteEngineTests.swift */; };
 		71F183D1D9FA8A99114163A6 /* TypewriterEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490E74655D3892FA56C5F791 /* TypewriterEffect.swift */; };
+		7863D2FFFD49D23806B1CA6D /* NoTransitionEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = E746B12BEF89B9CB7ED28554 /* NoTransitionEffect.swift */; };
 		7D8500682495A0034BE67E35 /* GlassStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FA0F0A5B1AA639636AE1616 /* GlassStyles.swift */; };
 		8027391767AB966C423B5901 /* TransitionParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9C599D15E8EAF966C93D6DF /* TransitionParameters.swift */; };
 		8319411E3439DF353AD56F2A /* ReciteSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A84D3734F1CB8487726027 /* ReciteSettingsView.swift */; };
@@ -159,6 +160,7 @@
 		E1DA7A3E84CC66956A9936EE /* TransitionContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionContent.swift; sourceTree = "<group>"; };
 		E3A309AC580D00EA58573B0A /* AppearanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceView.swift; sourceTree = "<group>"; };
 		E73EAFEF943046F8402C0627 /* HoverWord v2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "HoverWord v2.xcdatamodel"; sourceTree = "<group>"; };
+		E746B12BEF89B9CB7ED28554 /* NoTransitionEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoTransitionEffect.swift; sourceTree = "<group>"; };
 		EDC319F24CCFF1D50988707F /* ExperienceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceSettingsView.swift; sourceTree = "<group>"; };
 		F0D37827013ADF84102A7242 /* WordTransitionEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordTransitionEffect.swift; sourceTree = "<group>"; };
 		F4638FD5C18D7121C56DF2F5 /* NotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationNames.swift; sourceTree = "<group>"; };
@@ -296,6 +298,7 @@
 				945AFFAA5CBDA954EC619A61 /* ClassicFadeEffect.swift */,
 				4BFB88E118CD3195FEF4741F /* LetterMorphEffect.swift */,
 				3088BBB1C0FA2683086445C5 /* LiquidMergeEffect.swift */,
+				E746B12BEF89B9CB7ED28554 /* NoTransitionEffect.swift */,
 				0FF429EE23CC7458D57E9D0F /* PageFlipEffect.swift */,
 				490E74655D3892FA56C5F791 /* TypewriterEffect.swift */,
 			);
@@ -526,6 +529,7 @@
 				B79411F123AE5329AE079984 /* LanguageDetectionService.swift in Sources */,
 				CD342ACB6CE32D4A2C1CD919 /* LetterMorphEffect.swift in Sources */,
 				B7200EDA1178DC6A0534B8B3 /* LiquidMergeEffect.swift in Sources */,
+				7863D2FFFD49D23806B1CA6D /* NoTransitionEffect.swift in Sources */,
 				C56B194F8EE5BF6A9DDF127B /* NotificationNames.swift in Sources */,
 				A3FBB731321940893B891497 /* PageFlipEffect.swift in Sources */,
 				12875BD2AA7F5C1269EFE394 /* PlayOrder.swift in Sources */,
