@@ -12,6 +12,8 @@ import ObjectiveC
 /// - **接管即哑化**: 双保险——新一轮 `animate` 先取消上一轮任务（接管路径）；
 ///   每个任务写入前校验 label 内容仍等于当前字符流（覆盖不经 `animate` 的
 ///   接管方，如 `applyWordContent` 直接换词、其它动效中点改写）
+/// - **内容落位**: 先经 `swapContent` 让音标就位（打字机无中点语义，
+///   逐字符开始前即"旧内容不可辨"时点），再清空单词标签开始打字
 /// - **旧内容**: 立即清空（0ms）
 /// - **新内容**: 逐字符追加，每个字符间隔可调
 /// - **光标效果**: 未实现（简化版），可通过扩展添加闪烁光标
@@ -59,6 +61,7 @@ struct TypewriterEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         let interval = parameters.get("interval", defaultValue: Constants.typewriterDefaultInterval)
@@ -70,6 +73,10 @@ struct TypewriterEffect: WordTransitionEffect {
 
         // 接管即取消：新一轮动效开始，上一轮残留的字符流立即哑化
         Self.cancelPendingTasks(on: containerView)
+
+        // 音标先于字符流就位（swapContent 同步写入完整词，
+        // 随后立即清空由打字流接管单词呈现，同一 runloop 内无中间渲染）
+        swapContent()
 
         // 立即清空
         wordLabel.stringValue = ""

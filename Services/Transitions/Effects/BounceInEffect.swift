@@ -12,7 +12,7 @@ import AppKit
 ///   - `stiffness`: 100.0（刚度）
 ///   - `damping`: 10.0（阻尼，控制回弹衰减）
 ///   - `initialVelocity`: 0（初速度）
-/// - **位移**: 初始位置在下方 20px × intensity
+/// - **位移**: 初始位置在上方 20px × intensity（y 负向，macOS 坐标系）
 /// - **淡入**: 同时执行 0.3s 透明度动画
 ///
 /// ## 分类
@@ -55,6 +55,7 @@ struct BounceInEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         let intensity = parameters.get("intensity", defaultValue: Constants.bounceInDefaultIntensity)
@@ -70,8 +71,8 @@ struct BounceInEffect: WordTransitionEffect {
         let fadeOut = CABasicAnimation(keyPath: "opacity", from: 1.0, to: 0.0, duration: 0.1, timing: .linear)
         CATransaction.begin()
         CATransaction.setCompletionBlock {
-            // 更新内容
-            wordLabel.stringValue = newContent.word
+            // 淡出完毕（视觉不可辨），落位新内容（词 + 音标同步）
+            swapContent()
 
             // 设置初始状态（下方 20px）
             CATransaction.begin()

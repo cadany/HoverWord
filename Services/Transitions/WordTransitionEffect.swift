@@ -4,6 +4,10 @@ import AppKit
 ///
 /// 所有动效必须实现此协议，提供统一的接口供动效系统调用。
 /// 动效本身无状态，只是"如何动画"的算法，推荐用结构体实现。
+///
+/// ## 职责边界（重要）
+/// 动效只负责"如何动画"；新内容落位由调用方经 `swapContent` 回调完成，
+/// 动效 SHALL NOT 自行向单词/音标标签写入内容。
 protocol WordTransitionEffect: Sendable {
     /// 动效唯一标识（用于存储和查找）
     var id: String { get }
@@ -30,12 +34,16 @@ protocol WordTransitionEffect: Sendable {
     ///   - newContent: 新内容（切换后）
     ///   - containerView: 容器视图（悬浮窗内容视图）
     ///   - parameters: 用户配置的参数值
+    ///   - swapContent: 中点内容落位回调——在旧内容视觉不可辨的时点
+    ///     （翻转侧立、缩放为零、淡出完成、逐字符开始前等）恰好调用一次，
+    ///     由调用方完成新词与音标的写入（幂等）
     ///   - completion: 动画完成回调（必须调用）
     func animate(
         from oldContent: TransitionContent,
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     )
 }

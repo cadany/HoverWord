@@ -37,6 +37,7 @@ struct LiquidMergeEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField,
@@ -55,8 +56,8 @@ struct LiquidMergeEffect: WordTransitionEffect {
 
         CATransaction.begin()
         CATransaction.setCompletionBlock {
-            // 中点：换上新内容
-            wordLabel.stringValue = newContent.word
+            // 中点：收缩至零（视觉不可辨），落位新内容（词 + 音标同步）
+            swapContent()
 
             // 第二阶段：从中心滴落展开
             let expandIn = CABasicAnimation(keyPath: "transform.scale", from: 0.0, to: 1.0, duration: halfDuration, timing: .easeOut)

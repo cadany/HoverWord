@@ -47,6 +47,7 @@ struct CardFlipEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         let duration = parameters.get("duration", defaultValue: Constants.cardFlipDefaultDuration)
@@ -76,14 +77,8 @@ struct CardFlipEffect: WordTransitionEffect {
             wordLayer.transform = CATransform3DIdentity
             phoneticLayer.transform = CATransform3DIdentity
 
-            // 换上新内容，音标按有无显隐
-            wordLabel.stringValue = newContent.word
-            if let phonetic = newContent.phonetic {
-                phoneticLabel.stringValue = phonetic
-                phoneticLabel.isHidden = false
-            } else {
-                phoneticLabel.isHidden = true
-            }
+            // 侧立时视觉不可辨，落位新内容（词 + 音标同步）
+            swapContent()
             containerView.layoutSubtreeIfNeeded()
 
             // 第二阶段：新内容从侧立翻回正面

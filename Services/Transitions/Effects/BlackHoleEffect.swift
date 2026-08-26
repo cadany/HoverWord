@@ -39,6 +39,7 @@ struct BlackHoleEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField,
@@ -58,8 +59,8 @@ struct BlackHoleEffect: WordTransitionEffect {
 
         CATransaction.begin()
         CATransaction.setCompletionBlock {
-            // 中点：换上新内容
-            wordLabel.stringValue = newContent.word
+            // 中点：吸入消失（视觉不可辨），落位新内容（词 + 音标同步）
+            swapContent()
 
             // 第二阶段：喷发而出（继续同向旋出 + 放大 + 显影）
             let spinIn = CABasicAnimation(keyPath: "transform.rotation.z", from: Double.pi, to: Double.pi * 2, duration: halfDuration, timing: .easeOut)

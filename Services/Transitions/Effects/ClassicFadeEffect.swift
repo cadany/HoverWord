@@ -35,6 +35,7 @@ struct ClassicFadeEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         // 获取容器中的文字标签
@@ -42,7 +43,7 @@ struct ClassicFadeEffect: WordTransitionEffect {
               let phoneticLabel = containerView.viewWithTag(Constants.transitionPhoneticLabelTag) as? NSTextField,
               let wordLayer = wordLabel.layer,
               let phoneticLayer = phoneticLabel.layer else {
-            // 找不到标签，直接完成
+            // 找不到标签，直接完成（内容落位由调用方 completion 兜底）
             completion()
             return
         }
@@ -59,14 +60,8 @@ struct ClassicFadeEffect: WordTransitionEffect {
 
         CATransaction.begin()
         CATransaction.setCompletionBlock {
-            // 第二阶段：更新内容，新内容从下方 1px 淡入
-            wordLabel.stringValue = newContent.word
-            if let phonetic = newContent.phonetic {
-                phoneticLabel.stringValue = phonetic
-                phoneticLabel.isHidden = false
-            } else {
-                phoneticLabel.isHidden = true
-            }
+            // 第二阶段：中点淡出完毕（视觉不可辨），落位新内容后从下方 1px 淡入
+            swapContent()
 
             let fadeIn = CABasicAnimation(keyPath: "opacity", from: 0.0, to: 1.0, duration: halfDuration, timing: .easeOut)
             let moveIn = CABasicAnimation(keyPath: "transform.translation.y", from: 1.0, to: 0.0, duration: halfDuration, timing: .easeOut)

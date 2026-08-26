@@ -45,6 +45,7 @@ struct PageFlipEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField,
@@ -69,15 +70,8 @@ struct PageFlipEffect: WordTransitionEffect {
             // 让换词后的同步布局发生在恒等变换下
             wordLayer.transform = CATransform3DIdentity
 
-            wordLabel.stringValue = newContent.word
-            if let phoneticLabel = containerView.viewWithTag(Constants.transitionPhoneticLabelTag) as? NSTextField {
-                if let phonetic = newContent.phonetic {
-                    phoneticLabel.stringValue = phonetic
-                    phoneticLabel.isHidden = false
-                } else {
-                    phoneticLabel.isHidden = true
-                }
-            }
+            // 翻出完毕时视觉不可辨，落位新内容（词 + 音标同步）
+            swapContent()
             containerView.layoutSubtreeIfNeeded()
 
             // 同步布局后 label 宽度已是新词宽度，翻入支点按新宽度构造

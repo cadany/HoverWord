@@ -18,11 +18,11 @@
 - **THEN** 设置窗口 SHALL 使用最新材质渲染；macOS 14 以下版本不运行本应用
 
 ### Requirement: Sidebar 导航
-设置窗口 SHALL 使用左侧 sidebar 导航替代顶部 Tab 切换。Sidebar 包含 5 个导航项：单词本、背记、外观、发音、通用。每个导航项包含 SF Symbol 图标 + 文字标签。选中项 SHALL 以蓝色玻璃药丸高亮。导航项标签 SHALL 跟随界面语言设置本地化渲染。
+设置窗口 SHALL 使用左侧 sidebar 导航替代顶部 Tab 切换。Sidebar 包含 6 个导航项：单词本、背记、外观、发音、体验、通用。每个导航项包含 SF Symbol 图标 + 文字标签。选中项 SHALL 以蓝色玻璃药丸高亮。导航项标签 SHALL 跟随界面语言设置本地化渲染。
 
 #### Scenario: Sidebar 导航项
 - **WHEN** 用户打开设置窗口
-- **THEN** 左侧 sidebar SHALL 显示 5 个导航项，每项包含图标与文字标签，默认选中第一项
+- **THEN** 左侧 sidebar SHALL 显示 6 个导航项（单词本、背记、外观、发音、体验、通用，体验位于发音之后、通用之前），每项包含图标与文字标签，默认选中第一项
 
 #### Scenario: 选中态高亮
 - **WHEN** 某导航项被选中
@@ -242,6 +242,17 @@
 #### Scenario: 发音类型切换
 - **WHEN** 用户在语言分区的语音下拉中选择具体语音，或调整语速滑块
 - **THEN** 系统 SHALL 保存选择，后续发音使用对应语音与语速
+
+### Requirement: 体验设置 Tab
+设置窗口 SHALL 包含"体验"Tab，承载单词切换动效设置（动效选择、参数调整、预览），为未来其他体验类设置预留空间。动效系统行为规格见 word-transition-effects 能力规格（openspec/specs/word-transition-effects/spec.md）。
+
+#### Scenario: 体验 Tab 内容
+- **WHEN** 用户选择"体验" Tab
+- **THEN** 内容区 SHALL 显示体验设置视图 `ExperienceSettingsView`，包含动效选择（左标签"动效类型" + 右侧分组下拉与预览按钮成组）与参数配置，卡片/滑块行样式与其它设置页一致
+
+#### Scenario: 体验 Tab 图标
+- **WHEN** 渲染体验 Tab 的 Sidebar 项
+- **THEN** SHALL 使用 SF Symbols 的 "wand.and.stars" 图标（或语义相近的图标）
 
 ### Requirement: 系统菜单栏设置入口
 HoverWord 作为 macOS 应用，SHALL 在系统菜单栏的应用名下拉菜单中提供"HoverWord 设置…"菜单项，快捷键 ⌘,（Command + 逗号）。点击该菜单项 SHALL 打开与悬浮窗右键菜单"打开设置"相同的设置窗口。

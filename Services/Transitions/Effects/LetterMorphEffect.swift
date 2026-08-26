@@ -45,6 +45,7 @@ struct LetterMorphEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
         // 字母数量超限，降级为经典淡入
@@ -54,6 +55,7 @@ struct LetterMorphEffect: WordTransitionEffect {
                 to: newContent,
                 in: containerView,
                 parameters: parameters,
+                swapContent: swapContent,
                 completion: completion
             )
             return
@@ -75,8 +77,8 @@ struct LetterMorphEffect: WordTransitionEffect {
 
         CATransaction.begin()
         CATransaction.setCompletionBlock {
-            // 中点：换上新内容
-            wordLabel.stringValue = newContent.word
+            // 中点：旧内容已缩小淡出，落位新内容（词 + 音标同步）
+            swapContent()
 
             // 第二阶段：新内容从放大状态恢复正常
             let settleIn = CABasicAnimation(keyPath: "transform.scale", from: 1.5, to: 1.0, duration: halfDuration, timing: .easeOut)

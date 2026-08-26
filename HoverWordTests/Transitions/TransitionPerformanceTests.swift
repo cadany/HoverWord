@@ -20,6 +20,7 @@ final class TransitionPerformanceTests: XCTestCase {
             to: newContent,
             in: MockContainerView(),
             parameters: TransitionParameters(),
+            swapContent: {},
             completion: {
                 let endTime = CFAbsoluteTimeGetCurrent()
                 let duration = (endTime - startTime) * 1000 // 转换为毫秒
@@ -53,6 +54,7 @@ final class TransitionPerformanceTests: XCTestCase {
                 to: newContent,
                 in: MockContainerView(),
                 parameters: TransitionParameters(),
+                swapContent: {},
                 completion: {
                     let endTime = CFAbsoluteTimeGetCurrent()
                     let duration = (endTime - startTime) * 1000
@@ -81,6 +83,7 @@ final class TransitionPerformanceTests: XCTestCase {
             to: shortWord,
             in: MockContainerView(),
             parameters: TransitionParameters(),
+            swapContent: {},
             completion: {
                 shortExpectation.fulfill()
             }
@@ -101,6 +104,7 @@ final class TransitionPerformanceTests: XCTestCase {
             to: longWord,
             in: MockContainerView(),
             parameters: TransitionParameters(),
+            swapContent: {},
             completion: {
                 longExpectation.fulfill()
             }
@@ -115,11 +119,13 @@ private class MockContainerView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         let wordLabel = NSTextField(labelWithString: "test")
-        wordLabel.tag = 1001
+        wordLabel.tag = Constants.transitionWordLabelTag
+        wordLabel.wantsLayer = true
         addSubview(wordLabel)
 
         let phoneticLabel = NSTextField(labelWithString: "test")
-        phoneticLabel.tag = 1002
+        phoneticLabel.tag = Constants.transitionPhoneticLabelTag
+        phoneticLabel.wantsLayer = true
         addSubview(phoneticLabel)
     }
 

@@ -7,8 +7,8 @@ import AppKit
 /// 供偏好零过渡的用户选择，也是性能最保守的路径（无任何图层操作）。
 ///
 /// ## 技术实现
-/// 直接将新内容写入标签后立即回调 completion，与其它动效的
-/// "动效负责呈现新内容"契约一致；外层的 applyWordContent 兜底为幂等操作。
+/// 调用 swapContent 落位新内容后立即回调 completion，与其它动效契约一致；
+/// 外层的 applyWordContent 兜底为幂等操作。
 ///
 /// ## 分类
 /// `.minimal`（仅作协议要求的占位归属；设置页将其单独置顶展示，
@@ -28,22 +28,11 @@ struct NoTransitionEffect: WordTransitionEffect {
         to newContent: TransitionContent,
         in containerView: NSView,
         parameters: TransitionParameters,
+        swapContent: @escaping () -> Void,
         completion: @escaping () -> Void
     ) {
-        guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField,
-              let phoneticLabel = containerView.viewWithTag(Constants.transitionPhoneticLabelTag) as? NSTextField else {
-            completion()
-            return
-        }
-
-        // 直接呈现新内容，无任何动画
-        wordLabel.stringValue = newContent.word
-        if let phonetic = newContent.phonetic {
-            phoneticLabel.stringValue = phonetic
-            phoneticLabel.isHidden = false
-        } else {
-            phoneticLabel.isHidden = true
-        }
+        // 直接落位新内容，无任何动画
+        swapContent()
         completion()
     }
 }

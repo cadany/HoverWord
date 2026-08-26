@@ -601,16 +601,30 @@ class FloatContentView: NSView {
         // 由 applyWordContent 兜底完成切换，不阻塞背记流程
         let effect = TransitionRegistry.effect(id: AppSettings.shared.selectedTransitionId)
             ?? TransitionRegistry.defaultEffect
+        let newContent = TransitionContent.from(wordEntry: word)
         effect.animate(
             from: TransitionContent.from(wordEntry: previousEntry),
-            to: TransitionContent.from(wordEntry: word),
+            to: newContent,
             in: self,
-            parameters: AppSettings.shared.transitionParameters
+            parameters: AppSettings.shared.transitionParameters,
+            swapContent: makeContentSwap(for: newContent)
         ) { [weak self] in
             // 代际守卫：期间发生新一轮切词/预览则放弃归位；
             // 完成态守卫：动画期间被"重新开始"接管时不得覆盖新内容
             guard let self, generation == self.transitionGeneration, !self.isShowingCompleted else { return }
             self.applyWordContent(word)
+        }
+    }
+
+    /// 构造动效中点内容落位闭包：新词 + 音标一次性写入（幂等）
+    ///
+    /// 动效在旧内容视觉不可辨的时点调用该闭包完成新内容切换；
+    /// 打字机等自管单词呈现的动效在闭包执行后自行接管标签内容
+    private func makeContentSwap(for content: TransitionContent) -> () -> Void {
+        return { [weak self] in
+            guard let self else { return }
+            self.wordLabel.stringValue = content.word
+            self.updatePhonetic(content.phonetic)
         }
     }
 
@@ -700,7 +714,13 @@ class FloatContentView: NSView {
             )
         }
 
-        effect.animate(from: oldContent, to: newContent, in: self, parameters: parameters) { [weak self] in
+        effect.animate(
+            from: oldContent,
+            to: newContent,
+            in: self,
+            parameters: parameters,
+            swapContent: makeContentSwap(for: newContent)
+        ) { [weak self] in
             // 预览被切词打断（代际失效或标志清除）时不做恢复
             guard let self, self.isPreviewing, generation == self.transitionGeneration else { return }
             self.isPreviewing = false
