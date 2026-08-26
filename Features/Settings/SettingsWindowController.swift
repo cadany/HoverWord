@@ -122,6 +122,7 @@ struct SettingsRootView: View {
                 tabPage(SidebarItem.appearance.id) { AppearanceView() }
                 tabPage(SidebarItem.speech.id) { SpeechSettingsView() }
                 tabPage(SidebarItem.general.id) { GeneralSettingsView() }
+                tabPage(SidebarItem.experience.id) { ExperienceSettingsView() }
             }
             .optionalLiquidGlassBackground(.content)
             .animation(.spring(duration: 0.2), value: selectedItemId)

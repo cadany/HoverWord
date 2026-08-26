@@ -18,6 +18,14 @@ class FloatWindowController: NSWindowController {
     private let contentViewContainer = FloatContentView()
     private var rightClickMonitor: Any?
 
+    /// 悬停与预览两个暂停源：任一存在即暂停切词计时，避免一方恢复误解除另一方的暂停
+    private var isHoverPaused = false
+    private var isPreviewPaused = false
+
+    private func syncEnginePauseState() {
+        engine.setHoverPaused(isHoverPaused || isPreviewPaused)
+    }
+
     // MARK: - 初始化
 
     convenience init() {
@@ -129,7 +137,15 @@ class FloatWindowController: NSWindowController {
         }
         contentViewContainer.onHoverStateChanged = { [weak self] inside in
             // 鼠标在悬浮窗内时暂停切词计时，离开后从剩余时长继续
-            self?.engine.setHoverPaused(inside)
+            guard let self = self else { return }
+            self.isHoverPaused = inside
+            self.syncEnginePauseState()
+        }
+        contentViewContainer.onPreviewStateChanged = { [weak self] paused in
+            // 动效预览期间暂停切词计时（复用 hover 暂停通道），与悬停暂停互不干扰地各自恢复
+            guard let self = self else { return }
+            self.isPreviewPaused = paused
+            self.syncEnginePauseState()
         }
         contentViewContainer.onSpeakTap = { [weak self] in
             guard let word = self?.engine.currentWord() else { return }
@@ -184,7 +200,8 @@ class FloatWindowController: NSWindowController {
         // orderOut 不保证补发 mouseExited：隐藏前重置悬停状态并恢复计时，
         // 防止 isMouseInside 残留导致背记永久暂停
         contentViewContainer.resetHoverState()
-        engine.setHoverPaused(false)
+        isHoverPaused = false
+        syncEnginePauseState()
 
         // 全屏静音：切词进度继续，仅停掉在播语音并挂起后续自动发音，
         // 避免用户全屏观影/演示时被朗读打扰

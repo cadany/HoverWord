@@ -74,6 +74,7 @@
 		F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A93660EF34F8AC686402D5B /* WordbookService.swift */; };
 		F54774A181346FFCB58BB053 /* FloatWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC759D9D66D34909E95F47A6 /* FloatWindowController.swift */; };
 		F6D5EE3012941D3B93E5C76B /* HoverWord.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E001F28E3114ACA6BA7E6414 /* HoverWord.xcdatamodeld */; };
+		FA651539E7C9CCDD8A52634F /* FloatContentTransitionIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58C08FFC0965041B46AF5B10 /* FloatContentTransitionIntegrationTests.swift */; };
 		FAC4CC252C6613E0F5D0441E /* WordbookServiceFavoritesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CFFC10C66EC24372C4C683 /* WordbookServiceFavoritesTests.swift */; };
 		FC885C5E6482803B8B4F480C /* TransitionRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1DCD51994323CC78637582 /* TransitionRegistryTests.swift */; };
 		FD2488C64D59E9B2D50B86C1 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 1C55C7264BD496C6613ACB86 /* Localizable.xcstrings */; };
@@ -119,6 +120,7 @@
 		4D24E047A36159A6F1209CD6 /* GlassBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBackgroundView.swift; sourceTree = "<group>"; };
 		5049174FD409C7C705C94BBA /* Wordbook+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wordbook+CoreDataClass.swift"; sourceTree = "<group>"; };
 		509875D5B7E4A4676ECB984E /* WordbookImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookImportService.swift; sourceTree = "<group>"; };
+		58C08FFC0965041B46AF5B10 /* FloatContentTransitionIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatContentTransitionIntegrationTests.swift; sourceTree = "<group>"; };
 		620C4BA77D767A3DC090A911 /* Favorite+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Favorite+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		6542EAFD71253420F6397B33 /* DataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStack.swift; sourceTree = "<group>"; };
 		6547236BBB1CFF282CED9088 /* LanguageDetectionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetectionServiceTests.swift; sourceTree = "<group>"; };
@@ -365,6 +367,7 @@
 		B71965ECEEA7A52D7659D274 /* Transitions */ = {
 			isa = PBXGroup;
 			children = (
+				58C08FFC0965041B46AF5B10 /* FloatContentTransitionIntegrationTests.swift */,
 				ADCFEA583F539FECD6FC8072 /* TransitionParametersTests.swift */,
 				140BDA7AAF8BA1CE9E244C3F /* TransitionPerformanceTests.swift */,
 				AB1DCD51994323CC78637582 /* TransitionRegistryTests.swift */,
@@ -476,6 +479,7 @@
 			files = (
 				5D331D6EB9DE9436728634F4 /* AppSettingsTests.swift in Sources */,
 				A30F46CF0B82E7159D474FF1 /* ContentVisibilityTests.swift in Sources */,
+				FA651539E7C9CCDD8A52634F /* FloatContentTransitionIntegrationTests.swift in Sources */,
 				4217D370C5D6E5CC986E239E /* L10nTests.swift in Sources */,
 				DDF5302EAA247C7748F3F226 /* LanguageDetectionServiceTests.swift in Sources */,
 				50C51F1207D7AE7C57EC2660 /* ReciteEngineHoverPauseTests.swift in Sources */,

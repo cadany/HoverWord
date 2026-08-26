@@ -31,7 +31,8 @@ extension SidebarItem {
     static let appearance = SidebarItem(id: "appearance", labelKey: "sidebar.appearance", icon: "paintbrush")
     static let speech = SidebarItem(id: "speech", labelKey: "sidebar.speech", icon: "speaker.wave.2")
     static let general = SidebarItem(id: "general", labelKey: "sidebar.general", icon: "gearshape")
+    static let experience = SidebarItem(id: "experience", labelKey: "sidebar.experience", icon: "wand.and.stars")
 
     /// 全部导航项，按显示顺序排列
-    static let allItems: [SidebarItem] = [.wordbook, .recite, .appearance, .speech, .general]
+    static let allItems: [SidebarItem] = [.wordbook, .recite, .appearance, .speech, .general, .experience]
 }

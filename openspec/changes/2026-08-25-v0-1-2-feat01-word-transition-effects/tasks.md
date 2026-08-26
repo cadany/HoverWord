@@ -31,12 +31,12 @@
 
 ## 4. 悬浮窗集成
 
-- [x] 4.1 重构 `FloatContentView.showWord` 方法，提取当前动效逻辑为独立的 transition 调用
-- [x] 4.2 在 `FloatContentView` 中注入动效执行逻辑（从 TransitionRegistry 获取用户选择的动效）
-- [x] 4.3 实现动效执行失败的 fallback（catch 错误，立即显示新单词）
-- [x] 4.4 添加 `.previewTransitionEffect` 通知监听，支持预览功能
-- [x] 4.5 在预览时暂停背记引擎（复用 hover 暂停机制）
-- [x] 4.6 编写悬浮窗动效集成的集成测试
+- [ ] 4.1 重构 `FloatContentView.showWord` 方法，提取当前动效逻辑为独立的 transition 调用
+- [ ] 4.2 在 `FloatContentView` 中注入动效执行逻辑（从 TransitionRegistry 获取用户选择的动效）
+- [ ] 4.3 实现动效执行失败的 fallback（catch 错误，立即显示新单词）
+- [ ] 4.4 添加 `.previewTransitionEffect` 通知监听，支持预览功能
+- [ ] 4.5 在预览时暂停背记引擎（复用 hover 暂停机制）
+- [ ] 4.6 编写悬浮窗动效集成的集成测试
 
 ## 5. 设置界面
 
@@ -44,9 +44,9 @@
 - [x] 5.2 在 `ExperienceSettingsView` 中实现动效分类展示（按 category 分组）
 - [x] 5.3 在 `ExperienceSettingsView` 中实现参数调整 UI（滑块/选择器，根据动效的 adjustableParameters 动态生成）
 - [x] 5.4 在 `ExperienceSettingsView` 中实现 [预览] 按钮，发送 `.previewTransitionEffect` 通知
-- [x] 5.5 在 `SettingsWindowController.swift` 中添加"体验" Tab（SF Symbols "wand.and.stars" 图标）
+- [ ] 5.5 在 `SettingsWindowController.swift` 中添加"体验" Tab（SF Symbols "wand.and.stars" 图标）
 - [x] 5.6 在 `NotificationNames.swift` 中添加 `.previewTransitionEffect` 通知名
-- [x] 5.7 编写设置界面的 UI 测试（动效选择、参数调整、预览触发）
+- [ ] 5.7 编写设置界面的 UI 测试（动效选择、参数调整、预览触发）
 
 ## 6. 常量与配置
 
@@ -61,5 +61,5 @@
 
 ## 8. 文档与示例
 
-- [x] 8.1 更新 README.md，说明动效系统的扩展方式（如何实现新动效）
+- [ ] 8.1 更新 README.md，说明动效系统的扩展方式（如何实现新动效）
 - [x] 8.2 为每个内置动效添加注释，说明效果描述和参数含义

@@ -23,6 +23,8 @@ class FloatContentView: NSView {
     var onRightClick: ((NSEvent) -> Void)?
     /// 鼠标进出悬浮窗（true=进入，false=离开），控制器转发引擎暂停/恢复计时
     var onHoverStateChanged: ((Bool) -> Void)?
+    /// 动效预览开始/结束（true=开始并暂停背记，false=结束并恢复），控制器转发引擎计时控制
+    var onPreviewStateChanged: ((Bool) -> Void)?
 
     // MARK: - UI 组件
 
@@ -52,6 +54,14 @@ class FloatContentView: NSView {
     private var currentMode: ReciteMode = .memoryFeedback
     /// 缓存当前词条，用于 resize 时重新渲染释义
     private var currentWordEntry: WordEntry?
+    /// 切词/预览动画代际标记：新一轮动画使旧动画滞后的 completion 失效，
+    /// 避免覆盖新内容（同 FloatWindowController.visibilityAnimationToken 模式）
+    private var transitionGeneration = 0
+    /// 是否正在播放设置页发起的动效预览
+    private var isPreviewing = false
+    /// 动效执行前的初始图层锚点（PageFlip 等动效会改写锚点，结束后需复位）
+    private var initialWordLabelAnchor = CGPoint.zero
+    private var initialPhoneticLabelAnchor = CGPoint.zero
 
     /// 当前是否为深色模式
     private var isDarkMode: Bool {
@@ -67,6 +77,11 @@ class FloatContentView: NSView {
         setupContent()
         setupButtons()
         setupTrackingArea()
+        // 动效要求标签 layer-backed；先开启并记录初始锚点，动效结束后复位用
+        wordLabel.wantsLayer = true
+        phoneticLabel.wantsLayer = true
+        initialWordLabelAnchor = wordLabel.layer?.anchorPoint ?? .zero
+        initialPhoneticLabelAnchor = phoneticLabel.layer?.anchorPoint ?? .zero
         applyAppearanceSettings()
         updateTextColors()
         // 初始化即应用显示模式（无动画，避免启动闪烁）
@@ -86,6 +101,14 @@ class FloatContentView: NSView {
             self,
             selector: #selector(handleLanguageChange),
             name: .appLanguageDidChange,
+            object: nil
+        )
+
+        // 监听动效预览（设置页点击预览时，用示例单词演示一次）
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePreviewTransition),
+            name: .previewTransitionEffect,
             object: nil
         )
     }
@@ -237,6 +260,8 @@ class FloatContentView: NSView {
         ])
 
         // 第 1 列：单词标签
+        // tag 是动效实现的定位契约（viewWithTag 查找），改动前先看 Services/Transitions/
+        wordLabel.tag = Constants.transitionWordLabelTag
         wordLabel.font = NSFont.systemFont(ofSize: Constants.wordFontSize, weight: .semibold)
         wordLabel.alignment = .left
         wordLabel.lineBreakMode = .byTruncatingTail
@@ -247,6 +272,7 @@ class FloatContentView: NSView {
         rootStack.addArrangedSubview(wordLabel)
 
         // 第 2 列：音标标签
+        phoneticLabel.tag = Constants.transitionPhoneticLabelTag
         phoneticLabel.font = NSFont.systemFont(ofSize: Constants.phoneticFontSize, weight: .regular)
         phoneticLabel.alignment = .left
         phoneticLabel.textColor = NSColor.black.withAlphaComponent(Constants.secondaryTextAlpha)
@@ -532,23 +558,21 @@ class FloatContentView: NSView {
 
     func showWord(word: WordEntry, mode: ReciteMode, isFavorite: Bool) {
         currentMode = mode
-        currentWordEntry = word
         isShowingCompleted = false
 
-        // 更新内容
-        wordLabel.stringValue = word.sourceWord
-        updatePhonetic(word.phonetic)
-        updateMeanings(word: word)
+        // 预览被真实切词打断：让出显示权并恢复引擎计时
+        if isPreviewing {
+            isPreviewing = false
+            onPreviewStateChanged?(false)
+        }
 
-        // 显示正常内容，隐藏完成状态
+        // 非动效部分立即更新（完成态文案、释义、收藏、按钮）
         completedLabel.isHidden = true
         wordLabel.isHidden = false
-        phoneticLabel.isHidden = (word.phonetic == nil)
         meaningLabel.isHidden = false
+        updateMeanings(word: word)
         // 释义按显示模式决定初始可见性（hover 且鼠标在外时保持隐藏）
         meaningLabel.alphaValue = visibilityAlpha(for: AppSettings.shared.meaningVisibility)
-
-        // 更新收藏状态
         updateFavoriteState(isFavorite: isFavorite)
 
         // 根据模式更新按钮
@@ -558,29 +582,133 @@ class FloatContentView: NSView {
             setButtonsHidden(true)
         }
 
-        // 切换动效：淡入淡出 + 1px 垂直位移
+        // 单词/音标的文本更新交由动效驱动，完成回调统一归位
         wordLabel.wantsLayer = true
         phoneticLabel.wantsLayer = true
 
-        // 从上方 1px 开始淡入
+        let previousEntry = currentWordEntry
+        currentWordEntry = word
+        transitionGeneration += 1
+        let generation = transitionGeneration
+
+        // 首个单词无旧内容可过渡，直接显示（避免启动闪烁）
+        guard let previousEntry else {
+            applyWordContent(word)
+            return
+        }
+
+        // ID 无效时回退默认动效；动效内部失败（如找不到标签）会立即回调 completion，
+        // 由 applyWordContent 兜底完成切换，不阻塞背记流程
+        let effect = TransitionRegistry.effect(id: AppSettings.shared.selectedTransitionId)
+            ?? TransitionRegistry.defaultEffect
+        effect.animate(
+            from: TransitionContent.from(wordEntry: previousEntry),
+            to: TransitionContent.from(wordEntry: word),
+            in: self,
+            parameters: AppSettings.shared.transitionParameters
+        ) { [weak self] in
+            // 代际守卫：期间发生新一轮切词/预览则放弃归位；
+            // 完成态守卫：动画期间被"重新开始"接管时不得覆盖新内容
+            guard let self, generation == self.transitionGeneration, !self.isShowingCompleted else { return }
+            self.applyWordContent(word)
+        }
+    }
+
+    /// 将词条文本无动画地落到单词/音标标签，并复位动效残留的图层状态
+    ///
+    /// 动效完成回调统一走这里（也兜底动效 guard 失败立即完成的路径），
+    /// 确保最终文本正确、变换/锚点归位、注音透明度回到显示模式设定值。
+    private func applyWordContent(_ word: WordEntry) {
+        wordLabel.stringValue = word.sourceWord
+        updatePhonetic(word.phonetic)
+        resetTransitionLayerState()
+        updatePhoneticVisibility(animated: false)
+    }
+
+    /// 复位动效可能残留的图层状态（变换/不透明度/锚点）
+    private func resetTransitionLayerState() {
         CATransaction.begin()
         CATransaction.setAnimationDuration(0)
-        wordLabel.layer?.transform = CATransform3DMakeTranslation(0, 1, 0)
-        phoneticLabel.layer?.transform = CATransform3DMakeTranslation(0, 1, 0)
-        wordLabel.layer?.opacity = 0
-        phoneticLabel.layer?.opacity = 0
-        CATransaction.commit()
-
-        // 淡入 + 回到正常位置（注音按显示模式决定目标透明度）
-        let phoneticTarget = visibilityAlpha(for: AppSettings.shared.phoneticVisibility)
-        CATransaction.begin()
-        CATransaction.setAnimationDuration(Constants.wordSwitchDuration)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
         wordLabel.layer?.transform = CATransform3DIdentity
         phoneticLabel.layer?.transform = CATransform3DIdentity
         wordLabel.layer?.opacity = 1
-        phoneticLabel.layer?.opacity = Float(phoneticTarget)
+        phoneticLabel.layer?.opacity = 1
+        wordLabel.layer?.anchorPoint = initialWordLabelAnchor
+        phoneticLabel.layer?.anchorPoint = initialPhoneticLabelAnchor
         CATransaction.commit()
+    }
+
+    // MARK: - 动效预览
+
+    /// 播放一次设置页发起的动效演示：暂停背记 → 示例单词过渡 → 恢复当前内容
+    @objc private func handlePreviewTransition(_ notification: Notification) {
+        guard !isPreviewing,
+              let userInfo = notification.userInfo,
+              let effectId = userInfo["effectId"] as? String,
+              let effect = TransitionRegistry.effect(id: effectId) else { return }
+        let parameters = (userInfo["parameters"] as? TransitionParameters)
+            ?? AppSettings.shared.transitionParameters
+
+        isPreviewing = true
+        onPreviewStateChanged?(true)
+
+        // 完成态下临时切回单词内容演示，结束后恢复"已学完"
+        let wasCompleted = isShowingCompleted
+        if wasCompleted {
+            completedLabel.isHidden = true
+            wordLabel.isHidden = false
+            meaningLabel.isHidden = false
+        }
+
+        // 先呈现示例旧词，保证"from → to"完整可见；释义/注音临时全量显示
+        let oldMeaning = L10n.t("experience.preview.example.old.meaning")
+        wordLabel.stringValue = Constants.transitionPreviewOldWord
+        updatePhonetic(Constants.transitionPreviewOldPhonetic)
+        meaningLabel.stringValue = oldMeaning
+        meaningLabel.alphaValue = 1
+        phoneticLabel.alphaValue = 1
+
+        transitionGeneration += 1
+        let generation = transitionGeneration
+
+        let oldContent = TransitionContent(
+            word: Constants.transitionPreviewOldWord,
+            phonetic: Constants.transitionPreviewOldPhonetic,
+            meaning: oldMeaning
+        )
+        let newContent = TransitionContent(
+            word: Constants.transitionPreviewNewWord,
+            phonetic: Constants.transitionPreviewNewPhonetic,
+            meaning: L10n.t("experience.preview.example.new.meaning")
+        )
+
+        effect.animate(from: oldContent, to: newContent, in: self, parameters: parameters) { [weak self] in
+            // 预览被切词打断（代际失效或标志清除）时不做恢复
+            guard let self, self.isPreviewing, generation == self.transitionGeneration else { return }
+            self.isPreviewing = false
+            self.onPreviewStateChanged?(false)
+            self.restoreAfterPreview(wasCompleted: wasCompleted)
+        }
+    }
+
+    /// 预览结束后恢复演示前的真实内容
+    private func restoreAfterPreview(wasCompleted: Bool) {
+        if wasCompleted {
+            wordLabel.isHidden = true
+            phoneticLabel.isHidden = true
+            meaningLabel.isHidden = true
+            completedLabel.isHidden = false
+        } else if let entry = currentWordEntry {
+            applyWordContent(entry)
+            updateMeanings(word: entry)
+            meaningLabel.alphaValue = visibilityAlpha(for: AppSettings.shared.meaningVisibility)
+        } else {
+            // 引擎尚未展示任何单词（如刚启动）：清空演示残留
+            wordLabel.stringValue = ""
+            updatePhonetic(nil)
+            meaningLabel.stringValue = ""
+            resetTransitionLayerState()
+        }
     }
 
     /// 显示完成状态（带动画过渡）
