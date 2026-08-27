@@ -10,6 +10,7 @@ import AppKit
 /// - **翻转角度**: 0° → 90°（旧内容侧立消失），90° → 0°（新内容翻回正面）
 /// - **缓动**: 翻出使用 ease-in，翻入使用 ease-out
 /// - **动画驱动**: 显式 `CABasicAnimation`（layer-backed 视图无隐式动画，见协议扩展说明）
+/// - **音标**: 不参与动效（音标由视图层在中点瞬时切换，见协议"职责边界"）
 ///
 /// ## 分类
 /// `.playful`（趣味类）— 增加趣味性和互动感
@@ -52,16 +53,14 @@ struct CardFlipEffect: WordTransitionEffect {
     ) {
         let duration = parameters.get("duration", defaultValue: Constants.cardFlipDefaultDuration)
 
+        // 获取容器中的单词标签（音标不参与动效，见协议"职责边界"）
         guard let wordLabel = containerView.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField,
-              let phoneticLabel = containerView.viewWithTag(Constants.transitionPhoneticLabelTag) as? NSTextField,
-              let wordLayer = wordLabel.layer,
-              let phoneticLayer = phoneticLabel.layer else {
+              let wordLayer = wordLabel.layer else {
             completion()
             return
         }
 
         wordLabel.wantsLayer = true
-        phoneticLabel.wantsLayer = true
 
         let halfDuration = duration / 2
         let edgeOnAngle = Double.pi / 2
@@ -75,7 +74,6 @@ struct CardFlipEffect: WordTransitionEffect {
             // 中点：先复位模型 transform（同一 runloop 内不渲染，无跳变），
             // 让换词触发的布局发生在恒等变换下，避免 layer frame 推导异常
             wordLayer.transform = CATransform3DIdentity
-            phoneticLayer.transform = CATransform3DIdentity
 
             // 侧立时视觉不可辨，落位新内容（词 + 音标同步）
             swapContent()
@@ -88,19 +86,15 @@ struct CardFlipEffect: WordTransitionEffect {
             CATransaction.setCompletionBlock {
                 completion()
             }
-            for layer in [wordLayer, phoneticLayer] {
-                layer.add(flipIn, forKey: "transition.rotation")
-                // 模型终态：正面
-                layer.transform = CATransform3DIdentity
-            }
+            wordLayer.add(flipIn, forKey: "transition.rotation")
+            // 模型终态：正面
+            wordLayer.transform = CATransform3DIdentity
             CATransaction.commit()
         }
 
-        for layer in [wordLayer, phoneticLayer] {
-            layer.add(flipOut, forKey: "transition.rotation")
-            // 模型中点态：侧立
-            layer.transform = edgeOnTransform
-        }
+        wordLayer.add(flipOut, forKey: "transition.rotation")
+        // 模型中点态：侧立
+        wordLayer.transform = edgeOnTransform
         CATransaction.commit()
     }
 }

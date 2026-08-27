@@ -446,6 +446,10 @@ class FloatContentView: NSView {
     private func applyAlpha(_ alpha: CGFloat, to view: NSView, animated: Bool) {
         guard animated else {
             view.alphaValue = alpha
+            // 动效直接改写 layer.opacity 会绕过 AppKit 的 alphaValue 缓存，
+            // 随后设置相同值时被去重跳过 layer 写入，导致 hover/hidden 模式
+            // 下切词后音标持续显示；此处显式同步 layer 保证呈现与配置一致
+            view.layer?.opacity = Float(alpha)
             return
         }
         CATransaction.begin()

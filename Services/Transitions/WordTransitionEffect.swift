@@ -8,6 +8,8 @@ import AppKit
 /// ## 职责边界（重要）
 /// 动效只负责"如何动画"；新内容落位由调用方经 `swapContent` 回调完成，
 /// 动效 SHALL NOT 自行向单词/音标标签写入内容。
+/// 音标图层同样不参与动画：注音的呈现（文本切换时机、可见性）完全由
+/// 视图层负责，动效 SHALL NOT 向音标图层添加动画或改写其模型状态。
 protocol WordTransitionEffect: Sendable {
     /// 动效唯一标识（用于存储和查找）
     var id: String { get }

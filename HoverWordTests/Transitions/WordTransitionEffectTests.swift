@@ -124,6 +124,50 @@ final class WordTransitionEffectTests: XCTestCase {
         }
     }
 
+    /// 动效 SHALL NOT 向音标图层添加动画（音标呈现完全由视图层负责，
+    /// 见协议"职责边界"）；单词图层动画应正常存在
+    func testEffectsDoNotAnimatePhoneticLayer() {
+        let oldContent = TransitionContent(word: "apple", phonetic: "/ˈæpəl/", meaning: "n. 苹果")
+        let newContent = TransitionContent(word: "banana", phonetic: "/bəˈnænə/", meaning: "n. 香蕉")
+
+        let effects: [any WordTransitionEffect] = [ClassicFadeEffect(), CardFlipEffect()]
+        for effect in effects {
+            let container = MockContainerView()
+            guard let wordLayer = (container.viewWithTag(Constants.transitionWordLabelTag) as? NSTextField)?.layer,
+                  let phoneticLayer = (container.viewWithTag(Constants.transitionPhoneticLabelTag) as? NSTextField)?.layer else {
+                XCTFail("\(effect.id) 测试容器缺少标签")
+                return
+            }
+
+            effect.animate(
+                from: oldContent,
+                to: newContent,
+                in: container,
+                parameters: TransitionParameters(),
+                swapContent: {},
+                completion: {}
+            )
+
+            // 第一阶段动画在 animate 内同步添加：单词有、音标必须没有
+            XCTAssertNotNil(
+                wordLayer.animation(forKey: "transition.opacity") ?? wordLayer.animation(forKey: "transition.rotation"),
+                "\(effect.id) 单词图层应有过渡动画"
+            )
+            XCTAssertNil(
+                phoneticLayer.animation(forKey: "transition.opacity"),
+                "\(effect.id) 不应向音标图层添加透明度动画"
+            )
+            XCTAssertNil(
+                phoneticLayer.animation(forKey: "transition.rotation"),
+                "\(effect.id) 不应向音标图层添加翻转动画"
+            )
+            XCTAssertNil(
+                phoneticLayer.animation(forKey: "transition.translation"),
+                "\(effect.id) 不应向音标图层添加位移动画"
+            )
+        }
+    }
+
     /// 容器缺少契约标签时（guard 失败路径）SHALL 立即 completion 不崩溃，
     /// 内容落位由调用方 completion 兜底完成
     func testEffectsHandleMissingLabelsGracefully() {
