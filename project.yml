@@ -26,8 +26,8 @@ targets:
         INFOPLIST_FILE: Resources/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.hoverword.app
         PRODUCT_NAME: HoverWord
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1.2"
+        CURRENT_PROJECT_VERSION: "8"
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Automatic
         COMBINE_HIDPI_IMAGES: "YES"
@@ -41,12 +41,14 @@ targets:
         CFBundleName: HoverWord
         CFBundleDisplayName: HoverWord
         CFBundleIdentifier: com.hoverword.app
-        CFBundleVersion: "1"
-        CFBundleShortVersionString: "0.1.0"
+        # 版本号走构建变量注入（唯一真源为上方 MARKETING_VERSION / CURRENT_PROJECT_VERSION），
+        # 不要在 Xcode 或此处写死数值——xcodegen regen 会覆盖 Xcode 里的手动修改
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundlePackageType: APPL
         CFBundleExecutable: HoverWord
         LSUIElement: false
-        NSHumanReadableCopyright: "Copyright © 2026 HoverWord. All rights reserved."
+        NSHumanReadableCopyright: "Copyright © 2026 Richops. All rights reserved."
         NSPrincipalClass: NSApplication
 
   HoverWordTests:
