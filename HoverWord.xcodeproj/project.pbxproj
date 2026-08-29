@@ -60,6 +60,7 @@
 		B955CAC648ABD95084F681B7 /* ReciteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E183DC35C70AB0B2F1AACBEC /* ReciteEngine.swift */; };
 		BB27D5349EB3FA63565B350E /* TransitionContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1DA7A3E84CC66956A9936EE /* TransitionContent.swift */; };
 		BBE5F053593FA51B1C79698F /* WordbookPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0073504C9E3255482C1A6DA0 /* WordbookPreviewTests.swift */; };
+		BF1D02271A2A749E1F8385E7 /* ReciteEngineSectionOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F3E031ACB698BFBFBA1A11 /* ReciteEngineSectionOrderTests.swift */; };
 		C41F176984DB10016915A4C2 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07DBC51654076F72F333DDFB /* SpeechService.swift */; };
 		C56B194F8EE5BF6A9DDF127B /* NotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4638FD5C18D7121C56DF2F5 /* NotificationNames.swift */; };
 		C9C7D364714684D3D37DF8F9 /* WordbookExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD77275D3DADFAA37C597D9F /* WordbookExportService.swift */; };
@@ -75,6 +76,7 @@
 		F1F8FDC3C3A1E3D521CDB65D /* WordbookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A93660EF34F8AC686402D5B /* WordbookService.swift */; };
 		F54774A181346FFCB58BB053 /* FloatWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC759D9D66D34909E95F47A6 /* FloatWindowController.swift */; };
 		F6D5EE3012941D3B93E5C76B /* HoverWord.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = E001F28E3114ACA6BA7E6414 /* HoverWord.xcdatamodeld */; };
+		F758DA151F2DD26A8D7A845A /* SectionOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1176E28319DCC323E9095425 /* SectionOrder.swift */; };
 		FA651539E7C9CCDD8A52634F /* FloatContentTransitionIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58C08FFC0965041B46AF5B10 /* FloatContentTransitionIntegrationTests.swift */; };
 		FAC4CC252C6613E0F5D0441E /* WordbookServiceFavoritesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CFFC10C66EC24372C4C683 /* WordbookServiceFavoritesTests.swift */; };
 		FC885C5E6482803B8B4F480C /* TransitionRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1DCD51994323CC78637582 /* TransitionRegistryTests.swift */; };
@@ -101,6 +103,7 @@
 		0DAD5A9470C33F7A8927250F /* FloatContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatContentView.swift; sourceTree = "<group>"; };
 		0FF429EE23CC7458D57E9D0F /* PageFlipEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageFlipEffect.swift; sourceTree = "<group>"; };
 		10AE12D078A4B6FE706BCCB1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1176E28319DCC323E9095425 /* SectionOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionOrder.swift; sourceTree = "<group>"; };
 		119A802B7B78F2ECD414569B /* HoverWord v3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "HoverWord v3.xcdatamodel"; sourceTree = "<group>"; };
 		140BDA7AAF8BA1CE9E244C3F /* TransitionPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionPerformanceTests.swift; sourceTree = "<group>"; };
 		15A87F4D760AF6E35D872AB0 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -148,6 +151,7 @@
 		AB1DCD51994323CC78637582 /* TransitionRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRegistryTests.swift; sourceTree = "<group>"; };
 		AD77275D3DADFAA37C597D9F /* WordbookExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookExportService.swift; sourceTree = "<group>"; };
 		ADCFEA583F539FECD6FC8072 /* TransitionParametersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionParametersTests.swift; sourceTree = "<group>"; };
+		B2F3E031ACB698BFBFBA1A11 /* ReciteEngineSectionOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngineSectionOrderTests.swift; sourceTree = "<group>"; };
 		B425DDDB57462108EC41C536 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		BA765CE198C5655D75AB81D2 /* ReciteEngineProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngineProgressTests.swift; sourceTree = "<group>"; };
 		BDFCD2D0C77E9BD570C2E2BE /* SpeechSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSettingsView.swift; sourceTree = "<group>"; };
@@ -249,6 +253,7 @@
 				6547236BBB1CFF282CED9088 /* LanguageDetectionServiceTests.swift */,
 				6A2CC9FA6D851096A8F4CF9E /* ReciteEngineHoverPauseTests.swift */,
 				BA765CE198C5655D75AB81D2 /* ReciteEngineProgressTests.swift */,
+				B2F3E031ACB698BFBFBA1A11 /* ReciteEngineSectionOrderTests.swift */,
 				F8BD190A34FDBB7250BE786C /* ReciteEngineTests.swift */,
 				9D1911BE0477E1107AF18900 /* WordbookContentChangeTests.swift */,
 				A1EDBE0AB7D2D5B6061BA555 /* WordbookExportServiceTests.swift */,
@@ -329,6 +334,7 @@
 				938C8ADA1A7B29F25EA73A2B /* ContentVisibility.swift */,
 				08506151F055E3FC60E7BD3C /* PlayOrder.swift */,
 				714110DE24AB04E5204838B6 /* ReciteMode.swift */,
+				1176E28319DCC323E9095425 /* SectionOrder.swift */,
 			);
 			path = Enums;
 			sourceTree = "<group>";
@@ -487,6 +493,7 @@
 				DDF5302EAA247C7748F3F226 /* LanguageDetectionServiceTests.swift in Sources */,
 				50C51F1207D7AE7C57EC2660 /* ReciteEngineHoverPauseTests.swift in Sources */,
 				4C2E54CD61B81A0DCFD3840B /* ReciteEngineProgressTests.swift in Sources */,
+				BF1D02271A2A749E1F8385E7 /* ReciteEngineSectionOrderTests.swift in Sources */,
 				61035099A4B9211D259B8E17 /* ReciteEngineTests.swift in Sources */,
 				3D232AC62768F93376D2662A /* TransitionParametersTests.swift in Sources */,
 				023A67ED09B14284B8B43853 /* TransitionPerformanceTests.swift in Sources */,
@@ -537,6 +544,7 @@
 				3DB097932E62A3B0F5FFA68B /* ReciteMode.swift in Sources */,
 				8319411E3439DF353AD56F2A /* ReciteSettingsView.swift in Sources */,
 				35EFF370A2BA2C6F21D69A25 /* ScrollBackgroundCompat.swift in Sources */,
+				F758DA151F2DD26A8D7A845A /* SectionOrder.swift in Sources */,
 				41C3F1E3A49D6E693242EFDD /* SettingsWindowController.swift in Sources */,
 				96B4FBD012DED44A2A8BFFFD /* SidebarItem.swift in Sources */,
 				C41F176984DB10016915A4C2 /* SpeechService.swift in Sources */,

@@ -148,7 +148,7 @@ class ReciteEngine {
         NotificationCenter.default.removeObserver(self)
     }
 
-    /// 启动背记（尝试恢复历史进度，无有效进度则从第一个 Section 开始）
+    /// 启动背记（优先续背锚点 → 进行中进度 → 按策略新开始）
     func start() {
         buildQueue()
         guard !sectionQueue.isEmpty else {
@@ -157,16 +157,21 @@ class ReciteEngine {
             return
         }
 
-        // 尝试从 UserDefaults 恢复历史进度
-        if !restoreProgress() {
-            currentSectionQueueIndex = 0
-            prepareCurrentSection()
-            state = .playing
-            displayCurrentWord()
-        }
+        // 优先级 1：续背锚点（上一轮全部完成后记录的离开位置）
+        if resumeFromContinuationAnchor() { return }
+
+        // 优先级 2：进行中进度（含队列布局还原）
+        if restoreProgress() { return }
+
+        // 优先级 3：按当前策略新开始（随机化在此执行）
+        applySectionOrderStrategy()
+        currentSectionQueueIndex = 0
+        prepareCurrentSection()
+        state = .playing
+        displayCurrentWord()
     }
 
-    /// 重新开始（从队列第一个 Section 重新开始）
+    /// 重新开始（清除续背锚点与进度，按当前策略从策略起点开始）
     func restart() {
         clearProgress()
         start()
@@ -229,7 +234,7 @@ class ReciteEngine {
 
     // MARK: - 私有：队列构建
 
-    /// 从启用的单词本构建 Section 队列
+    /// 从启用的单词本构建 Section 队列（确定性基础队列，不含策略应用）
     private func buildQueue() {
         sectionQueue = []
         let wordbooks = WordbookService.shared.getEnabledWordbooks()
@@ -243,6 +248,24 @@ class ReciteEngine {
                     entries: entries
                 ))
             }
+        }
+    }
+
+    /// 按当前 Section 顺序策略应用随机化（仅新开始路径调用）
+    ///
+    /// sequential 恒等；randomStart 随机选起点 rotate（环形语义由 rotate 表达，
+    /// 推进逻辑零改动）；shuffled 整体打乱。单 Section 队列无随机空间，天然退化。
+    private func applySectionOrderStrategy() {
+        guard sectionQueue.count > 1 else { return }
+
+        switch AppSettings.shared.sectionOrder {
+        case .sequential:
+            break
+        case .randomStart:
+            let start = Int.random(in: 0..<sectionQueue.count)
+            sectionQueue.rotate(toStartAt: start)
+        case .shuffled:
+            sectionQueue.shuffle()
         }
     }
 
@@ -271,10 +294,11 @@ class ReciteEngine {
     private func advanceToNextSection() {
         currentSectionQueueIndex += 1
         if currentSectionQueueIndex >= sectionQueue.count {
-            // 全部 Section 完成，清除进度
+            // 全部 Section 完成：记录续背锚点（进度保留，下次 start 从下一组继续）
             state = .allComplete
             stopTimer()
             clearProgress()
+            saveContinuationAnchor()
             delegate?.engineDidCompleteAll()
             return
         }
@@ -490,19 +514,58 @@ class ReciteEngine {
 
     // MARK: - 进度持久化
 
-    private let progressSectionKey = "ReciteProgressSectionIndex"
+    private let progressSectionKey = "ReciteProgressSectionIdentity"
     private let progressWordKey = "ReciteProgressWordIndex"
     private let progressFeedbackSetKey = "ReciteProgressFeedbackSet"
     private let progressCompletedLoopsKey = "ReciteProgressCompletedLoops"
     private let progressOrderKey = "ReciteProgressWordOrder"
+    private let progressLayoutKey = "ReciteProgressQueueLayout"
+    private let continuationAnchorKey = "ReciteProgressLastCompleted"
 
-    /// 保存当前背记进度到 UserDefaults
+    /// Section 身份标识（身份寻址，队列索引的替代）
+    ///
+    /// Codable 存 UserDefaults；同一词本内 sectionIndex 天然唯一。
+    struct SectionIdentity: Codable, Equatable, Hashable {
+        let wordbookId: String
+        let sectionIndex: Int
+    }
+
+    /// 队列布局快照（恢复时套用到确定性重建的基础队列）
+    enum QueueLayout: Codable {
+        /// sequential：布局即基础队列，无需存储
+        case identity
+        /// randomStart：起点身份，恢复时 rotate 至该起点
+        case randomStart(SectionIdentity)
+        /// shuffled：完整身份列表，恢复时按列表重排（消失身份剔除）
+        case shuffled([SectionIdentity])
+    }
+
+    /// 保存当前背记进度到 UserDefaults（身份寻址）
     ///
     /// 保存时机：单词切换、Section 完成、App 退出。
-    /// 存储内容：Section 索引、单词索引、当前轮次播放顺序（wordId）、已反馈集合、走马灯已完成轮次。
+    /// 存储内容：当前 Section 身份、单词索引、当前轮次播放顺序（wordId）、
+    /// 已反馈集合、走马灯已完成轮次、队列布局快照。
     func saveProgress() {
         let defaults = UserDefaults.standard
-        defaults.set(currentSectionQueueIndex, forKey: progressSectionKey)
+
+        guard currentSectionQueueIndex < sectionQueue.count else { return }
+        let section = sectionQueue[currentSectionQueueIndex]
+
+        // 当前 Section 身份
+        let identity = SectionIdentity(
+            wordbookId: section.wordbookId,
+            sectionIndex: section.sectionIndex
+        )
+        encodeToDefaults(identity, forKey: progressSectionKey)
+
+        // 队列布局快照（sequential 不存，缺省即 identity）
+        let layout = currentQueueLayout()
+        if case .identity = layout {
+            defaults.removeObject(forKey: progressLayoutKey)
+        } else {
+            encodeToDefaults(layout, forKey: progressLayoutKey)
+        }
+
         defaults.set(currentWordIndex, forKey: progressWordKey)
         defaults.set(Array(feedbackSet), forKey: progressFeedbackSetKey)
         defaults.set(completedLoops, forKey: progressCompletedLoopsKey)
@@ -510,66 +573,93 @@ class ReciteEngine {
         // 持久化当前轮次的播放顺序（按 wordId）。
         // currentWordIndex 的语义依赖 currentWordOrder（shuffle 顺序、记忆反馈后续轮次的
         // "未反馈子集"顺序），不保存顺序就无法还原到确切的单词。
-        if currentSectionQueueIndex < sectionQueue.count {
-            let entries = sectionQueue[currentSectionQueueIndex].entries
-            let orderIds = currentWordOrder.compactMap { index -> String? in
-                guard index >= 0 && index < entries.count else { return nil }
-                return entries[index].wordId
-            }
-            defaults.set(orderIds, forKey: progressOrderKey)
-        } else {
-            defaults.removeObject(forKey: progressOrderKey)
+        let entries = section.entries
+        let orderIds = currentWordOrder.compactMap { index -> String? in
+            guard index >= 0 && index < entries.count else { return nil }
+            return entries[index].wordId
+        }
+        defaults.set(orderIds, forKey: progressOrderKey)
+    }
+
+    /// 计算当前队列的布局快照
+    private func currentQueueLayout() -> QueueLayout {
+        switch AppSettings.shared.sectionOrder {
+        case .sequential:
+            return .identity
+        case .randomStart:
+            guard let first = sectionQueue.first else { return .identity }
+            return .randomStart(SectionIdentity(
+                wordbookId: first.wordbookId,
+                sectionIndex: first.sectionIndex
+            ))
+        case .shuffled:
+            return .shuffled(sectionQueue.map {
+                SectionIdentity(wordbookId: $0.wordbookId, sectionIndex: $0.sectionIndex)
+            })
         }
     }
 
-    /// 清除持久化的进度数据
+    /// 清除持久化的进度数据（含续背锚点与旧索引格式残留）
     func clearProgress() {
         let defaults = UserDefaults.standard
+        // 旧版本索引寻址键一并清除（一次性迁移）
+        defaults.removeObject(forKey: "ReciteProgressSectionIndex")
         defaults.removeObject(forKey: progressSectionKey)
         defaults.removeObject(forKey: progressWordKey)
         defaults.removeObject(forKey: progressFeedbackSetKey)
         defaults.removeObject(forKey: progressCompletedLoopsKey)
         defaults.removeObject(forKey: progressOrderKey)
+        defaults.removeObject(forKey: progressLayoutKey)
+        defaults.removeObject(forKey: continuationAnchorKey)
     }
 
-    /// 尝试从 UserDefaults 恢复历史进度
+    /// 尝试从 UserDefaults 恢复历史进度（身份寻址 + 布局还原）
     ///
     /// 校验流程：
-    /// 1. 检查是否存在已保存的进度
-    /// 2. Section 索引不越界
-    /// 3. 保存的播放顺序（wordId）无重复，且每个单词都存在于当前 Section
-    /// 4. 单词索引不越界（对还原后的顺序校验）
-    /// 5. feedbackSet 中的单词 ID 均存在于当前 Section
-    /// 6. 走马灯已完成轮次不越界
+    /// 1. 检查是否存在已保存的进度（新身份键；旧索引键存在即视为失效清零）
+    /// 2. 套用保存的队列布局到确定性重建的基础队列（身份失效剔除，全失效则回退）
+    /// 3. 按身份定位当前 Section（找不到即回退）
+    /// 4. 保存的播放顺序（wordId）无重复，且每个单词都存在于当前 Section
+    /// 5. 单词索引不越界（对还原后的顺序校验）
+    /// 6. feedbackSet 中的单词 ID 均存在于当前 Section
+    /// 7. 走马灯已完成轮次不越界
     ///
-    /// 任意校验失败则清除进度，返回 false 由调用方从头开始。
-    /// 旧版本进度缺少播放顺序数据时同样视为失效，从头开始（一次性迁移代价）。
+    /// 任意校验失败则清除进度，返回 false 由调用方按策略新开始。
     ///
     /// - Returns: 恢复成功返回 true，无有效进度或校验失败返回 false
     private func restoreProgress() -> Bool {
         let defaults = UserDefaults.standard
 
-        // 无已保存的进度（首次启动或进度已清除）
-        guard defaults.object(forKey: progressSectionKey) != nil else {
-            return false
-        }
-
-        let savedSectionIndex = defaults.integer(forKey: progressSectionKey)
-        let savedWordIndex = defaults.integer(forKey: progressWordKey)
-        let savedFeedbackSet = defaults.stringArray(forKey: progressFeedbackSetKey) ?? []
-        let savedCompletedLoops = defaults.integer(forKey: progressCompletedLoopsKey)
-
-        // 校验 Section 索引（此时 currentSectionQueueIndex 尚未修改，仅需 clearProgress）
-        guard savedSectionIndex >= 0 && savedSectionIndex < sectionQueue.count else {
+        // 旧版本索引寻址进度：一次性失效，清零后按策略开始
+        if defaults.object(forKey: "ReciteProgressSectionIndex") != nil,
+           defaults.object(forKey: progressSectionKey) == nil {
             clearProgress()
             return false
         }
 
-        // 移到目标 Section 并重置轮次状态（单词顺序稍后用保存值覆盖）
-        currentSectionQueueIndex = savedSectionIndex
+        // 无已保存的进度（首次启动或进度已清除）
+        guard let savedIdentity = decodeFromDefaults(SectionIdentity.self, forKey: progressSectionKey) else {
+            return false
+        }
+
+        // 套用保存的队列布局（身份失效剔除；全失效回退由后续定位判定兜底）
+        applySavedLayout()
+
+        // 按身份定位当前 Section
+        guard let queueIndex = sectionQueue.firstIndex(where: {
+            $0.wordbookId == savedIdentity.wordbookId && $0.sectionIndex == savedIdentity.sectionIndex
+        }) else {
+            // 身份不在队列（词本停用/Section 消失）：回退新开始
+            return resetProgressAndFail()
+        }
+
+        currentSectionQueueIndex = queueIndex
         prepareCurrentSection()
 
         let section = sectionQueue[currentSectionQueueIndex]
+        let savedWordIndex = defaults.integer(forKey: progressWordKey)
+        let savedFeedbackSet = defaults.stringArray(forKey: progressFeedbackSetKey) ?? []
+        let savedCompletedLoops = defaults.integer(forKey: progressCompletedLoopsKey)
 
         // 还原保存时的播放顺序：wordId 映射回 Section 内索引
         guard let savedOrderIds = defaults.stringArray(forKey: progressOrderKey),
@@ -619,12 +709,115 @@ class ReciteEngine {
         return true
     }
 
+    /// 将保存的队列布局套用到确定性重建的基础队列上
+    ///
+    /// 布局身份不在队列中的（词本停用/删除）：randomStart 起点失效回退 identity；
+    /// shuffled 列表剔除失效项后重排（全部失效则保持基础队列，由后续身份定位兜底回退）。
+    private func applySavedLayout() {
+        guard let layout = decodeFromDefaults(QueueLayout.self, forKey: progressLayoutKey) else {
+            return // 无布局（sequential 或旧进度），基础队列即布局
+        }
+
+        switch layout {
+        case .identity:
+            break
+        case .randomStart(let start):
+            if let index = sectionQueue.firstIndex(where: {
+                $0.wordbookId == start.wordbookId && $0.sectionIndex == start.sectionIndex
+            }) {
+                sectionQueue.rotate(toStartAt: index)
+            }
+            // 起点身份失效：保持基础队列，身份定位失败会走回退路径
+        case .shuffled(let identities):
+            var byIdentity: [SectionIdentity: (wordbookId: String, sectionIndex: Int, entries: [WordEntry])] = [:]
+            for section in sectionQueue {
+                byIdentity[SectionIdentity(wordbookId: section.wordbookId, sectionIndex: section.sectionIndex)] = section
+            }
+            // 按保存顺序重排，仅保留仍存在于队列的 Section
+            let restored = identities.compactMap { byIdentity[$0] }
+            if restored.count == sectionQueue.count {
+                sectionQueue = restored
+            } else {
+                // 布局部分失效：保持基础队列（部分重排会产生与身份定位不一致的语义，
+                // 交由身份定位失败兜底回退到策略新开始，行为更可预测）
+            }
+        }
+    }
+
+    /// 全部完成时记录续背锚点（最后完成 Section 的身份）
+    ///
+    /// 在 clearProgress 之后调用：进行中进度已清除，仅留锚点键，
+    /// 与进行中进度天然互斥。
+    private func saveContinuationAnchor() {
+        guard currentSectionQueueIndex - 1 >= 0, currentSectionQueueIndex - 1 < sectionQueue.count else { return }
+        let section = sectionQueue[currentSectionQueueIndex - 1]
+        encodeToDefaults(
+            SectionIdentity(wordbookId: section.wordbookId, sectionIndex: section.sectionIndex),
+            forKey: continuationAnchorKey
+        )
+    }
+
+    /// 续背锚点恢复：从锚点的下一 Section（环形）开始新的一轮
+    ///
+    /// - Returns: 成功恢复返回 true；无锚点或锚点身份失效返回 false（回退正常启动路径）
+    private func resumeFromContinuationAnchor() -> Bool {
+        guard let anchor = decodeFromDefaults(SectionIdentity.self, forKey: continuationAnchorKey) else {
+            return false
+        }
+
+        // 锚点身份定位（基础队列即可，续背轮的推进顺序与布局无关紧要）
+        guard let anchorIndex = sectionQueue.firstIndex(where: {
+            $0.wordbookId == anchor.wordbookId && $0.sectionIndex == anchor.sectionIndex
+        }) else {
+            // 词本已停用等：锚点失效，清除后走正常路径
+            UserDefaults.standard.removeObject(forKey: continuationAnchorKey)
+            return false
+        }
+
+        // 下一 Section 环形绕回；锚点清除（新轮进度由正常保存路径接管）
+        UserDefaults.standard.removeObject(forKey: continuationAnchorKey)
+        currentSectionQueueIndex = (anchorIndex + 1) % sectionQueue.count
+        prepareCurrentSection()
+        state = .playing
+        displayCurrentWord()
+        saveProgress()
+        return true
+    }
+
     /// 清除进度并重置到初始状态，返回 false 供 restoreProgress 校验失败时使用
     private func resetProgressAndFail() -> Bool {
         clearProgress()
+        applySectionOrderStrategy()
         currentSectionQueueIndex = 0
         prepareCurrentSection()
         return false
+    }
+
+    // MARK: - 私有：Codable 与 UserDefaults 桥接
+
+    private func encodeToDefaults<T: Encodable>(_ value: T, forKey key: String) {
+        if let data = try? JSONEncoder().encode(value) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    private func decodeFromDefaults<T: Decodable>(_ type: T.Type, forKey key: String) -> T? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(type, from: data)
+    }
+}
+
+// MARK: - Array Rotate
+
+extension Array {
+    /// 将数组元素循环右移，使指定索引成为新首元素（randomStart 环形语义的实现基础）
+    ///
+    /// [A, B, C, D] rotate(toStartAt: 2) → [C, D, A, B]
+    mutating func rotate(toStartAt index: Int) {
+        guard count > 1, index > 0, index < count else { return }
+        let suffix = self[index...]
+        let prefix = self[..<index]
+        self = Array(suffix) + Array(prefix)
     }
 }
 

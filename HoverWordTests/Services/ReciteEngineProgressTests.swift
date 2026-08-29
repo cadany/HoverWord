@@ -106,7 +106,7 @@ final class ReciteEngineProgressTests: XCTestCase {
         newEngine.clearProgress()
     }
 
-    func testClearProgressOnAllComplete() {
+    func testContinuationAnchorAfterAllComplete() {
         AppSettings.shared.sectionSize = 5  // 所有 5 个单词在 1 个 Section
         AppSettings.shared.playOrder = .sequential
 
@@ -118,11 +118,11 @@ final class ReciteEngineProgressTests: XCTestCase {
 
         XCTAssertTrue(delegate.didCompleteAll)
 
-        // 新建引擎应从头开始（进度已被清除）
+        // 全部完成后记录续背锚点：新引擎从锚点下一 Section（环形绕回唯一 Section）继续
         let newEngine = ReciteEngine()
         newEngine.start()
         let pos = newEngine.currentSectionPosition()
-        XCTAssertEqual(pos.index, 0, "全部完成后进度应清除，新引擎从 Section 0 开始")
+        XCTAssertEqual(pos.index, 0, "唯一 Section 完成后续背环形绕回 Section 0")
 
         newEngine.stop()
         newEngine.clearProgress()
@@ -243,21 +243,27 @@ final class ReciteEngineProgressTests: XCTestCase {
         newEngine.clearProgress()
     }
 
-    func testInvalidSectionIndexClearsProgress() {
+    func testInvalidSectionIdentityClearsProgress() {
         AppSettings.shared.playOrder = .sequential
         engine.start()
         engine.markKnown()
         engine.saveProgress()
 
-        // 手动写入越界的 Section 索引
-        UserDefaults.standard.set(999, forKey: "ReciteProgressSectionIndex")
+        // 手动写入不存在词本的 Section 身份（模拟身份失效：词本已删除）
+        let invalidIdentity: [String: String] = [
+            "wordbookId": "ghost-wordbook",
+            "sectionIndex": "0"
+        ]
+        if let data = try? JSONEncoder().encode(invalidIdentity) {
+            UserDefaults.standard.set(data, forKey: "ReciteProgressSectionIdentity")
+        }
 
         let newEngine = ReciteEngine()
         newEngine.start()
 
         // 应回退到 Section 0
         let pos = newEngine.currentSectionPosition()
-        XCTAssertEqual(pos.index, 0, "越界 Section 索引应回退到 0")
+        XCTAssertEqual(pos.index, 0, "身份失效的进度应回退到 0")
 
         newEngine.stop()
         newEngine.clearProgress()

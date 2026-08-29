@@ -21,8 +21,11 @@ class AppSettings {
     /// 走马灯模式单 Section 循环轮次，取值 1-20，默认 3
     var carouselLoopCount: Int = Constants.defaultCarouselLoops
 
-    /// 展示顺序，默认顺序播放
+    /// 展示顺序（组内），默认顺序播放
     var playOrder: PlayOrder = .sequential
+
+    /// Section 组间顺序策略，默认从第一组开始
+    var sectionOrder: SectionOrder = .sequential
 
     /// 单单词停留时长（秒），取值 1-60，默认 5
     var stayDuration: Int = Constants.defaultStayDuration
@@ -120,6 +123,7 @@ class AppSettings {
             reciteMode: reciteMode,
             carouselLoopCount: carouselLoopCount,
             playOrder: playOrder,
+            sectionOrder: sectionOrder,
             stayDuration: stayDuration,
             fullscreenAutoHide: fullscreenAutoHide,
             muteSpeechInFullscreen: muteSpeechInFullscreen,
@@ -176,6 +180,7 @@ class AppSettings {
         var reciteMode: ReciteMode
         var carouselLoopCount: Int
         var playOrder: PlayOrder
+        var sectionOrder: SectionOrder?
         var stayDuration: Int
         var fullscreenAutoHide: Bool
         var muteSpeechInFullscreen: Bool?
@@ -204,6 +209,8 @@ class AppSettings {
         reciteMode = stored.reciteMode
         carouselLoopCount = stored.carouselLoopCount
         playOrder = stored.playOrder
+        // 向后兼容：旧版本无组间策略配置时使用默认值
+        sectionOrder = stored.sectionOrder ?? .sequential
         stayDuration = stored.stayDuration
         fullscreenAutoHide = stored.fullscreenAutoHide
         // 向后兼容：旧版本无全屏静音配置时默认开启

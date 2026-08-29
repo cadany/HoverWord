@@ -5,6 +5,14 @@
 ### Requirement: Section 队列构建
 系统 SHALL 根据用户勾选启用的单词本，按单词本在列表中的排列顺序，将所有 Section 依次拼接为完整的背记队列。构建 SHALL 采用每单词本单次查询取出全部词条并按 sectionIndex 内存分组（排序口径 sectionIndex → orderIndex → sourceWord，与逐 Section 查询一致），而非逐 Section 发起查询。收藏夹单词本 SHALL 单次取全部 Favorite 按 sectionSize 分桶，sectionIndex 由分桶位置推导。
 
+确定性基础队列构建后，按用户配置的 Section 顺序策略（`sectionOrder`）应用于队列：
+
+- `sequential`（默认）：队列即基础队列，按序推进
+- `randomStart`：新开始时随机选起点 Section，队列 rotate 至该起点，之后顺序推进（环形语义）
+- `shuffled`：新开始时打乱全部 Section 顺序
+
+策略仅在"新开始"（无有效进度冷启动 / restart / 进度校验失败回退 / 续背新轮）时执行随机化；恢复进行中进度时按确定性规则重建基础队列并套用保存的队列布局。单 Section 队列（含收藏夹单词本）时 randomStart/shuffled 退化为 sequential。
+
 #### Scenario: 单个单词本启用
 - **WHEN** 用户仅启用单词本 A（含 3 个 Section）
 - **THEN** 系统 SHALL 构建队列 [A-S0, A-S1, A-S2]
@@ -12,6 +20,22 @@
 #### Scenario: 多个单词本启用
 - **WHEN** 用户按顺序启用单词本 A（2 个 Section）和单词本 B（3 个 Section）
 - **THEN** 系统 SHALL 构建队列 [A-S0, A-S1, B-S0, B-S1, B-S2]，Section 间顺序固定
+
+#### Scenario: 随机起点
+- **WHEN** sectionOrder 为 randomStart 且无有效进度的新开始
+- **THEN** 队列 SHALL 为基础队列按随机起点的 rotate 结果；背到末尾后 SHALL 环形绕回起点前的 Section
+
+#### Scenario: 随机打乱
+- **WHEN** sectionOrder 为 shuffled 且无有效进度的新开始
+- **THEN** 队列 SHALL 为基础队列的随机排列，全部 Section 均出现且仅出现一次
+
+#### Scenario: 单 Section 退化
+- **WHEN** 队列仅含一个 Section（如收藏夹单词本）
+- **THEN** 任意策略下队列 SHALL 等价于基础队列（无随机空间）
+
+#### Scenario: 策略变更重置
+- **WHEN** 背记进行中修改 sectionOrder 设置
+- **THEN** SHALL 清除进度并按新策略重新开始（走既有设置变更重置路径）
 
 #### Scenario: 无单词本启用
 - **WHEN** 用户未启用任何单词本
@@ -91,7 +115,7 @@
 - **THEN** 系统 SHALL 从新轮次单词列表的 index 0 开始展示
 
 ### Requirement: Section 内展示顺序
-系统 SHALL 支持"顺序播放"与"随机播放"两种展示顺序设置，仅在单个 Section 内部生效，Section 之间的先后顺序固定不变。随机模式下每一轮循环重新打乱一次单词顺序。
+系统 SHALL 支持"顺序播放"与"随机播放"两种组内展示顺序设置，仅在单个 Section 内部生效，Section 之间的先后顺序由 Section 顺序策略决定。随机模式下每一轮循环重新打乱一次单词顺序。
 
 #### Scenario: 顺序播放
 - **WHEN** 展示顺序设为"顺序播放"
@@ -103,18 +127,33 @@
 
 #### Scenario: Section 间顺序不受影响
 - **WHEN** 展示顺序设为"随机播放"，队列中有多个 Section
-- **THEN** 系统 SHALL 保持 Section 之间的队列顺序不变，仅 Section 内部打乱
+- **THEN** 系统 SHALL 保持 Section 之间的队列顺序不变（由 Section 顺序策略决定），仅 Section 内部打乱
+
+### Requirement: 完成后续背循环
+全部 Section 完成时记录续背锚点（最后完成 Section 的身份）；下次会话 start() 检测到锚点时，SHALL 从锚点的下一 Section（环形绕回）继续新的一轮，而非从策略起点重来。`restart()` 显式清除锚点从策略起点开始。
+
+#### Scenario: 一轮完成后继续
+- **WHEN** 全部 Section 完成后应用重启（或再次 start）
+- **THEN** 新一轮 SHALL 从最后完成 Section 的下一 Section 开始
+
+#### Scenario: 最后一个 Section 完成后绕回
+- **WHEN** 最后完成的是队列中最后一个 Section
+- **THEN** 新一轮 SHALL 从队列第一个 Section 开始（环形）
+
+#### Scenario: 重新开始清除续背
+- **WHEN** 用户点击重新开始
+- **THEN** SHALL 清除续背锚点与全部进度，按当前策略新开始（重新随机化）
 
 ### Requirement: 全队列完成检测
-当背记队列中所有 Section 全部完成时，系统 SHALL 停止单词切换，进入"已学完"状态。
+当背记队列中所有 Section 全部完成时，系统 SHALL 停止单词切换，进入"已学完"状态，并记录续背锚点（最后完成 Section 的身份，进度不再清零）。
 
 #### Scenario: 所有 Section 完成
 - **WHEN** 队列中最后一个 Section 完成
-- **THEN** 系统 SHALL 停止调度，悬浮窗显示"已学完"状态
+- **THEN** 系统 SHALL 停止调度，悬浮窗显示"已学完"状态，并记录续背锚点
 
 #### Scenario: 已学完状态可重新开始
 - **WHEN** 悬浮窗处于"已学完"状态
-- **THEN** 用户 SHALL 可点击"重新开始"按钮，从队列第一个 Section 重新背记
+- **THEN** 用户 SHALL 可点击"重新开始"按钮，清除续背锚点与全部进度，按当前策略从策略起点开始（重新随机化）
 
 ### Requirement: 设置变化重置进度
 当用户在设置中修改背记规则、增减或调整单词本启用状态时，系统 SHALL 自动重置背记进度，从当前队列第一个 Section 重新开始。
@@ -185,15 +224,17 @@
 - **THEN** 引擎 SHALL 仅记录悬停标志，SHALL NOT 产生计时器副作用
 
 ### Requirement: 背记进度持久化
-系统 SHALL 将背记进度（当前 Section 索引、Section 内单词索引、当前轮次播放顺序（wordId 列表）、已反馈单词集合、走马灯已完成轮次）持久化到 UserDefaults。重启后 SHALL 自动恢复到上次进度，且恢复时展示的单词 SHALL 与保存时正在展示的单词完全一致，无论播放顺序为顺序、随机，还是记忆反馈后续轮次的"未反馈子集"。
+系统 SHALL 将背记进度（当前 Section 以 `(wordbookId, sectionIndex)` 身份标识、Section 内单词索引、当前轮次播放顺序（wordId 列表）、已反馈单词集合、走马灯已完成轮次、队列布局）持久化到 UserDefaults。重启后 SHALL 自动恢复到上次进度，且恢复时展示的单词 SHALL 与保存时正在展示的单词完全一致，无论播放顺序为顺序、随机，还是记忆反馈后续轮次的"未反馈子集"。
+
+进度以身份寻址：恢复时按确定性规则重建基础队列、套用保存的队列布局（randomStart 的起点身份 / shuffled 的完整身份列表）、按身份定位当前 Section。词本启停或词本列表顺序调整导致队列索引漂移时，身份寻址 SHALL 定位到与保存时相同的 Section。旧版本索引寻址的进度数据 SHALL 检测失效并清零（一次性迁移代价）。
 
 #### Scenario: 背记过程中保存进度
 - **WHEN** 引擎在背记模式下切换到下一个单词或完成一个 Section
-- **THEN** 系统 SHALL 将当前 Section 索引、单词索引、当前轮次播放顺序（wordId 列表）和已反馈集合保存到 UserDefaults
+- **THEN** 系统 SHALL 将当前 Section 身份、单词索引、当前轮次播放顺序（wordId 列表）、已反馈集合与队列布局保存到 UserDefaults
 
 #### Scenario: 重启后恢复进度
 - **WHEN** 用户启动应用，存在历史背记进度（含随机播放顺序或记忆反馈"未反馈子集"轮次的进度）
-- **THEN** 引擎 SHALL 按保存的播放顺序还原，从上次正在展示的单词继续背记，该单词与保存时完全一致
+- **THEN** 引擎 SHALL 按保存的播放顺序还原，从上次正在展示的单词继续背记，该单词与保存时完全一致（含随机策略下的队列布局还原）
 
 #### Scenario: 已反馈单词在恢复后不重复出现
 - **WHEN** 历史进度中存在已反馈集合，恢复后进入后续轮次
@@ -203,8 +244,16 @@
 - **WHEN** 历史进度保存的播放顺序中存在不属于当前 Section 的 wordId（如词库已重新导入）
 - **THEN** 系统 SHALL 清除进度并安全回退到从头开始背记，不崩溃、不显示异常
 
+#### Scenario: 身份失效回退
+- **WHEN** 恢复时保存的 Section 身份或布局身份不在重建队列中（词本停用/删除）
+- **THEN** SHALL 清除进度并按当前策略新开始（重新随机化）
+
+#### Scenario: 词本启停顺序变化不错位
+- **WHEN** 进度保存后词本启停或词本列表顺序调整导致队列索引漂移
+- **THEN** 身份寻址恢复 SHALL 定位到与保存时相同的 Section
+
 #### Scenario: 旧版本进度数据一次性失效
-- **WHEN** 历史进度由旧版本保存，缺少播放顺序数据
+- **WHEN** 历史进度由旧版本保存，缺少播放顺序数据或为索引寻址格式
 - **THEN** 系统 SHALL 视为无效进度，从头开始背记
 
 #### Scenario: 收藏夹单词本启用时恢复到确切单词
@@ -212,7 +261,7 @@
 - **THEN** 引擎 SHALL 恢复到上次正在展示的收藏词条，依赖收藏记录的稳定标识（favoriteId）完成匹配
 
 #### Scenario: 进度与当前配置不匹配时回退
-- **WHEN** 历史进度中的 Section 索引超出当前队列范围（单词本已修改或 Section 大小已变更）
+- **WHEN** 历史进度中的 Section 身份在当前队列中无法定位（单词本已修改或 Section 大小已变更）
 - **THEN** 系统 SHALL 安全回退到从头开始背记，不崩溃、不显示异常
 
 #### Scenario: 完成全部单词后清除进度

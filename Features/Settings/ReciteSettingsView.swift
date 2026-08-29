@@ -9,6 +9,7 @@ struct ReciteSettingsView: View {
     @State private var carouselLoops: Int = Constants.defaultCarouselLoops
     @State private var sectionSize: Int = Constants.defaultSectionSize
     @State private var playOrder: PlayOrder = .sequential
+    @State private var sectionOrder: SectionOrder = .sequential
     @State private var stayDuration: Double = Double(Constants.defaultStayDuration)
     @State private var fullscreenAutoHide: Bool = false
     @State private var muteSpeechInFullscreen: Bool = true
@@ -38,7 +39,7 @@ struct ReciteSettingsView: View {
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.secondary)
 
-                    // 每组词数
+                    // Section 词数
                     HStack {
                         Text(L10n.t("recite.sectionSize"))
                             .font(.system(size: 13))
@@ -69,21 +70,36 @@ struct ReciteSettingsView: View {
                         .onChange(of: carouselLoops) { _ in saveCarouselLoops() }
                     }
                     .opacity(reciteMode == .carousel ? 1.0 : 0.5)
-                }
-                .glassCard()
 
-                // 展示顺序卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.t("recite.playOrder"))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $playOrder) {
-                        ForEach(PlayOrder.allCases, id: \.self) { order in
-                            Text(order.displayName).tag(order)
+                    // Section 顺序（Section 之间）：左标签 + 右分段选择
+                    HStack {
+                        Text(L10n.t("recite.sectionOrder"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $sectionOrder) {
+                            ForEach(SectionOrder.allCases, id: \.self) { order in
+                                Text(order.shortDisplayName).tag(order)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+                        .onChange(of: sectionOrder) { _ in saveSectionOrder() }
                     }
-                    .pickerStyle(.radioGroup)
-                    .onChange(of: playOrder) { _ in savePlayOrder() }
+
+                    // Section 内展示顺序：左标签 + 右分段选择
+                    HStack {
+                        Text(L10n.t("recite.playOrder"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $playOrder) {
+                            ForEach(PlayOrder.allCases, id: \.self) { order in
+                                Text(order.displayName).tag(order)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+                        .onChange(of: playOrder) { _ in savePlayOrder() }
+                    }
                 }
                 .glassCard()
 
@@ -143,6 +159,7 @@ struct ReciteSettingsView: View {
         carouselLoops = AppSettings.shared.carouselLoopCount
         sectionSize = AppSettings.shared.sectionSize
         playOrder = AppSettings.shared.playOrder
+        sectionOrder = AppSettings.shared.sectionOrder
         stayDuration = Double(AppSettings.shared.stayDuration)
         fullscreenAutoHide = AppSettings.shared.fullscreenAutoHide
         muteSpeechInFullscreen = AppSettings.shared.muteSpeechInFullscreen
@@ -157,6 +174,12 @@ struct ReciteSettingsView: View {
     private func savePlayOrder() {
         guard AppSettings.shared.playOrder != playOrder else { return }
         AppSettings.shared.playOrder = playOrder
+        AppSettings.shared.postDidChange()
+    }
+
+    private func saveSectionOrder() {
+        guard AppSettings.shared.sectionOrder != sectionOrder else { return }
+        AppSettings.shared.sectionOrder = sectionOrder
         AppSettings.shared.postDidChange()
     }
 

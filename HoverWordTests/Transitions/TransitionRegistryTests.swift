@@ -14,14 +14,19 @@ final class TransitionRegistryTests: XCTestCase {
     }
 
     func testAllTransitionsRegistered() {
-        // 所有 8 个内置动效都应该注册
+        // 所有 9 个内置动效（含"无"动效）都应该注册
         let allEffects = TransitionRegistry.all
-        XCTAssertEqual(allEffects.count, 8, "应该有 8 个内置动效")
+        XCTAssertEqual(allEffects.count, 9, "应该有 9 个内置动效")
 
         // 验证每个动效都有唯一的 id
         let ids = allEffects.map { $0.id }
         let uniqueIds = Set(ids)
         XCTAssertEqual(ids.count, uniqueIds.count, "所有动效 id 应该唯一")
+    }
+
+    func testNoneTransitionRegisteredFirst() {
+        // "无"动效应置顶注册（下拉首项）
+        XCTAssertEqual(TransitionRegistry.all.first?.id, "none", "无动效应位于注册表首位")
     }
 
     func testEffectLookupById() {
