@@ -1,0 +1,18 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+ <!-- 小尺寸专用简化版（16/32pt 及 @2x）：完整双卡设计在 64px 以下时后卡「？」与投影会糊成噪点，
+      按 macOS 图标小尺寸惯例去除次要元素与投影、放大主体，保留绿底 + 白卡「W」核心识别。 -->
+ <defs>
+  <!-- 背景渐变：左上亮绿 -> 右下深绿（与 AppMainIcon.svg 一致） -->
+  <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="bgGrad">
+   <stop stop-color="#1BC49A" offset="0%"/>
+   <stop stop-color="#0A6B54" offset="100%"/>
+  </linearGradient>
+ </defs>
+ <!-- 背景：满幅直角，Apple 会自行加圆角 -->
+ <rect fill="url(#bgGrad)" width="1024" height="1024" x="0" y="0"/>
+ <!-- 顶部高光：macOS 系统应用式光泽 -->
+ <ellipse fill="#FFFFFF" opacity="0.16" cx="512" cy="-60" rx="814" ry="407"/>
+ <!-- 居中白卡「W」，无投影、不旋转：小尺寸下边缘最干净；主体放大并留呼吸边距保证 16px 可辨 -->
+ <rect fill="#FFFFFF" rx="126" width="680" height="620" x="172" y="202"/>
+ <text text-anchor="middle" dominant-baseline="central" fill="#0A6B54" font-weight="700" font-size="440" font-family="-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif" x="512" y="520">W</text>
+</svg>

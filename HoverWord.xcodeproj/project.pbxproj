@@ -15,6 +15,7 @@
 		12875BD2AA7F5C1269EFE394 /* PlayOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08506151F055E3FC60E7BD3C /* PlayOrder.swift */; };
 		146B5AEA700C93AF038B7559 /* BounceInEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25984498BAF81841AFD27F6E /* BounceInEffect.swift */; };
 		1D03693445B2C197896245DD /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A87F4D760AF6E35D872AB0 /* AppSettings.swift */; };
+		20253A2F021381CBB5D72EB4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E043701752CB26C991CF09BF /* PrivacyInfo.xcprivacy */; };
 		25723BB70E66C3597BFB1F13 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF4D83FCC510D01B55B6FFE /* L10n.swift */; };
 		25CA751B36288758B49370AA /* TransitionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA011F073415D5B000438EEF /* TransitionCategory.swift */; };
 		29E807D813EF762D2892CC5E /* TransitionParameter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4203F5043B4B8836DE324BF8 /* TransitionParameter.swift */; };
@@ -159,6 +160,7 @@
 		CC759D9D66D34909E95F47A6 /* FloatWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatWindowController.swift; sourceTree = "<group>"; };
 		D102E9C253542A91FF6AE7C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DEBB3E93850F9C39E4331DC1 /* SidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarItem.swift; sourceTree = "<group>"; };
+		E043701752CB26C991CF09BF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E1272A8141F56E87E813F8A2 /* Wordbook+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Wordbook+CoreDataProperties.swift"; sourceTree = "<group>"; };
 		E183DC35C70AB0B2F1AACBEC /* ReciteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngine.swift; sourceTree = "<group>"; };
 		E1DA7A3E84CC66956A9936EE /* TransitionContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionContent.swift; sourceTree = "<group>"; };
@@ -346,6 +348,7 @@
 				E001F28E3114ACA6BA7E6414 /* HoverWord.xcdatamodeld */,
 				10AE12D078A4B6FE706BCCB1 /* Info.plist */,
 				1C55C7264BD496C6613ACB86 /* Localizable.xcstrings */,
+				E043701752CB26C991CF09BF /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -476,6 +479,7 @@
 			files = (
 				CAA5B6CCA270C845C73575B1 /* Assets.xcassets in Resources */,
 				FD2488C64D59E9B2D50B86C1 /* Localizable.xcstrings in Resources */,
+				20253A2F021381CBB5D72EB4 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -721,6 +725,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HoverWord.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -761,6 +766,7 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HoverWord.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;

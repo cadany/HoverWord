@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en" class="js"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoverWord — macOS floating word flashcards</title>
+<meta name="description" id="metaDesc" content="HoverWord is a quiet glass pane that hovers on your desktop, flashing words at the edge of your sight. Glance once and the memory compounds. 100% local, offline, zero interruption.">
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+  --accent: #0A6B54;
+  --accent-hover: #0A4A3A;
+  --accent-soft: rgba(10, 107, 84, 0.10);
+  --accent-border: rgba(10, 107, 84, 0.24);
+
+  --bg: #F5F6F7;
+  --bg-raised: #FFFFFF;
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-strong: rgba(255, 255, 255, 0.86);
+  --stroke: rgba(17, 17, 17, 0.08);
+  --stroke-strong: rgba(17, 17, 17, 0.14);
+
+  --text: #17181A;
+  --text-2: #55575C;
+  --text-3: #85878D;
+
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.04), 0 2px 8px rgba(17, 17, 17, 0.05);
+  --shadow-md: 0 2px 6px rgba(17, 17, 17, 0.06), 0 16px 40px rgba(17, 17, 17, 0.10);
+
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+
+  --maxw: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #2FD0A0;
+    --accent-hover: #4EDFB2;
+    --accent-soft: rgba(47, 208, 160, 0.14);
+    --accent-border: rgba(47, 208, 160, 0.28);
+
+    --bg: #0E0F11;
+    --bg-raised: #1A1C1E;
+    --surface: rgba(40, 42, 45, 0.55);
+    --surface-strong: rgba(46, 48, 52, 0.85);
+    --stroke: rgba(255, 255, 255, 0.08);
+    --stroke-strong: rgba(255, 255, 255, 0.14);
+
+    --text: #F5F6F7;
+    --text-2: #B8BAC0;
+    --text-3: #8A8D93;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.5);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color .3s ease, color .3s ease;
+}
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+
+::selection { background: var(--accent-soft); }
+
+.container {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ---------- 导航 ---------- */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  transition: background-color .3s ease, border-color .3s ease, backdrop-filter .3s ease;
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: var(--surface);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--stroke);
+}
+.nav-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 650; font-size: 17px; letter-spacing: -0.01em;
+}
+.brand-mark {
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  object-fit: cover;
+  display: block;
+}
+.nav-links { display: flex; gap: 24px; margin-left: auto; }
+.nav-links a { font-size: 14.5px; color: var(--text-2); font-weight: 500; transition: color .15s ease; }
+.nav-links a:hover { color: var(--text); }
+.nav-actions { display: flex; align-items: center; gap: 10px; }
+.lang-toggle, .gh-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--stroke-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.lang-toggle svg, .gh-link svg { width: 16px; height: 16px; fill: currentColor; }
+.lang-toggle:hover { color: var(--text); border-color: var(--text-3); }
+.gh-link:hover { color: var(--text); border-color: var(--text-3); }
+.nav-cta {
+  display: inline-flex; align-items: center;
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px; font-weight: 600;
+  transition: background-color .15s ease, transform .1s ease;
+}
+.nav-cta:hover { background: var(--accent-hover); }
+.nav-cta:active { transform: scale(0.97); }
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: 160px 0 96px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 64px;
+  align-items: center;
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 24px;
+}
+.eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.hero h1 {
+  font-size: clamp(40px, 5.6vw, 62px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 22px;
+}
+.hero-sub {
+  font-size: 17.5px;
+  color: var(--text-2);
+  max-width: 460px;
+  margin-bottom: 36px;
+}
+.hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  font-size: 15.5px; font-weight: 600;
+  cursor: pointer;
+  transition: background-color .15s ease, transform .1s ease, color .15s ease, border-color .15s ease;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--stroke-strong);
+}
+.btn-ghost:hover { border-color: var(--text-3); background: var(--surface); }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.meta-chip {
+  font-size: 12.5px; color: var(--text-3); font-weight: 500;
+  padding: 5px 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+/* ---------- 悬浮窗复刻 ---------- */
+.hero-visual { position: relative; }
+.float-stage {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 56px 40px;
+  background:
+    radial-gradient(120% 90% at 15% 10%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(135deg, #1BC49A 0%, #129677 50%, #0A6B54 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  overflow: hidden;
+}
+@media (prefers-color-scheme: dark) {
+  .float-stage {
+    background:
+      radial-gradient(120% 90% at 15% 10%, rgba(255, 255, 255, 0.10), transparent 55%),
+      linear-gradient(135deg, #0F5F4C 0%, #0A4A3A 55%, #07362B 100%);
+  }
+}
+.float-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(140% 100% at 50% -20%, rgba(255,255,255,0.25), transparent 60%);
+}
+/* ---------- 舞台装饰：呼应 App 图标的双卡世界（深绿卡「？」-8°、白卡「W」+7°） ---------- */
+.stage-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* 点阵网格（桌面工作区隐喻）+ 右下柔光斑 */
+  background:
+    radial-gradient(130% 110% at 88% 96%, rgba(255,255,255,0.14), transparent 52%),
+    radial-gradient(rgba(255,255,255,0.13) 1px, transparent 1.6px) 0 0 / 24px 24px;
+}
+.ghost-card {
+  position: absolute;
+  display: grid; place-items: center;
+  font-weight: 700;
+  font-family: var(--font);
+  border-radius: 22px;
+  /* 不用 backdrop-filter/will-change：与无限动画叠加会逐帧重绘模糊背景，拖垮 hover 动效 */
+}
+.ghost-card.gc-back {
+  left: -34px; bottom: -42px;
+  width: 190px; height: 220px;
+  transform: rotate(-8deg);
+  background: rgba(10, 74, 58, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.30);
+  font-size: 96px;
+  box-shadow: 0 24px 48px rgba(7, 54, 43, 0.28);
+  animation: cardFloatA 9s ease-in-out infinite;
+}
+.ghost-card.gc-front {
+  right: -26px; top: -34px;
+  width: 150px; height: 176px;
+  transform: rotate(7deg);
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  color: rgba(255, 255, 255, 0.34);
+  font-size: 84px;
+  box-shadow: 0 18px 40px rgba(7, 54, 43, 0.22);
+  animation: cardFloatB 11s ease-in-out infinite;
+}
+@keyframes cardFloatA {
+  0%, 100% { transform: rotate(-8deg) translateY(0); }
+  50% { transform: rotate(-8deg) translateY(-10px); }
+}
+@keyframes cardFloatB {
+  0%, 100% { transform: rotate(7deg) translateY(0); }
+  50% { transform: rotate(7deg) translateY(-14px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ghost-card { animation: none; }
+}
+@media (prefers-color-scheme: dark) {
+  .stage-deco {
+    background:
+      radial-gradient(130% 110% at 88% 96%, rgba(255,255,255,0.06), transparent 52%),
+      radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1.6px) 0 0 / 24px 24px;
+  }
+  .ghost-card.gc-back { background: rgba(10, 74, 58, 0.50); }
+  .ghost-card.gc-front { background: rgba(255, 255, 255, 0.07); border-color: rgba(255,255,255,0.14); }
+}
+@media (max-width: 720px) {
+  .ghost-card.gc-back { width: 130px; height: 150px; font-size: 64px; left: -20px; bottom: -28px; }
+  .ghost-card.gc-front { width: 104px; height: 122px; font-size: 56px; right: -16px; top: -22px; }
+}
+.float-window {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    "word phonetic . actions"
+    "meaning meaning meaning meaning";
+  align-items: center;
+  column-gap: 18px;
+  row-gap: 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--surface-strong);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border: 1px solid var(--stroke-strong);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.4);
+  transition: opacity .15s ease, transform .15s ease;
+}
+@media (prefers-color-scheme: dark) {
+  .float-window {
+    box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+}
+.fw-word {
+  grid-area: word;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.fw-phonetic {
+  grid-area: phonetic;
+  font-size: 13px;
+  color: var(--text-3);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.fw-meaning {
+  grid-area: meaning;
+  font-size: 14.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.fw-actions {
+  grid-area: actions;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.float-window:hover .fw-actions,
+.float-window.touch .fw-actions { opacity: 1; transform: none; }
+.fw-btn {
+  width: 34px; height: 30px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 600;
+  border: 1px solid var(--stroke-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.fw-btn:hover { background: var(--accent-soft); color: var(--text); border-color: var(--accent-border); }
+.fw-btn.know { color: var(--accent); }
+.fw-btn.heart { border: none; background: transparent; font-size: 16px; }
+.fw-caption {
+  position: absolute;
+  bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: rgba(255,255,255,0.92);
+  background: rgba(10, 74, 58, 0.55);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+@media (prefers-color-scheme: dark) {
+  .fw-caption { color: rgba(255,255,255,0.92); background: rgba(6, 42, 34, 0.55); }
+}
+
+/* ---------- 指标带 ---------- */
+.metrics {
+  padding: 40px 0 88px;
+  border-top: 1px solid var(--stroke);
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.metric { text-align: left; }
+.metric-num {
+  font-size: 34px; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.metric-num em { font-style: normal; color: var(--accent); }
+.metric-label { font-size: 13.5px; color: var(--text-3); margin-top: 4px; }
+
+/* ---------- 通用 section ---------- */
+.section { padding: 96px 0; }
+.section-head { max-width: 620px; margin-bottom: 56px; }
+.section-kicker {
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.15; letter-spacing: -0.022em; font-weight: 700;
+  margin-bottom: 16px;
+}
+.section-desc { font-size: 16px; color: var(--text-2); }
+
+/* ---------- 双背记模式 ---------- */
+.modes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.mode-card {
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 32px;
+  position: relative;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.mode-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--stroke-strong); }
+.mode-tag {
+  display: inline-block;
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  background: var(--accent-soft); border: 1px solid var(--accent-border);
+  border-radius: 999px; padding: 5px 12px;
+  margin-bottom: 18px;
+}
+.mode-card h3 { font-size: 21px; font-weight: 650; margin-bottom: 12px; letter-spacing: -0.01em; }
+.mode-card p { font-size: 15px; color: var(--text-2); }
+.mode-ui {
+  margin-top: 24px;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  background: var(--bg-raised);
+  border: 1px solid var(--stroke);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.mode-ui .chip {
+  padding: 4px 10px; border-radius: 7px;
+  font-family: var(--font); font-size: 12.5px; font-weight: 600;
+  white-space: nowrap;
+}
+.chip.know { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-border); }
+.chip.dont { background: transparent; color: var(--text-2); border: 1px solid var(--stroke-strong); }
+
+/* ---------- 玻璃窗特性 ---------- */
+.glass-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+.glass-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.glass-list li { display: flex; gap: 16px; align-items: flex-start; }
+.glass-ico {
+  flex: none; width: 38px; height: 38px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  display: grid; place-items: center;
+  color: var(--accent); font-size: 17px; font-weight: 600;
+}
+.glass-list h3 { font-size: 16.5px; font-weight: 650; margin-bottom: 4px; }
+.glass-list p { font-size: 14.5px; color: var(--text-2); }
+
+/* ---------- 发音 + 词库 ---------- */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.duo-card {
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 36px;
+}
+.duo-card h3 { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 12px; }
+.duo-card p { font-size: 15px; color: var(--text-2); margin-bottom: 20px; }
+.speech-toggle {
+  display: inline-flex; gap: 8px;
+  background: var(--bg-raised); border: 1px solid var(--stroke);
+  border-radius: 999px; padding: 4px;
+}
+.speech-toggle span {
+  padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-3);
+}
+.speech-toggle span.on { background: var(--accent); color: #fff; }
+.code-block {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--bg-raised);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  color: var(--text-2);
+  overflow-x: auto;
+  line-height: 1.8;
+}
+.code-block .hl { color: var(--accent); }
+.lang-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.lang-chips span {
+  font-size: 13px; color: var(--text-2);
+  border: 1px solid var(--stroke); border-radius: 999px; padding: 6px 14px;
+  background: var(--surface);
+}
+
+/* ---------- 转场动效 ---------- */
+.transition-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.tg {
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 24px;
+}
+.tg h4 { font-size: 13px; font-weight: 600; color: var(--text-3); letter-spacing: .04em; margin-bottom: 14px; }
+.tg-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tg-chips span {
+  font-size: 13px; color: var(--text-2);
+  border: 1px solid var(--stroke-strong); border-radius: 999px; padding: 6px 14px;
+  background: var(--bg-raised);
+}
+
+/* ---------- 使用方式 ---------- */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.step { position: relative; }
+.step-num {
+  font-size: 14px; font-weight: 700; color: var(--accent);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent-soft); border: 1px solid var(--accent-border);
+  display: grid; place-items: center; margin-bottom: 18px;
+}
+.step h3 { font-size: 18px; font-weight: 650; margin-bottom: 8px; }
+.step p { font-size: 14.5px; color: var(--text-2); }
+
+/* ---------- 外观主题 ---------- */
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.theme-card {
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.theme-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.theme-swatch { height: 120px; position: relative; }
+.theme-swatch .mini-word {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.theme-swatch .mini-word b { font-size: 18px; font-weight: 700; }
+.theme-swatch .mini-word span { font-size: 11px; opacity: 0.6; }
+.theme-light { background: linear-gradient(160deg, #e8eef0, #d7e2e6); }
+.theme-light .mini-word b { color: #1b1d1e; }
+.theme-light .mini-word span { color: #4a4d51; }
+.theme-dark { background: linear-gradient(160deg, #26282b, #191b1d); }
+.theme-dark .mini-word b { color: #f4f5f6; }
+.theme-dark .mini-word span { color: #b8bac0; }
+.theme-green { background: linear-gradient(160deg, #dff0e2, #c7e3cf); }
+.theme-green .mini-word b { color: #17341f; }
+.theme-green .mini-word span { color: #426a4c; }
+.theme-label { padding: 16px 20px; border-top: 1px solid var(--stroke); }
+.theme-label h4 { font-size: 15px; font-weight: 650; }
+.theme-label p { font-size: 13px; color: var(--text-3); }
+
+/* ---------- FAQ ---------- */
+.faq { max-width: 760px; margin: 0 auto; }
+.faq details {
+  border-bottom: 1px solid var(--stroke);
+}
+.faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 22px 0;
+  font-size: 16.5px; font-weight: 600;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: "+";
+  font-size: 22px; font-weight: 400; color: var(--text-3);
+  transition: transform .2s ease;
+}
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq .faq-a { padding: 0 0 22px; font-size: 15px; color: var(--text-2); max-width: 640px; }
+
+/* ---------- 最终 CTA ---------- */
+.final {
+  padding: 120px 0;
+  text-align: center;
+}
+.final .container { display: flex; flex-direction: column; align-items: center; }
+.final h2 {
+  font-size: clamp(30px, 4vw, 44px); font-weight: 700; letter-spacing: -0.025em; line-height: 1.12;
+  margin-bottom: 18px;
+}
+.final p { font-size: 16px; color: var(--text-2); margin-bottom: 36px; }
+
+/* ---------- Footer ---------- */
+.footer {
+  border-top: 1px solid var(--stroke);
+  padding: 40px 0 48px;
+}
+.footer-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.footer-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.footer-links a { font-size: 13.5px; color: var(--text-3); transition: color .15s ease; }
+.footer-links a:hover { color: var(--text); }
+.footer-gh { display: inline-flex; align-items: center; gap: 6px; }
+.footer-gh svg { width: 14px; height: 14px; fill: currentColor; }
+.footer-note { font-size: 13px; color: var(--text-3); }
+
+/* ---------- 淡入 reveal（JS 增强，失败时兜底显示） ---------- */
+.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s cubic-bezier(.2,.7,.3,1), transform .6s cubic-bezier(.2,.7,.3,1); }
+.js .reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-actions { margin-left: auto; }
+  .hero { padding: 132px 0 72px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+  .hero-sub { max-width: 100%; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .modes-grid, .glass-wrap, .duo { grid-template-columns: 1fr; gap: 24px; }
+  .steps, .themes, .transition-groups { grid-template-columns: 1fr; }
+  .section { padding: 64px 0; }
+  .glass-wrap { gap: 40px; }
+}
+@media (max-width: 520px) {
+  .container { padding: 0 20px; }
+  .nav-inner { padding: 12px 20px; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .metric-num { font-size: 28px; }
+  .float-stage { padding: 36px 20px; }
+  .float-window {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "word . actions"
+      "meaning meaning meaning";
+    column-gap: 12px;
+  }
+  .fw-phonetic { display: none; }
+  .fw-actions { opacity: 1; transform: none; }
+  .hero-actions { width: 100%; }
+  .hero-actions .btn { flex: 1; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <img class="brand-mark" src="icon.png" alt="HoverWord" width="26" height="26">
+      <span>HoverWord</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features" data-en="Features" data-zh="功能">Features</a>
+      <a href="#how" data-en="How it works" data-zh="使用方式">How it works</a>
+      <a href="#faq" data-en="FAQ" data-zh="常见问题">FAQ</a>
+    </div>
+    <div class="nav-actions">
+      <button class="lang-toggle" id="langBtn" type="button" title="中文" aria-label="Switch language">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm5.9 7.3h-2.4a14.6 14.6 0 0 0-1.1-4.4A6.6 6.6 0 0 1 13.9 7.3zM8 1.6c.7 0 1.7 1.9 2 4.2H6c.3-2.3 1.3-4.2 2-4.2zM2.1 9.3h2.4c.1 1.6.5 3.1 1.1 4.4a6.6 6.6 0 0 1-3.5-4.4zm2.4-2H2.1a6.6 6.6 0 0 1 3.5-4.4A14.6 14.6 0 0 0 4.5 7.3zM8 14.4c-.7 0-1.7-1.9-2-4.2h4c-.3 2.3-1.3 4.2-2 4.2zm2.3-5.3H5.7a12.7 12.7 0 0 1 0-1.4h4.6a12.7 12.7 0 0 1 0 1.4zm.7 4.6c.6-1.3 1-2.8 1.1-4.4h2.4a6.6 6.6 0 0 1-3.5 4.4z"></path></svg>
+      </button>
+      <a class="gh-link" href="https://github.com/cadany/HoverWord" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+      </a>
+      <a class="nav-cta" href="https://github.com/cadany/HoverWord/releases/latest/download/HoverWord-v0.1.1.dmg" data-en="Download" data-zh="下载">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero" id="top">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span><span data-en="macOS floating word flashcards · local &amp; offline" data-zh="macOS 悬浮闪记单词 · 纯本地离线">macOS floating word flashcards · local &amp; offline</span></span>
+      <h1 data-en="Learn words without making time." data-zh="背单词，不用专门腾出时间。">Learn words without making time.</h1>
+      <p class="hero-sub" data-en="HoverWord is a quiet glass pane that hovers on your desktop. While you work, code, or browse, it flashes words at the edge of your sight — glance once, and the memory quietly compounds." data-zh="HoverWord 是一枚安静悬在桌面上的玻璃窗。办公、写代码、刷网页时，它在你视野边缘高频闪现单词——只需瞥一眼，记忆就在碎片里累积。">HoverWord is a quiet glass pane that hovers on your desktop. While you work, code, or browse, it flashes words at the edge of your sight — glance once, and the memory quietly compounds.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/cadany/HoverWord/releases/latest/download/HoverWord-v0.1.1.dmg" data-en="Download" data-zh="下载">Download</a>
+        <a class="btn btn-ghost" href="#features" data-en="Learn more" data-zh="了解功能">Learn more</a>
+      </div>
+      <div class="hero-meta">
+        <span class="meta-chip">macOS 14+</span>
+        <span class="meta-chip" data-en="Free · No ads" data-zh="免费 · 无广告">Free · No ads</span>
+        <span class="meta-chip" data-en="Local · Zero upload" data-zh="纯本地 · 零上传">Local · Zero upload</span>
+        <span class="meta-chip" data-en="Works offline" data-zh="离线可用">Works offline</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="float-stage">
+        <div class="stage-deco" aria-hidden="true">
+          <div class="ghost-card gc-back">?</div>
+          <div class="ghost-card gc-front">W</div>
+        </div>
+        <div class="float-window" id="floatWindow">
+          <div class="fw-word" id="fwWord" style="opacity: 1; transform: none;">巩固</div>
+          <div class="fw-phonetic" id="fwPhonetic">gǒnggù</div>
+          <div class="fw-meaning" id="fwMeaning">v. to strengthen; to consolidate</div>
+          <div class="fw-actions">
+            <button class="fw-btn heart" type="button" data-en-title="Favorite" data-zh-title="收藏" title="Favorite">♡</button>
+            <button class="fw-btn" type="button" data-en-title="Replay" data-zh-title="重听" title="Replay">▶</button>
+            <button class="fw-btn know" id="knowBtn" type="button" data-en-title="Know" data-zh-title="认识" title="Know">✓</button>
+            <button class="fw-btn" id="dontBtn" type="button" data-en-title="Don't know" data-zh-title="不认识" title="Don't know">✗</button>
+          </div>
+        </div>
+        <div class="fw-caption" data-en="Floating flashcard · glance to remember" data-zh="悬浮背记窗 · 一瞥即记">Floating flashcard · glance to remember</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- 指标带 -->
+<section class="metrics">
+  <div class="container">
+    <div class="metrics-grid">
+      <div class="metric"><div class="metric-num">≤100<em>MB</em></div><div class="metric-label" data-en="Memory (background)" data-zh="后台常驻内存">Memory (background)</div></div>
+      <div class="metric"><div class="metric-num">≤100<em>ms</em></div><div class="metric-label" data-en="Word switch latency" data-zh="单词切换延迟">Word switch latency</div></div>
+      <div class="metric"><div class="metric-num">≤3<em>s</em></div><div class="metric-label" data-en="Import a 10k-word library" data-zh="导入 10000 词词库">Import a 10k-word library</div></div>
+      <div class="metric"><div class="metric-num">0<em data-en=" deps" data-zh=" 依赖"> deps</em></div><div class="metric-label" data-en="Pure system frameworks · zero deps" data-zh="纯系统框架 · 无第三方依赖">Pure system frameworks · zero deps</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 双背记模式 -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-kicker" data-en="Two Modes" data-zh="两种模式">Two Modes</div>
+      <h2 class="section-title" data-en="Two rhythms, both without breaking your flow." data-zh="两种节奏，都只为不打断你。">Two rhythms, both without breaking your flow.</h2>
+      <p class="section-desc" data-en="Reinforce memory with feedback, or passively stream words — switch in a tap. Restarts cleanly whenever you change mode." data-zh="想靠反馈巩固记忆，或想纯被动刷词，切换即用。模式调整后自动从头开始背记。">Reinforce memory with feedback, or passively stream words — switch in a tap. Restarts cleanly whenever you change mode.</p>
+    </div>
+    <div class="modes-grid">
+      <div class="mode-card">
+        <span class="mode-tag" data-en="Memory feedback mode" data-zh="记忆反馈模式">Memory feedback mode</span>
+        <h3 data-en="See it, tap it." data-zh="看得见，就点一下。">See it, tap it.</h3>
+        <p data-en="Tap Know or Don't Know to drive the engine. Unanswered words reappear until you decide — memory you can actually track." data-zh="看到单词后点「认识 / 不认识」，引擎据此推进进度。未给出判断的词会在本轮再次出现，直到你完成标记，记忆效果有据可依。">Tap Know or Don't Know to drive the engine. Unanswered words reappear until you decide — memory you can actually track.</p>
+        <div class="mode-ui"><span data-en="抱负" data-zh="strengthen">抱负</span> <span class="chip know" data-en="Know" data-zh="认识">Know</span><span class="chip dont" data-en="Don't know" data-zh="不认识">Don't know</span> → <span data-en="next" data-zh="下一词">next</span></div>
+      </div>
+      <div class="mode-card">
+        <span class="mode-tag" data-en="Carousel mode" data-zh="走马灯式刷词模式">Carousel mode</span>
+        <h3 data-en="Nothing to tap at all." data-zh="什么都不用点。">Nothing to tap at all.</h3>
+        <p data-en="Set a dwell time and words rotate at your pace, hands-free. Each Section loops a set number of rounds before advancing." data-zh="设定停留时长，单词按你的节奏自动匀速轮换，全程无需动手。每个 Section 循环指定轮次后自动进入下一组。">Set a dwell time and words rotate at your pace, hands-free. Each Section loops a set number of rounds before advancing.</p>
+        <div class="mode-ui"><span data-en="抱负" data-zh="strengthen">抱负</span> ⟶ <span data-en="坚韧" data-zh="abandon">坚韧</span> ⟶ <span data-en="微妙" data-zh="ambition">微妙</span> ⋯</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 玻璃悬浮 -->
+<section class="section">
+  <div class="container glass-wrap">
+    <div>
+      <div class="section-kicker" data-en="Liquid Glass" data-zh="液态玻璃">Liquid Glass</div>
+      <h2 class="section-title" data-en="A glass pane that blends into your desktop." data-zh="一枚融入桌面的玻璃窗。">A glass pane that blends into your desktop.</h2>
+      <p class="section-desc" style="margin-bottom:32px;" data-en="Frameless, rounded, frosted and translucent — always on top, yet naturally low-key. It feels like part of your desktop, not an app window." data-zh="无边框、圆角、磨砂通透，全局置顶却天然低干扰。它更像桌面的一部分，而不是一个「应用窗口」。">Frameless, rounded, frosted and translucent — always on top, yet naturally low-key. It feels like part of your desktop, not an app window.</p>
+      <ul class="glass-list">
+        <li>
+          <div class="glass-ico">↕</div>
+          <div><h3 data-en="Drag freely · remembers position" data-zh="自由拖拽 · 记忆位置">Drag freely · remembers position</h3><p data-en="Place it anywhere; it remembers the screen and coordinates, across multiple displays." data-zh="按到哪是哪，自动记住屏幕与坐标，多显示器也能各归其位。">Place it anywhere; it remembers the screen and coordinates, across multiple displays.</p></div>
+        </li>
+        <li>
+          <div class="glass-ico">☾</div>
+          <div><h3 data-en="Follows system dark / light" data-zh="跟随系统深 / 浅色">Follows system dark / light</h3><p data-en="The glass auto-matches your system appearance — clear by day, soft by night." data-zh="玻璃材质自动适配系统外观，白天通透、夜晚柔和，无需手动切换。">The glass auto-matches your system appearance — clear by day, soft by night.</p></div>
+        </li>
+        <li>
+          <div class="glass-ico">⊞</div>
+          <div><h3 data-en="Auto hides in fullscreen" data-zh="全屏自动避让">Auto hides in fullscreen</h3><p data-en="Detects fullscreen apps and steps aside, then quietly returns once you exit." data-zh="检测到全屏应用时自动隐藏，退出全屏后悄然归位，绝不抢戏。">Detects fullscreen apps and steps aside, then quietly returns once you exit.</p></div>
+        </li>
+      </ul>
+    </div>
+    <div>
+      <div class="float-stage" style="padding:44px 36px;">
+        <div class="stage-deco" aria-hidden="true">
+          <div class="ghost-card gc-back">?</div>
+          <div class="ghost-card gc-front">W</div>
+        </div>
+        <div class="float-window">
+          <div class="fw-word" data-en="抱负" data-zh="ambition">抱负</div>
+          <div class="fw-phonetic" data-en="bàofù" data-zh="/æmˈbɪʃn/"></div>
+          <div class="fw-meaning" data-en="n. ambition; aspiration" data-zh="n. 抱负；野心 / v. 渴望">n. ambition; aspiration</div>
+          <div class="fw-actions" style="opacity:1;transform:none;">
+            <button class="fw-btn heart" type="button">♡</button>
+            <button class="fw-btn" type="button">▶</button>
+            <button class="fw-btn know" type="button">✓</button>
+            <button class="fw-btn" type="button">✗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 发音 + 词库 -->
+<section class="section">
+  <div class="container">
+    <div class="duo">
+      <div class="duo-card">
+        <h3 data-en="Offline pronunciation, in every voice." data-zh="离线发音，多语种各有声色。">Offline pronunciation, in every voice.</h3>
+        <p data-en="Auto-plays on word switch; toggle US/UK accent and adjust pace. Each enabled language gets its own accent &amp; voice — fully offline." data-zh="切换单词自动播放，英式 / 美式一键切换、语速自由调节；每种启用语言独立配置口音与语音，全部离线可用。">Auto-plays on word switch; toggle US/UK accent and adjust pace. Each enabled language gets its own accent &amp; voice — fully offline.</p>
+        <div class="speech-toggle"><span class="on" data-en="US" data-zh="美式">US</span><span data-en="UK" data-zh="英式">UK</span></div>
+        <p style="margin:16px 0 0;font-size:13px;color:var(--text-3);" data-en="▶ Replay the current word anytime." data-zh="▶ 一键重听当前单词。">▶ Replay the current word anytime.</p>
+      </div>
+      <div class="duo-card">
+        <h3 data-en="Import and export, freely." data-zh="导入、导出，词库进出自由。">Import and export, freely.</h3>
+        <p data-en="Drop a UTF-8 TXT to import — auto-detects the language pair, validates, and reports errors down to the line. Export in one tap to take your library anywhere." data-zh="拖入 UTF-8 的 TXT 即导入，自动识别语言对、校验格式并报错精确到行；一键导出，词库随时带走。">Drop a UTF-8 TXT to import — auto-detects the language pair, validates, and reports errors down to the line. Export in one tap to take your library anywhere.</p>
+        <div class="code-block">
+<span class="hl">abandon</span>	/əˈbændən/	v.	放弃；遗弃	n.	放纵<br>
+<span class="hl">ambition</span>	/æmˈbɪʃn/	n.	抱负；野心	v.	渴望
+        </div>
+      </div>
+    </div>
+    <div class="section-head" style="margin-top:72px;margin-bottom:24px;">
+      <div class="section-kicker" data-en="Multi-language" data-zh="多语种">Multi-language</div>
+      <h2 class="section-title" style="font-size:clamp(24px,3vw,32px);" data-en="Any language pair, plus bilingual UI." data-zh="词库任意语言对，界面中英双语。">Any language pair, plus bilingual UI.</h2>
+      <p class="section-desc" data-en="Import auto-detects the language pair, or set it manually; the UI follows your system or switches between English / Chinese." data-zh="导入即自动识别语言对，也可手动指定；界面语言跟随系统或自由切换中 / 英。">Import auto-detects the language pair, or set it manually; the UI follows your system or switches between English / Chinese.</p>
+    </div>
+    <div class="lang-chips">
+      <span data-en="中文 → English" data-zh="English → 中文">中文 → English</span><span>Français</span><span>Español</span><span>Deutsch</span><span>Italiano</span><span>Português</span><span>Русский</span><span>日本語</span><span>한국어</span><span data-en="Simplified Chinese" data-zh="简体中文">Simplified Chinese</span><span data-en="Traditional Chinese" data-zh="繁體中文">Traditional Chinese</span>
+    </div>
+  </div>
+</section>
+
+<!-- 使用方式 -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-kicker" data-en="How it works" data-zh="使用方式">How it works</div>
+      <h2 class="section-title" data-en="Three steps, from library to memory." data-zh="三步，从词库到记忆。">Three steps, from library to memory.</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-en="Import a library" data-zh="导入词库">Import a library</h3>
+        <p data-en="Drop a TXT or build a wordbook; it auto-validates and splits into Sections." data-zh="拖入 TXT 词库或自建单词本，自动校验格式、拆分 Section。">Drop a TXT or build a wordbook; it auto-validates and splits into Sections.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-en="Float silently" data-zh="静默悬浮">Float silently</h3>
+        <p data-en="The window stays on top, flashing words at the rhythm and mode you set." data-zh="窗口置顶落在桌面，按你设定的节奏与模式闪现单词。">The window stays on top, flashing words at the rhythm and mode you set.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-en="Glance to remember" data-zh="一瞥即记">Glance to remember</h3>
+        <p data-en="No dedicated time needed — recall builds through high-frequency exposure in your work gaps." data-zh="无需专门腾时间，在工作间隙的高频曝光里完成识记。">No dedicated time needed — recall builds through high-frequency exposure in your work gaps.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 外观主题 -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-kicker" data-en="Appearance" data-zh="外观">Appearance</div>
+      <h2 class="section-title" data-en="Your desktop, your look." data-zh="长什么样，你说了算。">Your desktop, your look.</h2>
+      <p class="section-desc" data-en="Three presets — light, dark, eye-care green — or customize background, opacity, size and font, with a live preview. Phonetics and meanings can also be set to reveal on hover: recall first, then verify." data-zh="浅色 / 深色 / 护眼绿三套预设，或从背景色、透明度、字号到字体逐项自定义，设置窗口实时预览。注音与释义还可设为「悬停显示」——先回忆、再验证。">Three presets — light, dark, eye-care green — or customize background, opacity, size and font, with a live preview. Phonetics and meanings can also be set to reveal on hover: recall first, then verify.</p>
+    </div>
+    <div class="themes">
+      <div class="theme-card">
+        <div class="theme-swatch theme-light"><div class="mini-word"><b data-en="巩固" data-zh="strengthen">巩固</b><span data-en="v. strengthen; consolidate" data-zh="v. 加强；巩固">v. strengthen; consolidate</span></div></div>
+        <div class="theme-label"><h4 data-en="Light" data-zh="浅色">Light</h4><p data-en="Clear glass for bright desktops." data-zh="通透玻璃，适配明亮桌面。">Clear glass for bright desktops.</p></div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-swatch theme-dark"><div class="mini-word"><b data-en="巩固" data-zh="strengthen">巩固</b><span data-en="v. strengthen; consolidate" data-zh="v. 加强；巩固">v. strengthen; consolidate</span></div></div>
+        <div class="theme-label"><h4 data-en="Dark" data-zh="深色">Dark</h4><p data-en="Dark frost for night use." data-zh="深灰磨砂，适配夜间使用。">Dark frost for night use.</p></div>
+      </div>
+      <div class="theme-card">
+        <div class="theme-swatch theme-green"><div class="mini-word"><b data-en="巩固" data-zh="strengthen">巩固</b><span data-en="v. strengthen; consolidate" data-zh="v. 加强；巩固">v. strengthen; consolidate</span></div></div>
+        <div class="theme-label"><h4 data-en="Eye-care green" data-zh="护眼绿">Eye-care green</h4><p data-en="Soft green to ease eye strain." data-zh="淡绿调玻璃，降低久视疲劳。">Soft green to ease eye strain.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 转场动效 -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-kicker" data-en="Transitions" data-zh="转场动效">Transitions</div>
+      <h2 class="section-title" data-en="Word switches, at your pace." data-zh="单词切换，按你的节奏登场。">Word switches, at your pace.</h2>
+      <p class="section-desc" data-en="Nine transition effects from restrained to immersive — pick one and preview live in settings, so every switch feels just right." data-zh="九种切词动效，从克制到沉浸，任选其一并在设置页实时预览——让每一次切换都恰到好处。">Nine transition effects from restrained to immersive — pick one and preview live in settings, so every switch feels just right.</p>
+    </div>
+    <div class="transition-groups">
+      <div class="tg">
+        <h4 data-en="Minimal" data-zh="简约">Minimal</h4>
+        <div class="tg-chips"><span data-en="None" data-zh="无">None</span><span data-en="Classic Fade" data-zh="经典淡入">Classic Fade</span></div>
+      </div>
+      <div class="tg">
+        <h4 data-en="Playful" data-zh="趣味">Playful</h4>
+        <div class="tg-chips"><span data-en="Typewriter" data-zh="打字机">Typewriter</span><span data-en="Bounce In" data-zh="弹跳入场">Bounce In</span><span data-en="Card Flip" data-zh="卡片翻转">Card Flip</span></div>
+      </div>
+      <div class="tg">
+        <h4 data-en="Immersive" data-zh="沉浸">Immersive</h4>
+        <div class="tg-chips"><span data-en="Page Flip" data-zh="翻页效果">Page Flip</span><span data-en="Liquid Merge" data-zh="液体融合">Liquid Merge</span><span data-en="Stellar Black Hole" data-zh="星体黑洞">Stellar Black Hole</span><span data-en="Letter Morph" data-zh="字母变形">Letter Morph</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head" style="max-width:none;text-align:center;">
+      <div class="section-kicker">FAQ</div>
+      <h2 class="section-title" data-en="Questions you might have." data-zh="你可能想问的。">Questions you might have.</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary data-en="Is HoverWord free?" data-zh="HoverWord 收费吗？">Is HoverWord free?</summary>
+        <p class="faq-a" data-en="Yes. No in-app purchases, no subscription, no ads — every feature is fully unlocked." data-zh="免费。当前版本无内购、无订阅、无广告，完整功能全部开放。">Yes. No in-app purchases, no subscription, no ads — every feature is fully unlocked.</p>
+      </details>
+      <details>
+        <summary data-en="Is my word data uploaded anywhere?" data-zh="我的单词数据会上传服务器吗？">Is my word data uploaded anywhere?</summary>
+        <p class="faq-a" data-en="No. All libraries, progress and favorites stay on your Mac . Nothing is uploaded — it runs entirely local." data-zh="不会。所有词库、背记进度与收藏记录均存储在本机，不涉及任何网络上传，纯本地运行。">No. All libraries, progress and favorites stay on your Mac . Nothing is uploaded — it runs entirely local.</p>
+      </details>
+      <details>
+        <summary data-en="Does it need an internet connection?" data-zh="需要联网吗？">Does it need an internet connection?</summary>
+        <p class="faq-a" data-en="No. Pronunciation uses the macOS system TTS engine, and libraries import and store locally — fully offline." data-zh="不需要。发音基于 macOS 系统 TTS 引擎，离线可用；词库也完全在本地导入与存储。">No. Pronunciation uses the macOS system TTS engine, and libraries import and store locally — fully offline.</p>
+      </details>
+      <details>
+        <summary data-en="Which systems are supported?" data-zh="支持哪些系统？">Which systems are supported?</summary>
+        <p class="faq-a" data-en="macOS 14 (Sonoma) and later, on both Intel and Apple Silicon Macs." data-zh="macOS 14 (Sonoma) 及以上，Intel 与 Apple Silicon 芯片均可运行。">macOS 14 (Sonoma) and later, on both Intel and Apple Silicon Macs.</p>
+      </details>
+      <details>
+        <summary data-en="How do I import a wordbook?" data-zh="词库如何导入？">How do I import a wordbook?</summary>
+        <p class="faq-a" data-en="Prepare a UTF-8 TXT file, one entry per line, fields separated by tabs (word, phonetic, part of speech and meaning). It validates on import and reports exact line numbers for errors." data-zh="准备一份 UTF-8 编码的 TXT 文件，每行一个词条、字段用 Tab 分隔（单词、音标、词性与释义）。导入时自动校验，格式错误会精确提示到行号。">Prepare a UTF-8 TXT file, one entry per line, fields separated by tabs (word, phonetic, part of speech and meaning). It validates on import and reports exact line numbers for errors.</p>
+      </details>
+      <details>
+        <summary data-en="Which language pairs are supported?" data-zh="支持哪些语言组合？">Which language pairs are supported?</summary>
+        <p class="faq-a" data-en="Language-agnostic by design. Ship with Chinese learning English out of the box, and support English, French, Spanish, German, Japanese, Korean, Italian, Portuguese, Russian and more — any pair." data-zh="默认面向「中文学英文」，但底层语种无关，支持英、法、西、德、日、韩、意、葡、俄等任意语言对。">Language-agnostic by design. Ship with Chinese learning English out of the box, and support English, French, Spanish, German, Japanese, Korean, Italian, Portuguese, Russian and more — any pair.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- 最终 CTA -->
+<section class="final" id="download">
+  <div class="container">
+    <h2 data-en="Make word-learning part of your desktop." data-zh="把背单词，变成桌面上的日常。">Make word-learning part of your desktop.</h2>
+    <p data-en="Local, offline, zero interruption. Install it now and let memory happen in the in-between moments." data-zh="纯本地、离线、零打扰。现在就装上，让记忆在碎片里发生。">Local, offline, zero interruption. Install it now and let memory happen in the in-between moments.</p>
+    <a class="btn btn-primary" href="https://github.com/cadany/HoverWord/releases/latest/download/HoverWord-v0.1.1.dmg" style="padding:16px 40px;font-size:16.5px;" data-en="Download" data-zh="下载">Download</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand"><img class="brand-mark" src="icon.png" alt="HoverWord" style="width:22px;height:22px;"> HoverWord</div>
+    <div class="footer-links">
+      <a href="#features" data-en="Features" data-zh="功能">Features</a>
+      <a href="#faq" data-en="FAQ" data-zh="常见问题">FAQ</a>
+      <a href="#" data-en="Privacy" data-zh="隐私政策">Privacy</a>
+      <a href="https://github.com/cadany/HoverWord" target="_blank" rel="noopener" class="footer-gh"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg><span>GitHub</span></a>
+      <a href="https://github.com/cadany/HoverWord/releases/latest/download/HoverWord-v0.1.1.dmg" data-en="Download" data-zh="下载">Download</a>
+    </div>
+    <div class="footer-note">© 2026 HoverWord · macOS 14+</div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var LANG_KEY = 'hw-lang';
+  var lang = 'en';
+  try {
+    var saved = localStorage.getItem(LANG_KEY);
+    if (saved === 'zh' || saved === 'en') lang = saved;
+  } catch (e) {}
+
+  var enWords = [ // 中文源 → 英文（英文页面示例）
+    { w: '抱负', p: 'bàofù',   m: 'n. ambition; aspiration' },
+    { w: '坚韧', p: 'jiānrèn', m: 'adj. resilient; tough' },
+    { w: '微妙', p: 'wēimiào', m: 'adj. subtle; delicate' },
+    { w: '遗弃', p: 'yíqì',    m: 'v. to abandon; to forsake' },
+    { w: '巩固', p: 'gǒnggù',  m: 'v. to strengthen; to consolidate' }
+  ];
+  var zhWords = [ // 英文源 → 中文（中文页面示例）
+    { w: 'strengthen', p: '/ˈstreŋθn/', m: 'v. 加强；巩固' },
+    { w: 'abandon',    p: '/əˈbændən/', m: 'v. 放弃；遗弃 / n. 放纵' },
+    { w: 'ambition',   p: '/æmˈbɪʃn/', m: 'n. 抱负；野心 / v. 渴望' },
+    { w: 'subtle',     p: '/ˈsʌtl/',    m: 'adj. 微妙的；隐约的' },
+    { w: 'resilient',  p: '/rɪˈzɪliənt/', m: 'adj. 有韧性的；能复原的' }
+  ];
+  var words = lang === 'zh' ? zhWords : enWords;
+
+  var fwWord = document.getElementById('fwWord');
+  var fwPhonetic = document.getElementById('fwPhonetic');
+  var fwMeaning = document.getElementById('fwMeaning');
+
+  function render(i) {
+    var item = words[i % words.length];
+    fwWord.style.opacity = '0';
+    fwWord.style.transform = 'translateY(4px)';
+    setTimeout(function () {
+      fwWord.textContent = item.w;
+      fwPhonetic.textContent = item.p;
+      fwMeaning.textContent = item.m;
+      fwWord.style.opacity = '1';
+      fwWord.style.transform = 'none';
+    }, 120);
+  }
+
+  function applyLang() {
+    var isZh = lang === 'zh';
+    document.documentElement.lang = isZh ? 'zh-CN' : 'en';
+
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      el.textContent = isZh ? (el.getAttribute('data-zh') || '') : (el.getAttribute('data-en') || '');
+    });
+    document.querySelectorAll('[data-en-title]').forEach(function (el) {
+      el.setAttribute('title', isZh ? (el.getAttribute('data-zh-title') || '') : (el.getAttribute('data-en-title') || ''));
+    });
+
+    document.title = isZh ? 'HoverWord — macOS 悬浮闪记单词' : 'HoverWord — macOS floating word flashcards';
+    var desc = document.getElementById('metaDesc');
+    if (desc) desc.setAttribute('content', isZh
+      ? 'HoverWord 是一枚安静悬浮在桌面上的玻璃窗，办公、写代码、刷网页时高频闪现单词，让你一瞥即记。纯本地、离线可用、零打扰。'
+      : 'HoverWord is a quiet glass pane that hovers on your desktop, flashing words at the edge of your sight. Glance once and the memory compounds. 100% local, offline, zero interruption.');
+
+    var lb = document.getElementById('langBtn');
+    if (lb) lb.setAttribute('title', isZh ? 'English' : '中文');
+
+    words = isZh ? zhWords : enWords;
+    render(0);
+  }
+
+  var langBtn = document.getElementById('langBtn');
+  if (langBtn) {
+    langBtn.addEventListener('click', function () {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+      applyLang();
+    });
+  }
+
+  applyLang();
+
+  // 导航滚动态
+  var nav = document.getElementById('nav');
+  var onScroll = function () {
+    if (window.scrollY > 10) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // 悬浮窗词汇轮换 demo
+  var idx = 0;
+  var floatWindow = document.getElementById('floatWindow');
+  function next() { idx = (idx + 1) % words.length; render(idx); }
+
+  var know = document.getElementById('knowBtn');
+  var dont = document.getElementById('dontBtn');
+  if (know && dont) {
+    know.addEventListener('click', next);
+    dont.addEventListener('click', next);
+  }
+  var timer = setInterval(next, 4000);
+  floatWindow.addEventListener('click', function () {
+    clearInterval(timer);
+    timer = setInterval(next, 4000);
+  });
+
+  // 触屏设备始终展示操作按钮
+  if (window.matchMedia('(hover: none)').matches) {
+    floatWindow.classList.add('touch');
+  }
+
+  // 淡入揭示（失败安全）
+  document.documentElement.classList.add('js');
+  var reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
+})();
+</script>
+
+
+</body></html>

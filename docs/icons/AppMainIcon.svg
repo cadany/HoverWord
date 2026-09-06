@@ -1,16 +1,33 @@
 <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
  <defs>
-  <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="bookCover">
-   <stop stop-color="#5AC8FA" offset="0%"/>
-   <stop stop-color="#3DDC84" offset="100%"/>
+  <!-- 背景渐变：左上亮绿 -> 右下深绿 -->
+  <linearGradient y2="100%" x2="100%" y1="0%" x1="0%" id="bgGrad">
+   <stop stop-color="#1BC49A" offset="0%"/>
+   <stop stop-color="#0A6B54" offset="100%"/>
   </linearGradient>
+  <!-- 深色卡面玻璃渐变：上白下透明 -->
+  <linearGradient y2="0%" x2="0%" y1="100%" id="cardSheen" x1="0%">
+   <stop stop-color="#FFFFFF" stop-opacity="0.35" offset="0%"/>
+   <stop stop-color="#FFFFFF" stop-opacity="0.10" offset="100%"/>
+  </linearGradient>
+  <!-- 前卡悬浮投影 -->
+  <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+   <feDropShadow dx="-13" dy="-22" stdDeviation="22" flood-color="#000000" flood-opacity="0.28"/>
+  </filter>
  </defs>
- <!-- 背景：直角，Apple 会自行加圆角 -->
- <rect fill="url(#bookCover)" width="1024" height="1024" x="0" y="0"/>
- <!-- 三条白色横杠，模拟书本/词条行 -->
- <rect fill="rgba(255,255,255,0.9)" rx="16" width="767" height="64" x="128" y="256"/>
- <rect fill="rgba(255,255,255,0.7)" rx="16" width="639" height="64" x="128" y="384"/>
- <rect fill="rgba(255,255,255,0.5)" rx="16" width="703" height="64" x="128" y="512"/>
- <!-- 应用名称 -->
- <text text-anchor="middle" fill="#FFFFFF" font-weight="600" font-size="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" x="512" y="704">HoverWord</text>
+ <!-- 背景：满幅直角，Apple 会自行加圆角 -->
+ <rect fill="url(#bgGrad)" width="1024" height="1024" x="0" y="0"/>
+ <!-- 顶部高光：macOS 系统应用式光泽 -->
+ <ellipse fill="#FFFFFF" opacity="0.16" cx="512" cy="-60" rx="814" ry="407"/>
+ <!-- 后卡：深色玻璃卡「文」，左下，逆时针 8° -->
+ <g transform="rotate(-8 424 389)">
+  <rect fill="#0A4A3A" rx="106" width="460" height="530" x="194" y="124"/>
+  <rect fill="url(#cardSheen)" rx="106" width="460" height="530" x="194" y="124"/>
+  <text text-anchor="middle" fill="#FFFFFF" font-weight="600" font-size="267" font-family="'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif" x="484" y="461">？</text>
+ </g>
+ <!-- 前卡：白卡「W」，右上，顺时针 7°，带悬浮投影 -->
+ <g transform="rotate(7 672 699)">
+  <rect fill="#FFFFFF" filter="url(#cardShadow)" rx="106" width="460" height="512" x="442" y="403"/>
+  <text text-anchor="middle" fill="#0A6B54" font-weight="700" font-size="283" font-family="-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif" x="672" y="754">W</text>
+ </g>
 </svg>

@@ -36,7 +36,7 @@ HoverWord is designed language-agnostic from the ground up. While the default wo
 - **Auto Language Detection** — On import, HoverWord analyzes the first 20 entries using `NLLanguageRecognizer` (NaturalLanguage framework, offline) to identify source and target languages. Confidence threshold of 0.7; falls back to defaults (en / zh-Hans) on ambiguity.
 - **Manual Language Override** — Each wordbook's `...` menu offers a "Language…" editor to set source/target languages explicitly, covering detection edge cases and existing wordbooks.
 - **Speech Partitioning** — The Speech settings page automatically creates one pronunciation panel per enabled language, each with its own accent and voice selection. Panels appear and disappear in real time as wordbooks are enabled, disabled, or re-labeled.
-- **Supported Languages** — English, French, Spanish, German, Japanese, Korean, Chinese (Simplified), Italian, Portuguese, Russian. The registry is centralized in `Constants.swift` and extensible without code changes elsewhere.
+- **Supported Languages** — English, French, Spanish, German, Italian, Portuguese, Russian, Japanese, Korean, Chinese (Simplified), Chinese (Traditional). The registry is centralized in `Constants.swift` and extensible without code changes elsewhere.
 - **RTL-Ready** — UI layout reserves entry points for right-to-left adaptation when non-LTR languages are added.
 
 ### Wordbook Management

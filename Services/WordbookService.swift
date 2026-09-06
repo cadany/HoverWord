@@ -538,6 +538,9 @@ class WordbookService {
     ///   - wordbook: 目标单词本
     /// - Throws: WordbookImportService.ImportError
     func importFromFile(fileURL: URL, to wordbook: Wordbook) async throws {
+        // 沙盒下 fileImporter 返回的 URL 需显式进入安全作用域，才能跨异步边界读取
+        let scoped = fileURL.startAccessingSecurityScopedResource()
+        defer { if scoped { fileURL.stopAccessingSecurityScopedResource() } }
         let data = try Data(contentsOf: fileURL)
         let entries = try WordbookImportService.parse(data: data)
         let sectionSize = AppSettings.shared.sectionSize

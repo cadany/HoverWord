@@ -427,6 +427,9 @@ struct WordbookTabView: View {
         Task.detached(priority: .userInitiated) {
             do {
                 let data = try await WordbookExportService.export(wordbookId: wb.id)
+                // 沙盒下 NSSavePanel 返回的 URL 需进入安全作用域才能写入
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                 try data.write(to: url)
             } catch {
                 await MainActor.run {
