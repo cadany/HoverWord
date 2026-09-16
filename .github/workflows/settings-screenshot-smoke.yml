@@ -124,11 +124,14 @@ jobs:
 
           capture() {
             local mode="$1"
+            # 深浅色必须走 System Events：`defaults write -g AppleInterfaceStyle`
+            # 只写偏好、不通知系统，runner 上外观实际不会切换（已验证：dark 图与 light 完全相同）。
             if [ "$mode" = "dark" ]; then
-              defaults write -g AppleInterfaceStyle -string "Dark"
+              osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to true'
             else
-              defaults delete -g AppleInterfaceStyle 2>/dev/null || true
+              osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to false'
             fi
+            sleep 1
 
             # 直接 exec bundle 内可执行文件，绕过 `open` / LaunchServices。
             # Actions runner 上下载的 Debug 产物未公证，`open` 经 LaunchServices
