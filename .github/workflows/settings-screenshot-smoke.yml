@@ -1,0 +1,135 @@
+name: Settings window screenshot smoke
+
+# 用途：为「设置窗口标题栏 / 玻璃材质」类改动提供低版本 macOS 的视觉回归证据。
+#
+# 关键约束：`.glassEffect` / `.buttonStyle(.glass)` 等 API 只存在于 macOS 26 SDK，
+# 因此**构建必须在 macos-26 runner**（在 14/15 runner 上用旧 Xcode 会编译失败）。
+# 构建产物部署目标为 14.0 且 26-only 调用全部有 `#available` 守卫，
+# 所以同一个 .app 可以直接分发到 macOS 14 / 15 / 26 runner 上启动运行。
+#
+# 流程：一次构建 → 三个系统版本各自启动 → 浅/深色各截一张全屏图 → 汇总成一个 artifact。
+# 截图供人工核对，不做像素断言；唯一的自动断言是"进程存活 N 秒未崩溃"。
+#
+# 说明：macos-14 镜像已进入弃用期（2026-11-02 起不再支持），故标记为 allow-failure。
+
+on:
+  workflow_dispatch:
+    inputs:
+      settle_seconds:
+        description: 启动后等待多少秒再截图（页面预热用）
+        required: false
+        default: "6"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: settings-screenshot-smoke
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (macOS 26 SDK)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      # 用 -target 而非 -scheme：工程由 XcodeGen 生成，未导出 shared scheme
+      - name: Build HoverWord.app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project HoverWord.xcodeproj \
+            -target HoverWord \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -quiet \
+            build
+          APP="$RUNNER_TEMP/dd/Build/Products/Debug/HoverWord.app"
+          test -d "$APP" || { echo "产物路径异常：$APP"; find "$RUNNER_TEMP/dd" -maxdepth 4 -name '*.app' -print; exit 1; }
+          echo "构建产物：$APP"
+          codesign -dv --verbose=2 "$APP" 2>&1 | head -5 || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HoverWord-app
+          path: ${{ runner.temp }}/dd/Build/Products/Debug/HoverWord.app
+          if-no-files-found: error
+          retention-days: 3
+
+  capture:
+    name: Screenshot on ${{ matrix.label }}
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.allow_failure }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            label: macOS-14-Sonoma
+            allow_failure: true
+          - runner: macos-15
+            label: macOS-15-Sequoia
+            allow_failure: false
+          # 与开发者本机同版本，作为"修复是否真的生效"的对照组
+          - runner: macos-26
+            label: macOS-26-Tahoe
+            allow_failure: false
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: HoverWord-app
+          path: ${{ runner.temp }}/app
+
+      - name: Launch and capture (light / dark)
+        env:
+          SETTLE: ${{ github.event.inputs.settle_seconds || '6' }}
+          LABEL: ${{ matrix.label }}
+          OUT: ${{ runner.temp }}/shots
+        run: |
+          set -uo pipefail
+          APP="${RUNNER_TEMP}/app/HoverWord.app"
+          mkdir -p "$OUT"
+          # 关闭"自动切换深浅色"，否则 AppleInterfaceStyle 写入可能被系统覆盖
+          defaults write -g AppleInterfaceStyleSwitchesAutomatically -bool false
+
+          capture() {
+            local mode="$1"
+            if [ "$mode" = "dark" ]; then
+              defaults write -g AppleInterfaceStyle -string "Dark"
+            else
+              defaults delete -g AppleInterfaceStyle 2>/dev/null || true
+            fi
+
+            open -n "$APP"
+            sleep "$SETTLE"
+
+            # 断言：进程仍在，说明该版本系统上启动未崩溃（跨版本运行本身即回归点）
+            if ! pgrep -x HoverWord >/dev/null; then
+              echo "::error::${LABEL} ${mode}：HoverWord 启动后已退出，疑似崩溃"
+              return 1
+            fi
+
+            # -x 静音，-o 不含桌面图标；整屏截图（设置窗居中，悬浮窗一并入镜便于对照）
+            screencapture -x -o "${OUT}/settings-${LABEL}-${mode}.png"
+            pkill -x HoverWord 2>/dev/null || true
+            sleep 1
+            return 0
+          }
+
+          rc=0
+          capture light || rc=1
+          capture dark  || rc=1
+          ls -l "$OUT"
+          exit $rc
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-${{ matrix.label }}
+          path: ${{ runner.temp }}/shots/*.png
+          if-no-files-found: warn
+          retention-days: 14

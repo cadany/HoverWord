@@ -14,7 +14,7 @@ class SettingsWindowController: NSWindowController {
     convenience init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: Constants.settingsWindowWidth, height: Constants.settingsWindowHeight),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -25,9 +25,15 @@ class SettingsWindowController: NSWindowController {
             height: Constants.settingsWindowMinHeight
         )
 
-        // 窗口透明：让 SwiftUI .regularMaterial / .thinMaterial 能透出桌面，呈现玻璃质感
+        // 窗口透明 + 标题栏显式接管：让 SwiftUI .regularMaterial / .thinMaterial 能透出桌面，
+        // 呈现贯穿整窗（含标题栏区域）的玻璃质感。
+        // titlebarAppearsTransparent / .fullSizeContentView 必须与透明成组出现：
+        // 不显式接管时，标题栏背景由系统默认绘制，macOS 27 起会把该区域装成
+        // 独立不透明条带（26 及以下无此现象）；接管后该区域像素完全由内容材质层
+        // 绘制，绕开各版本系统默认渲染差异（与悬浮窗 NSPanel 的既有做法同源）。
         window.isOpaque = false
         window.backgroundColor = .clear
+        window.titlebarAppearsTransparent = true
 
         // 窗口委托：关闭时隐藏而非退出
         window.delegate = SettingsWindowDelegate.shared
@@ -87,8 +93,9 @@ class SettingsWindowDelegate: NSObject, NSWindowDelegate {
 /// 重建 sidebar 与详情两棵子树（所有 L10n 查词随重建生效，选中项等父层状态保持）。
 ///
 /// 注意：`.id` 必须挂在子树而非 NavigationSplitView 本体——后者持有窗口
-/// 标题栏集成（sidebar 工具栏挂载），整树重建会重装标题栏 chrome，
-/// 导致语言切换后标题栏样式异常（变成独立不透明条带）。
+/// 标题栏集成（sidebar 工具栏挂载），整树重建会重装标题栏 chrome。
+/// 标题栏已显式接管（透明 + fullSizeContentView），重建不再产生独立不透明
+/// 条带，但 `.id` 仍挂子树以保留标题栏集成、避免无谓重建。
 struct SettingsRootView: View {
     @ObservedObject var languageManager: LanguageManager
     @State private var selectedItemId: String = SidebarItem.wordbook.id

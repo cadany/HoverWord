@@ -29,7 +29,7 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 | 悬浮窗（AppKit）   | macOS 12.0 \~ 13.x | 降级磨砂玻璃          | 使用 .hudWindow 材质 + 自定义 1px 内描边，模拟接近的通透质感                                                                                                |
 | 设置窗口（SwiftUI） | macOS 26.0+        | 完整 Liquid Glass | 使用系统原生 `.glassEffect()`、`.buttonStyle(.glass)`、`.thinMaterial` / `.regularMaterial`，整窗透明（isOpaque=false, backgroundColor=.clear）让材质透出桌面 |
 | 设置窗口（SwiftUI） | macOS 14.0 \~ 25.x | 系统默认            | 不添加任何自定义玻璃效果，完全交由系统默认控件渲染（遵循「系统默认优先」原则）                                                                                                 |
-| 通用规则          | 所有版本               | 自动跟随系统          | 所有玻璃材质自动适配深色 / 浅色模式，无需手动切换颜色                                                                                                            |
+| 通用规则          | 所有版本               | 自动跟随系统          | 所有玻璃材质自动适配深色 / 浅色模式，无需手动切换颜色；设置窗口标题栏全版本显式接管（titlebarAppearsTransparent + .fullSizeContentView + 整窗透明），不依赖系统对透明窗口标题栏的默认渲染                                                                                                          |
 
 ### 悬浮背记窗玻璃实现规范（核心场景）
 
@@ -65,7 +65,7 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 
 ### 主设置窗口玻璃适配规范
 
-- 窗口结构：标准标题栏 + Liquid Glass 材质贯穿设计。窗口设为透明（isOpaque=false, backgroundColor=.clear），让 SwiftUI material 能透出桌面呈现玻璃质感
+- 窗口结构：标题栏由应用显式接管 + Liquid Glass 材质贯穿设计。窗口设为透明（isOpaque=false, backgroundColor=.clear）并开启 titlebarAppearsTransparent + .fullSizeContentView，让内容材质层延伸到标题栏区域、透出桌面呈现贯穿整窗的玻璃质感。显式接管不依赖各版本系统对透明窗口标题栏的默认渲染（macOS 27 起默认会把标题栏区域装成独立不透明条带），红绿灯 / 拖拽 / 缩放行为不变
 
 - Sidebar 导航：左侧 200pt 宽 sidebar（macOS 26+ 使用 .thinMaterial 材质；macOS 14-25 使用系统默认）；6 个导航项（单词本/背记/外观/发音/体验/通用），选中态 accentColor 药丸高亮（opacity 0.15），hover 态微微提亮（primary opacity 0.06），切换时 spring 过渡（0.3s）
 
