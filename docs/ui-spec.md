@@ -67,9 +67,9 @@ Liquid Glass 是 macOS 26+ 推出的系统级玻璃材质，核心特征为：�
 
 - 窗口结构：标题栏由应用显式接管 + Liquid Glass 材质贯穿设计。窗口设为透明（isOpaque=false, backgroundColor=.clear）并开启 titlebarAppearsTransparent + .fullSizeContentView，让内容材质层延伸到标题栏区域、透出桌面呈现贯穿整窗的玻璃质感。显式接管不依赖各版本系统对透明窗口标题栏的默认渲染（macOS 27 起默认会把标题栏区域装成独立不透明条带），红绿灯 / 拖拽 / 缩放行为不变
 
-- Sidebar 导航：左侧 200pt 宽 sidebar（macOS 26+ 使用 .thinMaterial 材质；macOS 14-25 使用系统默认）；6 个导航项（单词本/背记/外观/发音/体验/通用），选中态 accentColor 药丸高亮（opacity 0.15），hover 态微微提亮（primary opacity 0.06），切换时 spring 过渡（0.3s）
+- Sidebar 导航：左侧 200pt 宽 sidebar（全版本使用 .thinMaterial 材质；透明窗口下低版本若不铺材质会直接透出桌面，故不再区分版本）；6 个导航项（单词本/背记/外观/发音/体验/通用），选中态 accentColor 药丸高亮（opacity 0.15），hover 态微微提亮（primary opacity 0.06），切换时 spring 过渡（0.3s）
 
-- 内容区域：右侧（macOS 26+ 使用 .regularMaterial 材质；macOS 14-25 使用系统默认），配置项以圆角 12pt 玻璃卡片分组（macOS 26+ 使用 .glassEffect()；macOS 14-25 无额外背景），卡片间 12pt 间距
+- 内容区域：右侧（全版本使用 .regularMaterial 材质，理由同上），配置项以圆角 12pt 玻璃卡片分组（macOS 26+ 使用 .glassEffect()；macOS 14-25 无额外背景），卡片间 12pt 间距
 
 - 自定义控件：macOS 26+ 按钮使用 .glass / .glassProminent 样式，Toggle、Picker 使用系统原生 glass 风格；macOS 14-25 使用系统默认控件
 

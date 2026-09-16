@@ -8,9 +8,9 @@
 
 - [x] 2.1 新增 `.github/workflows/settings-screenshot-smoke.yml`：`macos-26` 构建（`-target HoverWord`，产物上传 artifact）
 - [x] 2.2 capture job matrix 跑 `macos-14` / `macos-15` / `macos-26`：下载产物 → `open -n` → 等待预热 → 断言进程存活 → `screencapture` 浅色 / 深色各一张 → 按版本分别上传 artifact
-- [x] 2.3 深浅色切换用 `defaults write -g AppleInterfaceStyle` + 关闭系统自动切换，避免设置被覆盖
+- [x] 2.3 深浅色切换用 System Events（osascript set dark mode）+ 关闭系统自动切换；原方案 `defaults write -g AppleInterfaceStyle` 实测只写偏好不通知系统、外观不切换，已替换
 - [x] 2.4 `macos-14` 设 `continue-on-error`（镜像弃用期），`fail-fast: false` 保证三版本互不阻塞
-- [ ] 2.5 首次触发跑通并核对 artifact 截图可读（若 runner 无 GUI 会话导致截图失败，按 design D4 记录的约束调整）
+- [x] 2.5 首次触发跑通并核对 artifact 截图可读 —— 已跑通：三版本浅/深 6 张图均产出；发现深色切换不生效（defaults 写入不通知系统，已改 System Events）与 14/15 内容区透出桌面发黑（低版本分支未铺材质，已改为全版本应用系统材质），标题栏本身三版本均无独立不透明条带
 
 ## 3. 文档同步
 

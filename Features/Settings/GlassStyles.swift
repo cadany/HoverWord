@@ -34,10 +34,12 @@ extension View {
     }
 }
 
-// MARK: - Liquid Glass Background（仅 macOS 26+）
+// MARK: - Liquid Glass Background（全版本系统材质）
 
-/// 可选的液态玻璃背景：macOS 26+ 添加系统材质，低版本无任何操作（系统默认）
-/// macOS 26+ 按 role 区分材质：sidebar 用 .thinMaterial，content/window 用 .regularMaterial
+/// 玻璃背景：按 role 添加系统材质（sidebar 用 .thinMaterial，content/window 用 .regularMaterial）
+/// 材质本身 macOS 12+ 即可用、各版本渲染一致，无需 #available 分支。
+/// 注意：设置窗 backgroundColor=.clear，低版本若不铺材质会直接透出桌面
+/// （深色壁纸下内容不可读，CI 截图矩阵已在 macOS 14/15 复现），故全版本应用。
 struct OptionalLiquidGlassBackground: ViewModifier {
     enum Role {
         case sidebar
@@ -47,15 +49,11 @@ struct OptionalLiquidGlassBackground: ViewModifier {
     let role: Role
 
     func body(content: Content) -> some View {
-        if #available(macOS 26, *) {
-            switch role {
-            case .sidebar:
-                content.background(.thinMaterial)
-            case .content, .window:
-                content.background(.regularMaterial)
-            }
-        } else {
-            content
+        switch role {
+        case .sidebar:
+            content.background(.thinMaterial)
+        case .content, .window:
+            content.background(.regularMaterial)
         }
     }
 }
