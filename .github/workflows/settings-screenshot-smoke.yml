@@ -36,25 +36,30 @@ jobs:
       - uses: actions/checkout@v4
 
       # 用 -target 而非 -scheme：工程由 XcodeGen 生成，未导出 shared scheme
+      # （xcshareddata 为空、project.yml 无 schemes 块），CI 上 -scheme 不可用。
+      # 因此不能用 -derivedDataPath：xcodebuild 要求它必须配 -scheme
+      # （报 "The flag -scheme, -testProductsPath, or -xctestrun is required"）。
+      # 改用 SYMROOT 指定产物根目录，产物落在 $SYMROOT/Debug/HoverWord.app。
       - name: Build HoverWord.app
+        env:
+          SYMROOT_DIR: ${{ runner.temp }}/sym
         run: |
           set -euo pipefail
           xcodebuild \
             -project HoverWord.xcodeproj \
             -target HoverWord \
             -configuration Debug \
-            -derivedDataPath "$RUNNER_TEMP/dd" \
-            -quiet \
+            SYMROOT="$SYMROOT_DIR" \
             build
-          APP="$RUNNER_TEMP/dd/Build/Products/Debug/HoverWord.app"
-          test -d "$APP" || { echo "产物路径异常：$APP"; find "$RUNNER_TEMP/dd" -maxdepth 4 -name '*.app' -print; exit 1; }
+          APP="$SYMROOT_DIR/Debug/HoverWord.app"
+          test -d "$APP" || { echo "产物路径异常：$APP"; find "$SYMROOT_DIR" -maxdepth 3 -name '*.app' -print; exit 1; }
           echo "构建产物：$APP"
           codesign -dv --verbose=2 "$APP" 2>&1 | head -5 || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: HoverWord-app
-          path: ${{ runner.temp }}/dd/Build/Products/Debug/HoverWord.app
+          path: ${{ runner.temp }}/sym/Debug/HoverWord.app
           if-no-files-found: error
           retention-days: 3
 
