@@ -84,10 +84,13 @@ jobs:
             allow_failure: false
 
     steps:
+      # upload-artifact v4 在 path 指向目录时，artifact 存的是「目录内容」
+      # （压缩包根即 Contents/）。因此这里必须把下载路径直接写成 .app 本身，
+      # 解出来的 Contents/ 才会落在正确的 bundle 位置。
       - uses: actions/download-artifact@v4
         with:
           name: HoverWord-app
-          path: ${{ runner.temp }}/app
+          path: ${{ runner.temp }}/app/HoverWord.app
 
       - name: Launch and capture (light / dark)
         env:
@@ -97,6 +100,12 @@ jobs:
         run: |
           set -uo pipefail
           APP="${RUNNER_TEMP}/app/HoverWord.app"
+          # 结构自检：bundle 必须含可执行文件，否则直接暴露真实布局便于定位
+          if [ ! -x "$APP/Contents/MacOS/HoverWord" ]; then
+            echo "::error::$LABEL：产物结构异常，实际布局如下"
+            find "${RUNNER_TEMP}/app" -maxdepth 3 -print
+            exit 1
+          fi
           mkdir -p "$OUT"
           # 关闭"自动切换深浅色"，否则 AppleInterfaceStyle 写入可能被系统覆盖
           defaults write -g AppleInterfaceStyleSwitchesAutomatically -bool false
