@@ -100,8 +100,9 @@ jobs:
         run: |
           set -uo pipefail
           APP="${RUNNER_TEMP}/app/HoverWord.app"
-          # 结构自检：bundle 必须含可执行文件，否则直接暴露真实布局便于定位
-          if [ ! -x "$APP/Contents/MacOS/HoverWord" ]; then
+          # 结构自检：bundle 必须含可执行文件与 Info.plist，否则直接暴露真实布局便于定位
+          # （Info.plist 缺失时 LaunchServices 无法解析 bundle，open 会报 "does not exist"）
+          if [ ! -x "$APP/Contents/MacOS/HoverWord" ] || [ ! -f "$APP/Contents/Info.plist" ]; then
             echo "::error::$LABEL：产物结构异常，实际布局如下"
             find "${RUNNER_TEMP}/app" -maxdepth 3 -print
             exit 1
@@ -118,17 +119,23 @@ jobs:
               defaults delete -g AppleInterfaceStyle 2>/dev/null || true
             fi
 
-            open -n "$APP"
+            # 直接 exec bundle 内可执行文件，绕过 `open` / LaunchServices。
+            # Actions runner 上下载的 Debug 产物未公证，`open` 经 LaunchServices
+            # 评估会报 "The file ... does not exist."（并非 App 崩溃），进程根本没起。
+            # 直接 exec 时 NSApplication 仍会连 WindowServer 正常出窗。
+            "$APP/Contents/MacOS/HoverWord" >/dev/null 2>&1 &
+            local pid=$!
             sleep "$SETTLE"
 
             # 断言：进程仍在，说明该版本系统上启动未崩溃（跨版本运行本身即回归点）
-            if ! pgrep -x HoverWord >/dev/null; then
-              echo "::error::${LABEL} ${mode}：HoverWord 启动后已退出，疑似崩溃"
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo "::error::${LABEL} ${mode}：HoverWord 启动后已退出，疑似崩溃（pid=$pid）"
               return 1
             fi
 
             # -x 静音，-o 不含桌面图标；整屏截图（设置窗居中，悬浮窗一并入镜便于对照）
             screencapture -x -o "${OUT}/settings-${LABEL}-${mode}.png"
+            kill "$pid" 2>/dev/null || true
             pkill -x HoverWord 2>/dev/null || true
             sleep 1
             return 0
