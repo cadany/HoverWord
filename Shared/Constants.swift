@@ -337,6 +337,7 @@ enum Constants {
         static let restart = 100
         static let openSettings = 101
         static let quit = 102
+        static let pauseResume = 103
     }
 }
 

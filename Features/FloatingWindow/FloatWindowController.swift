@@ -18,9 +18,12 @@ class FloatWindowController: NSWindowController {
     private let contentViewContainer = FloatContentView()
     private var rightClickMonitor: Any?
 
-    /// 悬停与预览两个暂停源：任一存在即暂停切词计时，避免一方恢复误解除另一方的暂停
+    /// 瞬时暂停源（悬停 / 预览）：任一存在即暂停切词计时，避免一方恢复误解除另一方的暂停
     private var isHoverPaused = false
     private var isPreviewPaused = false
+
+    /// 用户暂停源（右键菜单）：不随鼠标位置与窗口隐藏解除，仅由菜单翻转
+    private var isUserPauseRequested = false
 
     private func syncEnginePauseState() {
         engine.setHoverPaused(isHoverPaused || isPreviewPaused)
@@ -204,7 +207,8 @@ class FloatWindowController: NSWindowController {
         syncEnginePauseState()
 
         // 全屏静音：切词进度继续，仅停掉在播语音并挂起后续自动发音，
-        // 避免用户全屏观影/演示时被朗读打扰
+        // 避免用户全屏观影/演示时被朗读打扰。
+        // 用户暂停不参与重置（暂停态跨隐藏保留），其发音挂起与本行同源同值，幂等
         if AppSettings.shared.muteSpeechInFullscreen {
             SpeechService.shared.stopSpeaking()
             engine.setSpeechSuppressed(true)
@@ -243,8 +247,11 @@ class FloatWindowController: NSWindowController {
         guard let panel = window as? NSPanel else { return }
         guard !(panel.isVisible && panel.alphaValue >= 1.0) else { return }
 
-        // 退出全屏恢复显示：解除发音挂起（若静音未开启，隐藏时也未曾挂起，重复置 false 幂等）
-        engine.setSpeechSuppressed(false)
+        // 退出全屏恢复显示：解除发音挂起（若静音未开启，隐藏时也未曾挂起，重复置 false 幂等）。
+        // 用户暂停期间不得解除——暂停中隐藏再显示应维持"既不切词也不念"
+        if !engine.isUserPausedActive {
+            engine.setSpeechSuppressed(false)
+        }
 
         visibilityAnimationToken += 1
         let token = visibilityAnimationToken
@@ -287,6 +294,15 @@ class FloatWindowController: NSWindowController {
             menu.addItem(NSMenuItem.separator())
         }
 
+        // 暂停/继续：已学完状态下无计时可冻结，不出现该项
+        if !engine.isAllComplete {
+            let pauseKey = isUserPauseRequested ? "float.menu.resume" : "float.menu.pause"
+            let pauseItem = NSMenuItem(title: L10n.t(pauseKey), action: #selector(menuItemAction(_:)), keyEquivalent: "")
+            pauseItem.tag = Constants.FloatMenuTag.pauseResume
+            pauseItem.target = self
+            menu.addItem(pauseItem)
+        }
+
         let settingsItem = NSMenuItem(title: L10n.t("float.menu.settings"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
         settingsItem.tag = Constants.FloatMenuTag.openSettings
         settingsItem.target = self
@@ -311,7 +327,11 @@ class FloatWindowController: NSWindowController {
     func handleMenuAction(tag: Int) {
         switch tag {
         case Constants.FloatMenuTag.restart:
+            // 重启前解除用户暂停，否则重新开始的第一个单词是冻住的
+            applyUserPause(false)
             engine.restart()
+        case Constants.FloatMenuTag.pauseResume:
+            applyUserPause(!isUserPauseRequested)
         case Constants.FloatMenuTag.openSettings:
             // 延迟到下一轮 run loop，确保 popUp 的 modal tracking 完全退出后再操作窗口
             DispatchQueue.main.async {
@@ -321,6 +341,36 @@ class FloatWindowController: NSWindowController {
             AppDelegate.shared.quitApp()
         default: break
         }
+    }
+
+    /// 翻转用户暂停（右键菜单"暂停背记 / 继续背记"）
+    ///
+    /// 计时冻结由引擎的用户暂停源负责；发音挂起在此成对处理：
+    /// 暂停 = 停止在播语音 + 屏蔽后续自动播报，继续 = 视静音状态决定是否恢复。
+    /// 与全屏静音共用引擎的挂起标志，静音优先，故解除挂起须过 `releaseSpeechSuppressionIfNeeded`。
+    private func applyUserPause(_ paused: Bool) {
+        isUserPauseRequested = paused
+        engine.setUserPaused(paused)
+
+        if paused {
+            SpeechService.shared.stopSpeaking()
+            engine.setSpeechSuppressed(true)
+        } else {
+            releaseSpeechSuppressionIfNeeded()
+        }
+    }
+
+    /// 解除发音挂起（仅当无用户暂停且当前不需要静音时）
+    private func releaseSpeechSuppressionIfNeeded() {
+        guard !engine.isUserPausedActive, !shouldMuteSpeechNow() else { return }
+        engine.setSpeechSuppressed(false)
+    }
+
+    /// 当前是否应处于全屏静音状态（开关开启且窗口不可见或正隐藏中）
+    private func shouldMuteSpeechNow() -> Bool {
+        guard AppSettings.shared.muteSpeechInFullscreen else { return false }
+        guard let panel = window as? NSPanel else { return false }
+        return !panel.isVisible || panel.alphaValue <= 0
     }
 
     // MARK: - 位置记忆

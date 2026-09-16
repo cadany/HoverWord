@@ -49,6 +49,7 @@
 		8453C77FACA4276930DB733B /* CardFlipEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7975117AA25C9C2291A28896 /* CardFlipEffect.swift */; };
 		8926A6FCAEE11AE852A56A5A /* WordbookTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DB7F760FE4362A115754EB /* WordbookTabView.swift */; };
 		89464B51FDE47BEB9D6CB6A0 /* DataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6542EAFD71253420F6397B33 /* DataStack.swift */; };
+		948CDBFCBCEE5A29D6DBF9C8 /* ReciteEngineUserPauseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89340DDAD41E1651299505D7 /* ReciteEngineUserPauseTests.swift */; };
 		96B4FBD012DED44A2A8BFFFD /* SidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB3E93850F9C39E4331DC1 /* SidebarItem.swift */; };
 		A30F46CF0B82E7159D474FF1 /* ContentVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 075600235170EC8DB979E714 /* ContentVisibilityTests.swift */; };
 		A3FBB731321940893B891497 /* PageFlipEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF429EE23CC7458D57E9D0F /* PageFlipEffect.swift */; };
@@ -137,6 +138,7 @@
 		79CFFC10C66EC24372C4C683 /* WordbookServiceFavoritesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordbookServiceFavoritesTests.swift; sourceTree = "<group>"; };
 		7BA833E0AE3D951480410498 /* TransitionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionRegistry.swift; sourceTree = "<group>"; };
 		8282B3A66D9D2B76EE910EA5 /* HoverWordApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoverWordApp.swift; sourceTree = "<group>"; };
+		89340DDAD41E1651299505D7 /* ReciteEngineUserPauseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReciteEngineUserPauseTests.swift; sourceTree = "<group>"; };
 		8A1E78EE8AE99BBB0367883B /* HoverWordTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HoverWordTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		938C8ADA1A7B29F25EA73A2B /* ContentVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentVisibility.swift; sourceTree = "<group>"; };
 		945AFFAA5CBDA954EC619A61 /* ClassicFadeEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicFadeEffect.swift; sourceTree = "<group>"; };
@@ -257,6 +259,7 @@
 				BA765CE198C5655D75AB81D2 /* ReciteEngineProgressTests.swift */,
 				B2F3E031ACB698BFBFBA1A11 /* ReciteEngineSectionOrderTests.swift */,
 				F8BD190A34FDBB7250BE786C /* ReciteEngineTests.swift */,
+				89340DDAD41E1651299505D7 /* ReciteEngineUserPauseTests.swift */,
 				9D1911BE0477E1107AF18900 /* WordbookContentChangeTests.swift */,
 				A1EDBE0AB7D2D5B6061BA555 /* WordbookExportServiceTests.swift */,
 				9B846712964BEABA83A77596 /* WordbookImportLanguageTests.swift */,
@@ -499,6 +502,7 @@
 				4C2E54CD61B81A0DCFD3840B /* ReciteEngineProgressTests.swift in Sources */,
 				BF1D02271A2A749E1F8385E7 /* ReciteEngineSectionOrderTests.swift in Sources */,
 				61035099A4B9211D259B8E17 /* ReciteEngineTests.swift in Sources */,
+				948CDBFCBCEE5A29D6DBF9C8 /* ReciteEngineUserPauseTests.swift in Sources */,
 				3D232AC62768F93376D2662A /* TransitionParametersTests.swift in Sources */,
 				023A67ED09B14284B8B43853 /* TransitionPerformanceTests.swift in Sources */,
 				FC885C5E6482803B8B4F480C /* TransitionRegistryTests.swift in Sources */,
@@ -729,7 +733,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -770,7 +774,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

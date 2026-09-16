@@ -7,22 +7,46 @@ artifacts:
     description: 变更提案，强制绑定当前实施基线版本，生成子版本号
     instruction: |
       ## MANDATORY VERSION CONSTRAINT（强制，不可跳过）
-      1. 识别当前活跃基线版本：扫描openspec/changes下非archive目录，找到当前正在实施的主基线目录，例如 mvp‑v0‑1。
-      2. /opsx:propose 生成新change时，必须基于当前正在实施的基线版本派生子版本号。
-         版本命名规则：{baseline}-{type}{seq}，type可选feat/patch，seq两位数字，示例基线 mvp‑v0‑1 → mvp‑v0‑1‑feat01、mvp‑v0‑1‑patch02。
-      3. change文件夹命名格式：`{change_sub_version}-{short‑description}`。
-      4. proposal.md YAML frontmatter必须写入元数据：
-         ---
-         baseline_version: "<当前主基线名称>"
-         change_sub_version: "<派生得到的子版本>"
-         ---
-      5. 禁止propose直接创建更高主基线版本；升级主基线版本只能通过 /opsx:archive 归档全部相关变更后人工新建基线。
-      6. 正常生成proposal的意图、scope、approach。
+
+      ### 基线唯一真源
+      基线 = project.yml 的 MARKETING_VERSION（点换连字符并加 v 前缀）：0.1.2 → v0-1-2。
+      不得从 change 目录名或归档名推断基线——非 archive 目录里没有"基线目录"，
+      openspec/changes 下只有 change，基线一律取当前构建版本号。
+
+      ### 派生子版本（确定性算法，禁止自由发挥）
+      1. 取基线 B（见上）。
+      2. 收集既有子版本：扫描 openspec/changes 与 openspec/changes/archive，
+         匹配目录名或 proposal frontmatter 中形如 {B}-{type}{NN} 的项，type ∈ feat/patch/fix。
+      3. 选 type：新增或增强能力 → feat；缺陷修复、行为纠偏、review 批次 → fix；
+         纯小修与文案微调 → patch。（type 只影响序号归属，不改变基线）
+      4. seq = 同 (B, type) 下已存在的最大序号 + 1，两位数字补零。
+      5. 子版本 S = {B}-{type}{NN}；目录名 = {S}-{short-description}；
+         proposal frontmatter 与每份 delta spec 的 Change-Sub-Version 一律使用同一个 S。
+
+      ### 禁止事项
+      - 禁止预支未发布的基线：只要 MARKETING_VERSION 是 x.y.z，就不得出现高于 v-x-y-z 的子版本。
+        发布版本号由 /opsx:archive 收口时人工提升，propose 无权提升。
+      - 禁止 change_sub_version 前缀 ≠ baseline_version。
+      - 禁止无版本前缀的目录名。
+
+      ### 落盘后必须自检（CLI 的 --strict 不校验版本命名，必须手工跑）
+      ```bash
+      CH=openspec/changes/<目录名>/
+      BL="v$(grep -m1 'MARKETING_VERSION' project.yml | sed 's/.*"\(.*\)".*/\1/' | tr . -)"
+      grep -m1 'baseline_version' "$CH/proposal.md" | grep -q "\"$BL\"" || echo "FAIL: baseline 应为 $BL"
+      grep -m1 'change_sub_version' "$CH/proposal.md" | grep -q "\"$BL-" || echo "FAIL: 子版本应以 ${BL}- 开头"
+      ```
+      两条 FAIL 任一出现即命名错误：立即改名并回改所有 Change-Sub-Version 引用，不得继续。
+
+      ### 正常生成 proposal 的意图、scope、approach
     template: proposal.md
     rules:
       proposal:
         - proposal frontmatter必须包含baseline_version、change_sub_version元数据，缺失视为校验失败
         - change目录名必须携带派生的子版本标识，禁止无版本通用命名
+        - baseline_version必须严格等于project.yml MARKETING_VERSION派生的v-x-y-z，禁止预支更高版本
+        - change_sub_version必须以baseline_version加连字符为前缀，seq取同基线同type现有最大值加一
+        - 主基线升级只能由archive收口后人工完成，propose阶段禁止变更MARKETING_VERSION
     requires: []
 
   - id: specs

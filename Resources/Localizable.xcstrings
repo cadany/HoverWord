@@ -719,6 +719,23 @@
         }
       }
     },
+    "float.menu.pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停背记"
+          }
+        }
+      }
+    },
     "float.menu.quit": {
       "extractionState": "manual",
       "localizations": {
@@ -749,6 +766,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新开始"
+          }
+        }
+      }
+    },
+    "float.menu.resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续背记"
           }
         }
       }

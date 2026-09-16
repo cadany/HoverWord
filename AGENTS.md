@@ -18,6 +18,10 @@
 
 - 当前版本：v0.1 @HoverWord 产品需求文档（PRD）v0.1.md
 
+- OpenSpec change 的版本命名以 `openspec/schemas/version-aware/schema.yaml` 的「MANDATORY VERSION CONSTRAINT」为准：基线一律取 `project.yml` 的 `MARKETING_VERSION`（0.1.2 → `v0-1-2`），子版本为 `{基线}-{feat|fix|patch}{两位序号}`，序号取同基线同类型现有最大值 +1
+
+- 禁止预支未发布的基线（`MARKETING_VERSION` 未提升前不得出现更高版本前缀）；proposal frontmatter 的 `change_sub_version` 必须以 `baseline_version` 为前缀，change 目录名必须携带该子版本；落盘后须执行 schema 内给出的自检命令，CLI 的 `--strict` 不校验版本命名
+
 ## 技术规范
 
 ### 核心技术栈
