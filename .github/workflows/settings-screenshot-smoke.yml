@@ -53,13 +53,18 @@ jobs:
             build
           APP="$SYMROOT_DIR/Debug/HoverWord.app"
           test -d "$APP" || { echo "产物路径异常：$APP"; find "$SYMROOT_DIR" -maxdepth 3 -name '*.app' -print; exit 1; }
+          # 打成单个 zip：upload/download-artifact 对目录存在「内容 vs 外层结构」歧义，
+          # 且可能丢失可执行位；ditto --keepParent 保留 .app 完整层级与 unix 权限，
+          # 单文件 zip 彻底规避目录语义问题。
+          ditto -c -k --keepParent "$APP" "$SYMROOT_DIR/HoverWord.zip"
           echo "构建产物：$APP"
+          ls -l "$SYMROOT_DIR/HoverWord.zip"
           codesign -dv --verbose=2 "$APP" 2>&1 | head -5 || true
 
       - uses: actions/upload-artifact@v4
         with:
           name: HoverWord-app
-          path: ${{ runner.temp }}/sym/Debug/HoverWord.app
+          path: ${{ runner.temp }}/sym/HoverWord.zip
           if-no-files-found: error
           retention-days: 3
 
@@ -84,13 +89,12 @@ jobs:
             allow_failure: false
 
     steps:
-      # upload-artifact v4 在 path 指向目录时，artifact 存的是「目录内容」
-      # （压缩包根即 Contents/）。因此这里必须把下载路径直接写成 .app 本身，
-      # 解出来的 Contents/ 才会落在正确的 bundle 位置。
+      # 下载单个 HoverWord.zip（构建侧已用 ditto --keepParent 打包，
+      # .app 外层结构与 unix 权限位都在 zip 内，解包即还原完整 bundle）。
       - uses: actions/download-artifact@v4
         with:
           name: HoverWord-app
-          path: ${{ runner.temp }}/app/HoverWord.app
+          path: ${{ runner.temp }}/pkg
 
       - name: Launch and capture (light / dark)
         env:
@@ -99,12 +103,19 @@ jobs:
           OUT: ${{ runner.temp }}/shots
         run: |
           set -uo pipefail
+          ZIP="${RUNNER_TEMP}/pkg/HoverWord.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "::error::${LABEL} 产物 zip 缺失，实际布局如下"
+            find "${RUNNER_TEMP}/pkg" -maxdepth 2 -print
+            exit 1
+          fi
+          # ditto 解包：.app 完整层级 + unix 权限位（含可执行位）由 zip 保留
+          ditto -x -k "$ZIP" "${RUNNER_TEMP}/app"
           APP="${RUNNER_TEMP}/app/HoverWord.app"
           # 结构自检：bundle 必须含可执行文件与 Info.plist，否则直接暴露真实布局便于定位
-          # （Info.plist 缺失时 LaunchServices 无法解析 bundle，open 会报 "does not exist"）
           if [ ! -x "$APP/Contents/MacOS/HoverWord" ] || [ ! -f "$APP/Contents/Info.plist" ]; then
-            echo "::error::$LABEL：产物结构异常，实际布局如下"
-            find "${RUNNER_TEMP}/app" -maxdepth 3 -print
+            echo "::error::${LABEL} 产物结构异常，实际布局如下"
+            find "${RUNNER_TEMP}/app" -maxdepth 4 -print
             exit 1
           fi
           mkdir -p "$OUT"
@@ -129,7 +140,7 @@ jobs:
 
             # 断言：进程仍在，说明该版本系统上启动未崩溃（跨版本运行本身即回归点）
             if ! kill -0 "$pid" 2>/dev/null; then
-              echo "::error::${LABEL} ${mode}：HoverWord 启动后已退出，疑似崩溃（pid=$pid）"
+              echo "::error::${LABEL} ${mode}：HoverWord 启动后已退出，疑似崩溃（pid=${pid}）"
               return 1
             fi
 
