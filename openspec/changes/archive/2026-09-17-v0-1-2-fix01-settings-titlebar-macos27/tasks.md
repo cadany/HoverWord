@@ -21,5 +21,5 @@
 - [x] 4.1 `xcodebuild build` 通过，无新增告警
 - [x] 4.2 全量 `xcodebuild test` 通过（全新 DerivedData 复跑 149 tests / 0 failures，TEST SUCCEEDED；首次跑的 2 条失败经隔离重跑确认为既有间歇性 flaky，与本改动无关）
 - [x] 4.3 macOS 27 本机验证：不透明白条消失、折叠按钮回标题栏、顶部内容不与红绿灯重叠、红绿灯/拖拽/缩放正常、sidebar 折叠按钮可用、深浅色各截图一张 —— 用户已确认通过
-- [x] 4.4 触发 CI 截图矩阵，人工核对 14 / 15 / 26 三版本标题栏无独立不透明条带、材质贯穿正常 —— 用户已验证通过（含低版本内容区补材质修复后的复跑）
+- [x] 4.4 触发 CI 截图矩阵，人工核对 14 / 15 / 26 三版本标题栏无独立不透明条带、材质贯穿正常
 - [x] 4.5 `openspec validate v0-1-2-fix01-settings-titlebar-macos27 --strict` 通过 + schema 落盘自检
