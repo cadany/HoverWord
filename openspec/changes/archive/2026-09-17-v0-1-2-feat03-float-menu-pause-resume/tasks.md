@@ -30,9 +30,9 @@
 - [x] 5.1 新增 `HoverWordTests/Services/ReciteEngineUserPauseTests.swift`：开启冻结并记录剩余时长、解除按剩余时长续计、非 playing 态解除不启动计时、暂停中手动切词保持暂停、暂停中 `stayDuration` 热更新
 - [x] 5.2 组合用例：hover 先真 → user 后真（来源身份不被合并值吞掉，hover 解除后仍保持冻结；停表期间 `pausedRemaining` 不随墙钟衰减）；user 解除但 hover 仍在（保持暂停）
 - [x] 5.3 重启用例：用户暂停中引擎 `start()` 重启后仍暂停，解除后能正常恢复计时（不悬空）
-- [ ] 5.4 静音叠加场景改由手动验收覆盖（见 5.6）：解除挂起判定 `!isUserPausedActive && !shouldMuteSpeechNow()` 依赖 `window` 可见性与 `SpeechService.shared` 单例，当前无注入接缝，不为其重构控制器
+- [x] 5.4 静音叠加场景改由手动验收覆盖（见 5.6）：解除挂起判定 `!isUserPausedActive && !shouldMuteSpeechNow()` 依赖 `window` 可见性与 `SpeechService.shared` 单例，当前无注入接缝，不为其重构控制器
 - [x] 5.5 回归 `ReciteEngineHoverPauseTests` 全部既有用例
-- [ ] 5.6 手动验收：右键暂停/继续文案翻转、已学完态菜单无暂停项、暂停中窗口隐藏再显示仍冻结、重启应用后不保留暂停；并覆盖 5.4 的静音叠加（暂停 + 全屏静音并存时解除暂停仍不播报，解除静音后正常播报）
+- [x] 5.6 手动验收：右键暂停/继续文案翻转、已学完态菜单无暂停项、暂停中窗口隐藏再显示仍冻结、重启应用后不保留暂停；并覆盖 5.4 的静音叠加（暂停 + 全屏静音并存时解除暂停仍不播报，解除静音后正常播报）
 
 ## 6. 验证与收尾
 
