@@ -53,7 +53,7 @@ targets:
         CFBundlePackageType: APPL
         CFBundleExecutable: HoverWord
         LSUIElement: false
-        NSHumanReadableCopyright: "Copyright © 2026 Richops. All rights reserved."
+        NSHumanReadableCopyright: "Copyright © 2026 cadany. Licensed under the Apache License 2.0."
         NSPrincipalClass: NSApplication
 
   HoverWordTests:

@@ -101,3 +101,8 @@ ambition	/æmˈbʃən/	n.	ambition, aspiration	v.	to desire
 ![HoverWord](docs/imgs/F1.png)
 
 ![HoverWord](docs/imgs/F2.png)
+
+## License
+
+HoverWord is licensed under the [Apache License 2.0](LICENSE).
+Copyright © 2026 cadany.
