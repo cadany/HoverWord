@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hoverword.richops.cn/sitemap.xml

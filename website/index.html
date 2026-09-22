@@ -3,8 +3,85 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HoverWord — macOS floating word flashcards</title>
-<meta name="description" id="metaDesc" content="HoverWord is a quiet glass pane that hovers on your desktop, flashing words at the edge of your sight. Glance once and the memory compounds. 100% local, offline, zero interruption.">
+<meta name="description" id="metaDesc" content="HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.">
 <link rel="icon" type="image/png" href="icon.png">
+<link rel="canonical" href="https://hoverword.richops.cn/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HoverWord">
+<meta property="og:url" content="https://hoverword.richops.cn/">
+<meta property="og:title" content="HoverWord — macOS floating word flashcards">
+<meta property="og:description" content="HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.">
+<meta property="og:image" content="https://hoverword.richops.cn/icon.png">
+<meta property="og:image:alt" content="HoverWord app icon — floating glass word cards on macOS">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="HoverWord — macOS floating word flashcards">
+<meta name="twitter:description" content="HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.">
+<meta name="twitter:image" content="https://hoverword.richops.cn/icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "HoverWord",
+  "url": "https://hoverword.richops.cn/",
+  "image": "https://hoverword.richops.cn/icon.png",
+  "description": "HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "macOS 14.0 or later",
+  "softwareVersion": "0.1.1",
+  "featureList": [
+    "Floating glass word window on your desktop",
+    "Two recite rhythms: glance-only, or tap to mark known / unknown",
+    "Offline pronunciation via macOS system TTS",
+    "Import and export word libraries (TXT)",
+    "Any language pair, bilingual UI",
+    "Auto hides in fullscreen apps"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is HoverWord free?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. No in-app purchases, no subscription, no ads — every feature is fully unlocked." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my word data uploaded anywhere?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. All libraries, progress and favorites stay on your Mac. Nothing is uploaded — it runs entirely local." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it need an internet connection?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Pronunciation uses the macOS system TTS engine, and libraries import and store locally — fully offline." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which systems are supported?",
+      "acceptedAnswer": { "@type": "Answer", "text": "macOS 14 (Sonoma) and later, on both Intel and Apple Silicon Macs." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I import a wordbook?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Prepare a UTF-8 TXT file, one entry per line, fields separated by tabs (word, phonetic, part of speech and meaning). It validates on import and reports exact line numbers for errors." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which language pairs are supported?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Language-agnostic by design. Ship with Chinese learning English out of the box, and support English, French, Spanish, German, Japanese, Korean, Italian, Portuguese, Russian and more — any pair." }
+    }
+  ]
+}
+</script>
 <style>
 :root {
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
@@ -621,6 +698,8 @@ h1, h2, h3, p { margin: 0; }
 .footer-gh { display: inline-flex; align-items: center; gap: 6px; }
 .footer-gh svg { width: 14px; height: 14px; fill: currentColor; }
 .footer-note { font-size: 13px; color: var(--text-3); }
+.footer-note a { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; transition: color .15s ease; }
+.footer-note a:hover { color: var(--text); }
 
 /* ---------- 淡入 reveal（JS 增强，失败时兜底显示） ---------- */
 .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s cubic-bezier(.2,.7,.3,1), transform .6s cubic-bezier(.2,.7,.3,1); }
@@ -933,7 +1012,7 @@ h1, h2, h3, p { margin: 0; }
       </details>
       <details>
         <summary data-en="Is my word data uploaded anywhere?" data-zh="我的单词数据会上传服务器吗？">Is my word data uploaded anywhere?</summary>
-        <p class="faq-a" data-en="No. All libraries, progress and favorites stay on your Mac . Nothing is uploaded — it runs entirely local." data-zh="不会。所有词库、背记进度与收藏记录均存储在本机，不涉及任何网络上传，纯本地运行。">No. All libraries, progress and favorites stay on your Mac . Nothing is uploaded — it runs entirely local.</p>
+        <p class="faq-a" data-en="No. All libraries, progress and favorites stay on your Mac. Nothing is uploaded — it runs entirely local." data-zh="不会。所有词库、背记进度与收藏记录均存储在本机，不涉及任何网络上传，纯本地运行。">No. All libraries, progress and favorites stay on your Mac . Nothing is uploaded — it runs entirely local.</p>
       </details>
       <details>
         <summary data-en="Does it need an internet connection?" data-zh="需要联网吗？">Does it need an internet connection?</summary>
@@ -971,11 +1050,11 @@ h1, h2, h3, p { margin: 0; }
     <div class="footer-links">
       <a href="#features" data-en="Features" data-zh="功能">Features</a>
       <a href="#faq" data-en="FAQ" data-zh="常见问题">FAQ</a>
-      <a href="#" data-en="Privacy" data-zh="隐私政策">Privacy</a>
+      <a href="privacy.html" data-en="Privacy" data-zh="隐私政策">Privacy</a>
       <a href="https://github.com/cadany/HoverWord" target="_blank" rel="noopener" class="footer-gh"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg><span>GitHub</span></a>
       <a href="https://github.com/cadany/HoverWord/releases/latest/download/HoverWord-v0.1.1.dmg" data-en="Download" data-zh="下载">Download</a>
     </div>
-    <div class="footer-note">© 2026 HoverWord · macOS 14+</div>
+    <div class="footer-note">© 2026 HoverWord · <a class="footer-license" href="https://github.com/cadany/HoverWord/blob/main/LICENSE" target="_blank" rel="noopener">Apache License 2.0</a> · macOS 14+</div>
   </div>
 </footer>
 
@@ -1036,7 +1115,7 @@ h1, h2, h3, p { margin: 0; }
     var desc = document.getElementById('metaDesc');
     if (desc) desc.setAttribute('content', isZh
       ? 'HoverWord 是一枚安静悬浮在桌面上的玻璃窗，办公、写代码、刷网页时高频闪现单词，让你一瞥即记。纯本地、离线可用、零打扰。'
-      : 'HoverWord is a quiet glass pane that hovers on your desktop, flashing words at the edge of your sight. Glance once and the memory compounds. 100% local, offline, zero interruption.');
+      : 'HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.');
 
     var lb = document.getElementById('langBtn');
     if (lb) lb.setAttribute('title', isZh ? 'English' : '中文');
