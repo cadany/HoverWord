@@ -17,6 +17,27 @@
 <meta name="twitter:title" content="Privacy Policy — HoverWord">
 <meta name="twitter:description" content="HoverWord collects nothing. No telemetry, no analytics, no accounts, no tracking. All your word libraries and progress stay on your Mac.">
 <meta name="twitter:image" content="https://hoverword.richops.cn/icon.png">
+<!-- Google tag (gtag.js) with Consent Mode v2: analytics denied until consent -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9MKV15Y3W5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  var hwConsent = null;
+  try { hwConsent = localStorage.getItem('hw-consent'); } catch (e) {}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': hwConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update': 500
+  });
+  gtag('js', new Date());
+  gtag('config', 'G-9MKV15Y3W5', {
+    'allow_google_signals': false,
+    'allow_ad_personalization_signals': false
+  });
+</script>
+<script src="consent.js" defer></script>
 <style>
 :root {
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
@@ -182,7 +203,8 @@ h1 {
 
   <div class="card">
     <h2>This website</h2>
-    <p>This website contains no cookies, no analytics scripts, and no third-party trackers. It is a set of plain static files.</p>
+    <p>This website uses Google Analytics 4 to understand aggregate usage — pages visited, approximate region, and device type. The analytics cookie is set only after you accept the consent banner; if you decline, no analytics cookies are used.</p>
+    <p>Collected data is retained for 2 months and is processed by Google on our behalf. Google does not log or store your IP address in GA4. You can withdraw consent at any time by clearing this site's data in your browser settings. See also <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</p>
   </div>
 
   <div class="card">

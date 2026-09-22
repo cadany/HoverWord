@@ -18,6 +18,27 @@
 <meta name="twitter:title" content="HoverWord — macOS floating word flashcards">
 <meta name="twitter:description" content="HoverWord floats vocabulary flashcards on your Mac desktop — glance and remember, without interrupting your work. 100% local, offline, free.">
 <meta name="twitter:image" content="https://hoverword.richops.cn/icon.png">
+<!-- Google tag (gtag.js) with Consent Mode v2: analytics denied until consent -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9MKV15Y3W5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  var hwConsent = null;
+  try { hwConsent = localStorage.getItem('hw-consent'); } catch (e) {}
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage': hwConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update': 500
+  });
+  gtag('js', new Date());
+  gtag('config', 'G-9MKV15Y3W5', {
+    'allow_google_signals': false,
+    'allow_ad_personalization_signals': false
+  });
+</script>
+<script src="consent.js" defer></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -1122,6 +1143,7 @@ h1, h2, h3, p { margin: 0; }
 
     words = isZh ? zhWords : enWords;
     render(0);
+    document.dispatchEvent(new CustomEvent('hw:lang'));
   }
 
   var langBtn = document.getElementById('langBtn');
