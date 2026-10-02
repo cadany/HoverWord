@@ -15,6 +15,7 @@ final class ReciteEngineUserPauseTests: XCTestCase {
         super.setUp()
         DataStack.shared.initialize()
         clearAllData()
+        ReviewStateService.shared.resetAll()
         setupTestData()
 
         engine = ReciteEngine()
@@ -24,6 +25,10 @@ final class ReciteEngineUserPauseTests: XCTestCase {
 
         AppSettings.shared.reciteMode = .memoryFeedback
         AppSettings.shared.playOrder = .sequential
+        AppSettings.shared.sectionOrder = .sequential
+        AppSettings.shared.maxExposureRounds = Constants.defaultMaxExposureRounds
+        AppSettings.shared.sessionReviewCap = Constants.defaultSessionReviewCap
+        AppSettings.shared.reviewBaseIntervalDays = Constants.defaultReviewBaseIntervalDays
         AppSettings.shared.stayDuration = 1
         AppSettings.shared.sectionSize = 10
     }
@@ -33,6 +38,7 @@ final class ReciteEngineUserPauseTests: XCTestCase {
         engine.clearProgress()
         engine.setHoverPaused(false)
         engine.setUserPaused(false)
+        ReviewStateService.shared.resetAll()
         clearAllData()
         engine = nil
         delegate = nil

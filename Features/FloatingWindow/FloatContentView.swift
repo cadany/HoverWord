@@ -17,7 +17,7 @@ class FloatContentView: NSView {
     // MARK: - 回调
 
     var onKnowTap: (() -> Void)?
-    var onUnknownTap: (() -> Void)?
+    var onVagueTap: (() -> Void)?
     var onFavoriteTap: (() -> Void)?
     var onSpeakTap: (() -> Void)?
     var onRightClick: ((NSEvent) -> Void)?
@@ -145,11 +145,11 @@ class FloatContentView: NSView {
 
     /// 按当前界面语言刷新静态文案（toolTip 与完成态文字）
     ///
-    /// 按钮常态为图标字符（✓ ✗ ▶ ♡），不随语言变化；
+    /// 按钮常态为图标字符（✓ ↺ ▶ ♡），不随语言变化；
     /// 本地化语义只体现在 toolTip 与"已学完"文案
     private func refreshLocalizedTexts() {
         knowButton.toolTip = L10n.t("float.button.know")
-        unknownButton.toolTip = L10n.t("float.button.unknown")
+        unknownButton.toolTip = L10n.t("float.button.vague")
         speakButton.toolTip = L10n.t("float.button.speak")
         completedLabel.stringValue = L10n.t("float.completed")
     }
@@ -338,9 +338,9 @@ class FloatContentView: NSView {
         knowButton.toolTip = L10n.t("float.button.know")
         knowButton.target = self
 
-        // 不认识按钮
-        configureButton(unknownButton, title: "✗", action: #selector(unknownTapped))
-        unknownButton.toolTip = L10n.t("float.button.unknown")
+        // 模糊按钮（图标 ↺ 表达「模糊」）
+        configureButton(unknownButton, title: "↺", action: #selector(unknownTapped))
+        unknownButton.toolTip = L10n.t("float.button.vague")
         unknownButton.target = self
 
         buttonStack.addArrangedSubview(favoriteButton)
@@ -523,7 +523,7 @@ class FloatContentView: NSView {
 
     @objc private func unknownTapped() {
         animateButtonClick(unknownButton)
-        onUnknownTap?()
+        onVagueTap?()
     }
 
     @objc private func favoriteTapped() {

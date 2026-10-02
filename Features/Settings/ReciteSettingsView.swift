@@ -7,6 +7,9 @@ import SwiftUI
 struct ReciteSettingsView: View {
     @State private var reciteMode: ReciteMode = .memoryFeedback
     @State private var carouselLoops: Int = Constants.defaultCarouselLoops
+    @State private var maxExposureRounds: Int = Constants.defaultMaxExposureRounds
+    @State private var sessionReviewCap: Int = Constants.defaultSessionReviewCap
+    @State private var reviewBaseIntervalDays: Double = Constants.defaultReviewBaseIntervalDays
     @State private var sectionSize: Int = Constants.defaultSectionSize
     @State private var playOrder: PlayOrder = .sequential
     @State private var sectionOrder: SectionOrder = .sequential
@@ -17,21 +20,6 @@ struct ReciteSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Constants.settingsCardSpacing) {
-
-                // 背记模式卡片
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.t("recite.mode"))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $reciteMode) {
-                        ForEach(ReciteMode.allCases, id: \.self) { mode in
-                            Text(mode.displayName).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.radioGroup)
-                    .onChange(of: reciteMode) { _ in saveReciteMode() }
-                }
-                .glassCard()
 
                 // Section 设置卡片
                 VStack(alignment: .leading, spacing: 12) {
@@ -53,23 +41,6 @@ struct ReciteSettingsView: View {
                         }
                         .onChange(of: sectionSize) { _ in saveSectionSize() }
                     }
-
-                    // 走马灯循环轮次（非走马灯模式禁用）
-                    HStack {
-                        Text(L10n.t("recite.carouselLoops"))
-                            .font(.system(size: 13))
-                        Spacer()
-                        Stepper(
-                            value: $carouselLoops,
-                            in: Constants.minCarouselLoops...Constants.maxCarouselLoops
-                        ) {
-                            Text("\(carouselLoops)")
-                                .frame(width: 40, alignment: .trailing)
-                        }
-                        .disabled(reciteMode != .carousel)
-                        .onChange(of: carouselLoops) { _ in saveCarouselLoops() }
-                    }
-                    .opacity(reciteMode == .carousel ? 1.0 : 0.5)
 
                     // Section 顺序（Section 之间）：左标签 + 右分段选择
                     HStack {
@@ -102,6 +73,103 @@ struct ReciteSettingsView: View {
                     }
                 }
                 .glassCard()
+
+                // 背记模式卡片
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(L10n.t("recite.mode"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Picker("", selection: $reciteMode) {
+                        ForEach(ReciteMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    .onChange(of: reciteMode) { _ in saveReciteMode() }
+                }
+                .glassCard()
+
+                // 走马灯专属卡：循环轮次（仅走马灯模式可交互）
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L10n.t("recite.carousel"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text(L10n.t("recite.carouselLoops"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Stepper(
+                            value: $carouselLoops,
+                            in: Constants.minCarouselLoops...Constants.maxCarouselLoops
+                        ) {
+                            Text("\(carouselLoops)")
+                                .frame(width: 40, alignment: .trailing)
+                        }
+                        .disabled(reciteMode != .carousel)
+                        .onChange(of: carouselLoops) { _ in saveCarouselLoops() }
+                    }
+                }
+                .glassCard()
+                .disabled(reciteMode != .carousel)
+                .opacity(reciteMode == .carousel ? 1.0 : 0.5)
+
+                // 记忆反馈专属卡：单词最大曝光次数（仅记忆反馈模式可交互）
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L10n.t("recite.memoryFeedback"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text(L10n.t("recite.maxExposureRounds"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Stepper(
+                            value: $maxExposureRounds,
+                            in: Constants.minMaxExposureRounds...Constants.maxMaxExposureRounds
+                        ) {
+                            Text("\(maxExposureRounds)")
+                                .frame(width: 40, alignment: .trailing)
+                        }
+                        .disabled(reciteMode != .memoryFeedback)
+                        .onChange(of: maxExposureRounds) { _ in saveMaxExposureRounds() }
+                    }
+
+                    // 会话复习词上限：0 = 不限
+                    HStack {
+                        Text(L10n.t("recite.sessionReviewCap"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Stepper(
+                            value: $sessionReviewCap,
+                            in: Constants.minSessionReviewCap...Constants.maxSessionReviewCap
+                        ) {
+                            Text(sessionReviewCap == 0 ? L10n.t("recite.unlimited") : "\(sessionReviewCap)")
+                                .frame(width: 50, alignment: .trailing)
+                        }
+                        .disabled(reciteMode != .memoryFeedback)
+                        .onChange(of: sessionReviewCap) { _ in saveSessionReviewCap() }
+                    }
+
+                    // 复习基础间隔：0.5 / 1 / 2 天
+                    HStack {
+                        Text(L10n.t("recite.reviewBaseInterval"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $reviewBaseIntervalDays) {
+                            ForEach(Constants.reviewBaseIntervalOptions, id: \.self) { days in
+                                Text(String(format: "%g %@", days, L10n.t("recite.dayUnit"))).tag(days)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+                        .disabled(reciteMode != .memoryFeedback)
+                        .onChange(of: reviewBaseIntervalDays) { _ in saveReviewBaseInterval() }
+                    }
+                }
+                .glassCard()
+                .disabled(reciteMode != .memoryFeedback)
+                .opacity(reciteMode == .memoryFeedback ? 1.0 : 0.5)
 
                 // 停留时长卡片
                 VStack(alignment: .leading, spacing: 8) {
@@ -157,6 +225,9 @@ struct ReciteSettingsView: View {
     private func loadSettings() {
         reciteMode = AppSettings.shared.reciteMode
         carouselLoops = AppSettings.shared.carouselLoopCount
+        maxExposureRounds = AppSettings.shared.maxExposureRounds
+        sessionReviewCap = AppSettings.shared.sessionReviewCap
+        reviewBaseIntervalDays = AppSettings.shared.reviewBaseIntervalDays
         sectionSize = AppSettings.shared.sectionSize
         playOrder = AppSettings.shared.playOrder
         sectionOrder = AppSettings.shared.sectionOrder
@@ -188,6 +259,28 @@ struct ReciteSettingsView: View {
         carouselLoops = newValue
         guard AppSettings.shared.carouselLoopCount != newValue else { return }
         AppSettings.shared.carouselLoopCount = newValue
+        AppSettings.shared.postDidChange()
+    }
+
+    private func saveMaxExposureRounds() {
+        let newValue = min(Constants.maxMaxExposureRounds, max(Constants.minMaxExposureRounds, maxExposureRounds))
+        maxExposureRounds = newValue
+        guard AppSettings.shared.maxExposureRounds != newValue else { return }
+        AppSettings.shared.maxExposureRounds = newValue
+        AppSettings.shared.postDidChange()
+    }
+
+    private func saveSessionReviewCap() {
+        let newValue = min(Constants.maxSessionReviewCap, max(Constants.minSessionReviewCap, sessionReviewCap))
+        sessionReviewCap = newValue
+        guard AppSettings.shared.sessionReviewCap != newValue else { return }
+        AppSettings.shared.sessionReviewCap = newValue
+        AppSettings.shared.postDidChange()
+    }
+
+    private func saveReviewBaseInterval() {
+        guard AppSettings.shared.reviewBaseIntervalDays != reviewBaseIntervalDays else { return }
+        AppSettings.shared.reviewBaseIntervalDays = reviewBaseIntervalDays
         AppSettings.shared.postDidChange()
     }
 

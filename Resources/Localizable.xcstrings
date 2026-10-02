@@ -702,6 +702,23 @@
         }
       }
     },
+    "float.button.vague": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vague"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模糊"
+          }
+        }
+      }
+    },
     "float.completed": {
       "extractionState": "manual",
       "localizations": {
@@ -749,6 +766,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "退出程序"
+          }
+        }
+      }
+    },
+    "float.menu.reset.confirmCancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "float.menu.reset.confirmMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will permanently clear all mastery records for every word. This action cannot be undone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将清除全部单词掌握度记录，且此操作不可恢复。"
+          }
+        }
+      }
+    },
+    "float.menu.reset.confirmOK": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置"
+          }
+        }
+      }
+    },
+    "float.menu.reset.confirmTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Learning Record?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置学习记录？"
+          }
+        }
+      }
+    },
+    "float.menu.resetLearningRecord": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Learning Record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重置学习记录"
           }
         }
       }
@@ -1178,6 +1280,23 @@
         }
       }
     },
+    "recite.carousel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carousel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "走马灯"
+          }
+        }
+      }
+    },
     "recite.carouselLoops": {
       "extractionState": "manual",
       "localizations": {
@@ -1195,6 +1314,23 @@
         }
       }
     },
+    "recite.dayUnit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day(s)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天"
+          }
+        }
+      }
+    },
     "recite.fullscreenHide": {
       "extractionState": "manual",
       "localizations": {
@@ -1208,6 +1344,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "全屏应用时自动隐藏悬浮窗"
+          }
+        }
+      }
+    },
+    "recite.maxExposureRounds": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max Exposures per Word"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单词最大曝光次数"
+          }
+        }
+      }
+    },
+    "recite.memoryFeedback": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory Feedback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记忆反馈"
           }
         }
       }
@@ -1280,6 +1450,23 @@
         }
       }
     },
+    "recite.reviewBaseInterval": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review Base Interval"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复习基础间隔"
+          }
+        }
+      }
+    },
     "recite.seconds.format": {
       "extractionState": "manual",
       "localizations": {
@@ -1348,6 +1535,23 @@
         }
       }
     },
+    "recite.sessionReviewCap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review Words per Session"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每次会话复习上限"
+          }
+        }
+      }
+    },
     "recite.stayDuration": {
       "extractionState": "manual",
       "localizations": {
@@ -1361,6 +1565,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "单单词停留时长"
+          }
+        }
+      }
+    },
+    "recite.unlimited": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不限"
           }
         }
       }

@@ -15,6 +15,9 @@ final class ReciteEngineHoverPauseTests: XCTestCase {
         super.setUp()
         DataStack.shared.initialize()
         clearAllData()
+        // 记忆反馈模式下超时=unknown 会给单词建 ReviewState；不重置会污染后跑用例
+        //（无新词+无到期 → 判 allComplete → currentWord 为 nil），故每例复位。
+        ReviewStateService.shared.resetAll()
         setupTestData()
 
         engine = ReciteEngine()

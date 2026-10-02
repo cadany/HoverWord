@@ -122,8 +122,8 @@ class FloatWindowController: NSWindowController {
         contentViewContainer.onKnowTap = { [weak self] in
             self?.engine.markKnown()
         }
-        contentViewContainer.onUnknownTap = { [weak self] in
-            self?.engine.markUnknown()
+        contentViewContainer.onVagueTap = { [weak self] in
+            self?.engine.markVague()
         }
         contentViewContainer.onFavoriteTap = { [weak self] in
             guard let self = self, let word = self.engine.currentWord() else { return }
@@ -285,12 +285,20 @@ class FloatWindowController: NSWindowController {
     private func showContextMenu(event: NSEvent) {
         let menu = NSMenu()
 
-        // 已学完状态时，顶部插入"重新开始"
+        // 已学完状态时，顶部插入"重新开始"；记忆反馈模式另加"重置学习记录"
         if engine.isAllComplete {
             let restartItem = NSMenuItem(title: L10n.t("float.menu.restart"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
             restartItem.tag = Constants.FloatMenuTag.restart
             restartItem.target = self
             menu.addItem(restartItem)
+
+            if AppSettings.shared.reciteMode == .memoryFeedback {
+                let resetItem = NSMenuItem(title: L10n.t("float.menu.resetLearningRecord"), action: #selector(menuItemAction(_:)), keyEquivalent: "")
+                resetItem.tag = Constants.FloatMenuTag.resetLearningRecord
+                resetItem.target = self
+                menu.addItem(resetItem)
+            }
+
             menu.addItem(NSMenuItem.separator())
         }
 
@@ -339,7 +347,28 @@ class FloatWindowController: NSWindowController {
             }
         case Constants.FloatMenuTag.quit:
             AppDelegate.shared.quitApp()
+        case Constants.FloatMenuTag.resetLearningRecord:
+            // 先弹确认对话框，确认后才清除掌握度记录
+            presentResetLearningRecordConfirm()
         default: break
+        }
+    }
+
+    /// 弹出"重置学习记录"确认对话框
+    private func presentResetLearningRecordConfirm() {
+        guard let panel = window else { return }
+        let alert = NSAlert()
+        alert.messageText = L10n.t("float.menu.reset.confirmTitle")
+        alert.informativeText = L10n.t("float.menu.reset.confirmMessage")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.t("float.menu.reset.confirmOK"))
+        alert.addButton(withTitle: L10n.t("float.menu.reset.confirmCancel"))
+        // 以悬浮窗为父窗口呈现，保持层级
+        alert.beginSheetModal(for: panel) { [weak self] response in
+            guard let self = self, response == .alertFirstButtonReturn else { return }
+            // 确认：清除全部掌握度记录 + 会话进度，按当前策略重新开始
+            self.applyUserPause(false)
+            self.engine.resetLearningRecord()
         }
     }
 

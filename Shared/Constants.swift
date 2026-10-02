@@ -225,6 +225,44 @@ enum Constants {
     /// Section 单词数最大值
     static let maxSectionSize: Int = 500
 
+    // MARK: - 记忆反馈（简易 SRS）
+
+    /// Leitner 盒级上限
+    static let srsBoxMax: Int = 5
+
+    /// 认识复习基础间隔（第 1 盒），后续盒级按 1 天 × 2^(盒-1) 递增 → 1/2/4/8/16 天
+    static let srsBaseInterval: TimeInterval = 86_400
+
+    /// 模糊（↺）跨会话复现间隔：4 小时
+    static let srsVagueInterval: TimeInterval = 4 * 3_600
+
+    /// 不认识（超时）跨会话复现间隔：1 小时
+    static let srsUnknownInterval: TimeInterval = 3_600
+
+    /// 单词最大曝光次数默认值
+    static let defaultMaxExposureRounds: Int = 3
+
+    /// 单词最大曝光次数取值范围（1-10）
+    static let minMaxExposureRounds: Int = 1
+    static let maxMaxExposureRounds: Int = 10
+
+    /// 会话内重试延迟（词数）：不认识延迟 3 词重现，模糊延迟 2 词重现
+    static let unknownRetryDelay: Int = 3
+    static let vagueRetryDelay: Int = 2
+
+    /// 单次会话可调度的到期复习词预算默认值（0 = 不限）
+    static let defaultSessionReviewCap: Int = 0
+
+    /// 复习预算取值范围（0-200，0 = 不限）
+    static let minSessionReviewCap: Int = 0
+    static let maxSessionReviewCap: Int = 200
+
+    /// 复习基础间隔可选值（天）：认识复习间隔 = 基准天 × 2^(盒-1)
+    static let reviewBaseIntervalOptions: [Double] = [0.5, 1, 2]
+
+    /// 复习基础间隔默认值（天）
+    static let defaultReviewBaseIntervalDays: Double = 1.0
+
     // MARK: - 转场动效
 
     /// "无动效"选项 ID（设置页置顶项，切词时不执行任何动画）
@@ -338,6 +376,7 @@ enum Constants {
         static let openSettings = 101
         static let quit = 102
         static let pauseResume = 103
+        static let resetLearningRecord = 104
     }
 }
 

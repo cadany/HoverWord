@@ -51,11 +51,49 @@ class ReciteEngine {
     /// 当前单词在 currentWordOrder 中的索引
     private var currentWordIndex: Int = 0
 
-    /// 记忆反馈模式：已反馈的单词 ID 集合
-    private var feedbackSet: Set<String> = []
-
     /// 走马灯模式：当前 Section 已完成的轮次
     private var completedLoops: Int = 0
+
+    // MARK: - 记忆反馈（SRS 全局复习队列）状态
+
+    /// 记忆反馈批次单词状态
+    private enum MemoryWordState: Int, Codable {
+        /// 待展示
+        case pending = 0
+        /// 待重现（延迟计数隐含于批次展示列表插入位置，持久化即保序）
+        case pendingRedisplay = 1
+        /// 已通过（认识）
+        case passed = 2
+        /// 已放行（曝光达标）
+        case released = 3
+    }
+
+    /// 当前记忆反馈批次
+    private struct MemoryBatch {
+        /// 有序展示列表：含重现插入的重复实例，位置即含延迟语义
+        var wordIds: [String] = []
+        /// 各单词会话状态
+        var states: [String: MemoryWordState] = [:]
+        /// 本会话曝光计数
+        var exposures: [String: Int] = [:]
+        /// 当前展示索引
+        var index: Int = 0
+    }
+
+    /// 启用词库的 wordId → 词条 映射（记忆反馈取词用）
+    private var entryByWordId: [String: WordEntry] = [:]
+    /// 当前记忆反馈批次
+    private var memoryBatch: MemoryBatch?
+    /// 当前批次序号（delegate 报告用）
+    private var memoryBatchIndex: Int = 0
+    /// 预计总批次数（delegate 报告用）
+    private var memoryTotalBatches: Int = 0
+
+    /// 本会话剩余可调度的到期复习词预算（nil = 不限）
+    ///
+    /// 会话级：新开始由 AppSettings.sessionReviewCap 初始化（0 = 不限），
+    /// 随进度持久化，中断恢复后按剩余预算继续，累计至预算耗尽。
+    private var sessionReviewBudgetRemaining: Int?
 
     // MARK: - Timer
 
@@ -196,6 +234,12 @@ class ReciteEngine {
             return
         }
 
+        // 记忆反馈模式：全局复习队列主体，不走 Section 逐节流转
+        if AppSettings.shared.reciteMode == .memoryFeedback {
+            startMemoryFeedback()
+            return
+        }
+
         // 优先级 1：续背锚点（上一轮全部完成后记录的离开位置）
         if resumeFromContinuationAnchor() { return }
 
@@ -211,7 +255,18 @@ class ReciteEngine {
     }
 
     /// 重新开始（清除续背锚点与进度，按当前策略从策略起点开始）
+    ///
+    /// 记忆反馈模式下仅清除会话进度并重排，ReviewState（掌握度）保留。
     func restart() {
+        clearProgress()
+        start()
+    }
+
+    /// 重置学习记录（清除全部 ReviewState + 会话进度，按当前策略重新开始）
+    ///
+    /// 与 restart() 语义区分：restart 保留掌握度，本方法彻底清空跨会话复习记录。
+    func resetLearningRecord() {
+        ReviewStateService.shared.resetAll()
         clearProgress()
         start()
     }
@@ -224,26 +279,22 @@ class ReciteEngine {
 
     // MARK: - 用户交互（记忆反馈模式）
 
-    /// 用户标记当前单词为"认识"
+    /// 用户标记当前单词为"认识"（✓）
     func markKnown() {
         guard state == .playing,
               AppSettings.shared.reciteMode == .memoryFeedback,
               let word = currentWord() else { return }
 
-        feedbackSet.insert(word.wordId)
-        advanceToNextWord()
+        handleMemoryFeedback(.known, for: word.wordId)
     }
 
-    /// 用户标记当前单词为"不认识"
-    ///
-    /// 不加入 feedbackSet，保持未反馈状态，单词将在后续轮次重试。
-    func markUnknown() {
+    /// 用户标记当前单词为"模糊"（↺ 按钮）
+    func markVague() {
         guard state == .playing,
               AppSettings.shared.reciteMode == .memoryFeedback,
-              currentWord() != nil else { return }
+              let word = currentWord() else { return }
 
-        // 不加入 feedbackSet，单词将在后续轮次再次出现
-        advanceToNextWord()
+        handleMemoryFeedback(.vague, for: word.wordId)
     }
 
     // MARK: - 当前单词访问
@@ -251,13 +302,23 @@ class ReciteEngine {
     /// 获取当前单词
     ///
     /// 返回 nil 表示当前状态无效（队列空 / 索引越界），调用方须安全处理。
+    /// 记忆反馈模式从当前批次取词；走马灯模式从 Section 队列取词。
     func currentWord() -> WordEntry? {
+        if AppSettings.shared.reciteMode == .memoryFeedback {
+            return currentMemoryWord()
+        }
         guard currentSectionQueueIndex < sectionQueue.count else { return nil }
         guard currentWordIndex < currentWordOrder.count else { return nil }
         let section = sectionQueue[currentSectionQueueIndex]
         let index = currentWordOrder[currentWordIndex]
         guard index < section.entries.count else { return nil }
         return section.entries[index]
+    }
+
+    /// 记忆反馈模式当前批次词
+    private func currentMemoryWord() -> WordEntry? {
+        guard let batch = memoryBatch, batch.index < batch.wordIds.count else { return nil }
+        return entryByWordId[batch.wordIds[batch.index]]
     }
 
     /// 获取当前 Section 总单词数
@@ -312,7 +373,6 @@ class ReciteEngine {
 
     /// 准备当前 Section（重置内部状态、确定单词顺序）
     private func prepareCurrentSection() {
-        feedbackSet.removeAll()
         completedLoops = 0
         rebuildWordOrder()
     }
@@ -352,16 +412,12 @@ class ReciteEngine {
 
     /// 切换到下一个单词
     private func advanceToNextWord() {
-        guard currentSectionQueueIndex < sectionQueue.count else { return }
-
-        let section = sectionQueue[currentSectionQueueIndex]
-        let mode = AppSettings.shared.reciteMode
-
-        switch mode {
+        switch AppSettings.shared.reciteMode {
         case .memoryFeedback:
-            advanceMemoryFeedback(section: section)
+            advanceMemoryFeedback()
         case .carousel:
-            advanceCarousel(section: section)
+            guard currentSectionQueueIndex < sectionQueue.count else { return }
+            advanceCarousel(section: sectionQueue[currentSectionQueueIndex])
         }
 
         // 单词切换后保存进度（若仍在播放状态）
@@ -370,39 +426,30 @@ class ReciteEngine {
         }
     }
 
-    /// 记忆反馈模式的单词推进
-    private func advanceMemoryFeedback(section: (wordbookId: String, sectionIndex: Int, entries: [WordEntry])) {
-        let totalWords = section.entries.count
+    /// 记忆反馈模式的单词推进（批次内线性展示 + 重现词已预插于列表）
+    private func advanceMemoryFeedback() {
+        guard var batch = memoryBatch else { return }
+        batch.index += 1
 
-        // 当前轮次已完成所有单词的展示
-        currentWordIndex += 1
-
-        if currentWordIndex >= currentWordOrder.count {
-            // 当前轮次结束
-            // 检查是否所有单词都已反馈
-            let allFeedback = section.entries.allSatisfy { feedbackSet.contains($0.wordId) }
-
-            if allFeedback {
-                // Section 完成
-                delegate?.engineDidCompleteSection(
-                    sectionIndex: currentSectionQueueIndex,
-                    totalSections: sectionQueue.count
-                )
-                advanceToNextSection()
+        // 批次末尾：说明批内单词均已解决（认识/放行）或重现词已耗尽
+        if batch.index >= batch.wordIds.count {
+            memoryBatch = nil
+            delegate?.engineDidCompleteSection(
+                sectionIndex: memoryBatchIndex,
+                totalSections: memoryTotalBatches
+            )
+            memoryBatchIndex += 1
+            guard buildNextMemoryBatch() else {
+                finishMemoryAllComplete()
                 return
             }
-
-            // 开始新轮次：仅展示未反馈的单词
-            let unfeedbackIndices = currentWordOrder.filter { idx in
-                !feedbackSet.contains(section.entries[idx].wordId)
-            }
-            currentWordOrder = unfeedbackIndices
-            if AppSettings.shared.playOrder == .shuffled {
-                currentWordOrder.shuffle()
-            }
-            currentWordIndex = 0
+            state = .playing
+            displayCurrentWord()
+            saveProgress()
+            return
         }
 
+        memoryBatch = batch
         displayCurrentWord()
     }
 
@@ -437,6 +484,13 @@ class ReciteEngine {
     /// 用于首次展示（start / 新 Section / 新轮次）和推进后的展示。
     private func displayCurrentWord() {
         guard let word = currentWord() else { return }
+
+        // 记忆反馈模式：展示计数计入本会话曝光量（阈值放行判定依据）
+        if AppSettings.shared.reciteMode == .memoryFeedback, var batch = memoryBatch {
+            batch.exposures[word.wordId] = (batch.exposures[word.wordId] ?? 0) + 1
+            memoryBatch = batch
+        }
+
         startTimer()
         delegate?.engineDidAdvanceToWord(word)
 
@@ -485,12 +539,163 @@ class ReciteEngine {
 
         switch mode {
         case .memoryFeedback:
-            // 超时未反馈，不加入 feedbackSet，直接进入下一单词
-            advanceToNextWord()
+            // 停留时长耗尽自动记为「不认识」，立即推进至下一单词
+            if let word = currentWord() {
+                handleMemoryFeedback(.unknown, for: word.wordId)
+            } else {
+                advanceToNextWord()
+            }
         case .carousel:
             // 走马灯模式：正常推进
             advanceToNextWord()
         }
+    }
+
+    // MARK: - 记忆反馈调度（全局复习队列）
+
+    /// 启动记忆反馈会话：尝试恢复进度，否则按全局复习队列构建首批
+    private func startMemoryFeedback() {
+        // 新词分批须按 sectionOrder 策略组织（randomStart 旋转 / shuffled 打乱），
+        // 与走马灯共用同一策略应用入口；restoreMemoryProgress 会以保存的批次覆盖会话状态
+        applySectionOrderStrategy()
+        buildEntryByWordId()
+        computeMemoryPlan()
+
+        if restoreMemoryProgress() { return }
+
+        // 无有效进度：开启新会话，重置会话复习预算（0 = 不限）
+        let cap = AppSettings.shared.sessionReviewCap
+        sessionReviewBudgetRemaining = cap > 0 ? cap : nil
+        memoryBatchIndex = 0
+        guard buildNextMemoryBatch(rebuildPlan: false) else {
+            finishMemoryAllComplete()
+            return
+        }
+        state = .playing
+        displayCurrentWord()
+    }
+
+    /// 构建 wordId → 词条 映射（启用词库池）
+    private func buildEntryByWordId() {
+        entryByWordId = [:]
+        for section in sectionQueue {
+            for entry in section.entries {
+                entryByWordId[entry.wordId] = entry
+            }
+        }
+    }
+
+    /// 计算预计总批次数（delegate 报告用）
+    private func computeMemoryPlan() {
+        let now = Date()
+        let dueCount = ReviewStateService.shared.dueStates(at: now).filter { entryByWordId[$0.wordId] != nil }.count
+        let newCount = enabledWordIdsInOrder().filter { ReviewStateService.shared.state(for: $0) == nil }.count
+        let size = max(AppSettings.shared.sectionSize, 1)
+        memoryTotalBatches = max(1, Int(ceil(Double(dueCount + newCount) / Double(size))))
+    }
+
+    /// 启用词库按词源构建顺序的 wordId 列表（新词分批池）
+    private func enabledWordIdsInOrder() -> [String] {
+        var ids: [String] = []
+        for section in sectionQueue {
+            for entry in section.entries {
+                ids.append(entry.wordId)
+            }
+        }
+        return ids
+    }
+
+    /// 处理一次记忆反馈：更新 ReviewState + 会话内状态 + 推进
+    private func handleMemoryFeedback(_ feedback: ReviewFeedback, for wordId: String) {
+        guard var batch = memoryBatch else { return }
+
+        // 跨会话：记录掌握度（即时落盘）
+        ReviewStateService.shared.record(feedback: feedback, for: wordId)
+
+        let currentIndex = batch.index
+        if feedback == .known {
+            batch.states[wordId] = .passed
+        } else {
+            let exposure = batch.exposures[wordId] ?? 0
+            if exposure >= AppSettings.shared.maxExposureRounds {
+                // 曝光达标放行：本会话不再重现
+                batch.states[wordId] = .released
+            } else {
+                // 延迟重现：插入到当前索引之后 delay+1 个位置（当前实例随后被推进越过）
+                batch.states[wordId] = .pendingRedisplay
+                let delay = feedback == .vague ? Constants.vagueRetryDelay : Constants.unknownRetryDelay
+                let insertPos = min(currentIndex + delay + 1, batch.wordIds.count)
+                if insertPos >= 0 && insertPos <= batch.wordIds.count {
+                    batch.wordIds.insert(wordId, at: insertPos)
+                }
+            }
+        }
+
+        memoryBatch = batch
+        advanceToNextWord()
+    }
+
+    /// 构建下一记忆反馈批次；无词可调度时返回 false（由调用方决定收尾）
+    ///
+    /// `rebuildPlan` 默认 false：记忆反馈批次流转到下一批时沿用启动时的批次估算，
+    /// 避免每次转批都重算 `memoryTotalBatches`（估算值即可满足 delegate 报告需求）。
+    private func buildNextMemoryBatch(rebuildPlan: Bool = false) -> Bool {
+        if rebuildPlan { computeMemoryPlan() }
+        let excluded = Set(memoryBatch?.wordIds ?? [])
+        return buildMemoryBatchExcluding(excluded)
+    }
+
+    /// 按排除集构建一批（先到期复习词、后新词补足）
+    private func buildMemoryBatchExcluding(_ excluded: Set<String>) -> Bool {
+        let size = max(AppSettings.shared.sectionSize, 1)
+        let now = Date()
+
+        // 到期复习词：存在 ReviewState 且 dueAt <= now，按 dueAt 升序（服务已排序）
+        let due = ReviewStateService.shared.dueStates(at: now)
+            .map { $0.wordId }
+            .filter { entryByWordId[$0] != nil && !excluded.contains($0) }
+
+        // 会话复习预算：本次批次纳入的到期词数受剩余预算约束（预算耗尽后不再拉取到期词）
+        var scheduledDueCount = min(due.count, size)
+        if let budget = sessionReviewBudgetRemaining {
+            scheduledDueCount = min(scheduledDueCount, budget)
+            sessionReviewBudgetRemaining = budget - scheduledDueCount
+        }
+        let dueWords = Array(due.prefix(scheduledDueCount))
+
+        // 新词：无 ReviewState，按词源构建顺序
+        var news = enabledWordIdsInOrder().filter {
+            !excluded.contains($0) &&
+            entryByWordId[$0] != nil &&
+            ReviewStateService.shared.state(for: $0) == nil
+        }
+        if AppSettings.shared.playOrder == .shuffled {
+            news.shuffle()
+        }
+
+        var wordIds: [String] = []
+        wordIds.append(contentsOf: dueWords)
+        let fill = size - wordIds.count
+        if fill > 0 { wordIds.append(contentsOf: news.prefix(fill)) }
+
+        guard !wordIds.isEmpty else { return false }
+
+        var batch = MemoryBatch()
+        batch.wordIds = wordIds
+        for wordId in wordIds {
+            batch.states[wordId] = .pending
+            batch.exposures[wordId] = 0
+        }
+        memoryBatch = batch
+        return true
+    }
+
+    /// 记忆反馈全队列完成：清除进度、进入已学完（不写续背锚点）
+    private func finishMemoryAllComplete() {
+        state = .allComplete
+        stopTimer()
+        clearMemoryProgress()
+        delegate?.engineDidCompleteAll()
     }
 
     // MARK: - 通知处理
@@ -560,6 +765,28 @@ class ReciteEngine {
     private let progressOrderKey = "ReciteProgressWordOrder"
     private let progressLayoutKey = "ReciteProgressQueueLayout"
     private let continuationAnchorKey = "ReciteProgressLastCompleted"
+    private let memoryProgressKey = "ReciteProgressBatchState"
+
+    /// 记忆反馈进度载荷版本（不兼容改动时递增）
+    ///
+    /// v1：批次展示列表 + 会话状态 + 曝光计数
+    /// v2：新增 reviewBudgetRemaining（会话复习预算随进度持久化）
+    private let memoryProgressFormatVersion = 2
+
+    /// 记忆反馈进度载荷（专用新键，formatVersion 标记）
+    ///
+    /// 与走马灯既有键位隔离；批次展示列表保序即含重现延迟语义，
+    /// 恢复时据此还原到确切单词且重试节奏不断。
+    private struct MemoryProgress: Codable {
+        let formatVersion: Int
+        let batchWordIds: [String]
+        let wordStates: [String: MemoryWordState]
+        let exposureCounts: [String: Int]
+        let index: Int
+        let batchIndex: Int
+        /// 本会话剩余复习预算（nil = 不限）
+        let reviewBudgetRemaining: Int?
+    }
 
     /// Section 身份标识（身份寻址，队列索引的替代）
     ///
@@ -583,8 +810,18 @@ class ReciteEngine {
     ///
     /// 保存时机：单词切换、Section 完成、App 退出。
     /// 存储内容：当前 Section 身份、单词索引、当前轮次播放顺序（wordId）、
-    /// 已反馈集合、走马灯已完成轮次、队列布局快照。
+    /// 走马灯已完成轮次、队列布局快照。
     func saveProgress() {
+        // 记忆反馈模式走专用进度键；其余走马灯既有路径
+        guard AppSettings.shared.reciteMode == .memoryFeedback else {
+            saveCarouselProgress()
+            return
+        }
+        saveMemoryProgress()
+    }
+
+    /// 保存走马灯进度（身份寻址）
+    private func saveCarouselProgress() {
         let defaults = UserDefaults.standard
 
         guard currentSectionQueueIndex < sectionQueue.count else { return }
@@ -606,18 +843,35 @@ class ReciteEngine {
         }
 
         defaults.set(currentWordIndex, forKey: progressWordKey)
-        defaults.set(Array(feedbackSet), forKey: progressFeedbackSetKey)
         defaults.set(completedLoops, forKey: progressCompletedLoopsKey)
 
         // 持久化当前轮次的播放顺序（按 wordId）。
-        // currentWordIndex 的语义依赖 currentWordOrder（shuffle 顺序、记忆反馈后续轮次的
-        // "未反馈子集"顺序），不保存顺序就无法还原到确切的单词。
+        // currentWordIndex 的语义依赖 currentWordOrder（shuffle 顺序），
+        // 不保存顺序就无法还原到确切的单词。
         let entries = section.entries
         let orderIds = currentWordOrder.compactMap { index -> String? in
             guard index >= 0 && index < entries.count else { return nil }
             return entries[index].wordId
         }
         defaults.set(orderIds, forKey: progressOrderKey)
+    }
+
+    /// 保存记忆反馈进度（专用新键，含批次展示列表 + 会话状态 + 曝光计数）
+    private func saveMemoryProgress() {
+        guard let batch = memoryBatch, !batch.wordIds.isEmpty else {
+            clearMemoryProgress()
+            return
+        }
+        let progress = MemoryProgress(
+            formatVersion: memoryProgressFormatVersion,
+            batchWordIds: batch.wordIds,
+            wordStates: batch.states,
+            exposureCounts: batch.exposures,
+            index: batch.index,
+            batchIndex: memoryBatchIndex,
+            reviewBudgetRemaining: sessionReviewBudgetRemaining
+        )
+        encodeToDefaults(progress, forKey: memoryProgressKey)
     }
 
     /// 计算当前队列的布局快照
@@ -650,6 +904,88 @@ class ReciteEngine {
         defaults.removeObject(forKey: progressOrderKey)
         defaults.removeObject(forKey: progressLayoutKey)
         defaults.removeObject(forKey: continuationAnchorKey)
+        // 记忆反馈专用进度键一并清除
+        clearMemoryProgress()
+    }
+
+    /// 清除记忆反馈进度键（含旧记忆反馈残留键）
+    private func clearMemoryProgress() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: memoryProgressKey)
+        // 旧记忆反馈 feedbackSet 键位残留一次性清理
+        defaults.removeObject(forKey: progressFeedbackSetKey)
+        memoryBatch = nil
+    }
+
+    /// 尝试从 UserDefaults 恢复记忆反馈进度（专用键 + formatVersion 校验）
+    ///
+    /// 校验批次词单中的 wordId 均存在于当前启用词库、会话状态与曝光计数
+    /// 均不越界（key 属于批次词单）；失败则清除并回退重建。恢复时跳过
+    /// 已通过/已放行单词，直达仍然待展示的词。
+    ///
+    /// - Returns: 恢复成功返回 true，无有效进度或校验失败返回 false
+    private func restoreMemoryProgress() -> Bool {
+        // 旧格式（无 formatVersion 的记忆反馈进度）一次性失效清零
+        guard let saved = decodeFromDefaults(MemoryProgress.self, forKey: memoryProgressKey) else {
+            // 键缺失（首次/已清）与旧格式/损坏载荷统一在此清零，避免残留影响后续启动
+            clearMemoryProgress()
+            return false
+        }
+        guard saved.formatVersion == memoryProgressFormatVersion else {
+            clearMemoryProgress()
+            return false
+        }
+
+        // 记忆反馈批次允许重复 wordId（延迟重现会向展示列表插入第二副本），
+        // 故不做唯一性校验；仅用 Set 集合作 key 包含性判定
+        let batchWordIdSet = Set(saved.batchWordIds)
+        // wordId 均存在于当前启用词库
+        for wordId in saved.batchWordIds where entryByWordId[wordId] == nil {
+            clearMemoryProgress()
+            return false
+        }
+        // 会话状态与曝光计数 key 均属于批次词单
+        for key in saved.wordStates.keys where !batchWordIdSet.contains(key) {
+            clearMemoryProgress()
+            return false
+        }
+        for key in saved.exposureCounts.keys where !batchWordIdSet.contains(key) {
+            clearMemoryProgress()
+            return false
+        }
+        guard saved.index >= 0, saved.index <= saved.batchWordIds.count else {
+            clearMemoryProgress()
+            return false
+        }
+
+        memoryBatchIndex = max(saved.batchIndex, 0)
+        var batch = MemoryBatch()
+        batch.wordIds = saved.batchWordIds
+        batch.states = saved.wordStates
+        batch.exposures = saved.exposureCounts
+
+        // 跳过已通过/放行词，直达待展示位置
+        var idx = saved.index
+        while idx < batch.wordIds.count {
+            let wordId = batch.wordIds[idx]
+            if let state = batch.states[wordId], state == .passed || state == .released {
+                idx += 1
+            } else {
+                break
+            }
+        }
+        guard idx < batch.wordIds.count else {
+            clearMemoryProgress()
+            return false
+        }
+        batch.index = idx
+        memoryBatch = batch
+        // 会话复习预算随进度恢复（nil = 不限；负数视为无效清 0）
+        sessionReviewBudgetRemaining = saved.reviewBudgetRemaining.map { max($0, 0) }
+
+        state = .playing
+        displayCurrentWord()
+        return true
     }
 
     /// 尝试从 UserDefaults 恢复历史进度（身份寻址 + 布局还原）
@@ -660,8 +996,7 @@ class ReciteEngine {
     /// 3. 按身份定位当前 Section（找不到即回退）
     /// 4. 保存的播放顺序（wordId）无重复，且每个单词都存在于当前 Section
     /// 5. 单词索引不越界（对还原后的顺序校验）
-    /// 6. feedbackSet 中的单词 ID 均存在于当前 Section
-    /// 7. 走马灯已完成轮次不越界
+    /// 6. 走马灯已完成轮次不越界
     ///
     /// 任意校验失败则清除进度，返回 false 由调用方按策略新开始。
     ///
@@ -697,7 +1032,6 @@ class ReciteEngine {
 
         let section = sectionQueue[currentSectionQueueIndex]
         let savedWordIndex = defaults.integer(forKey: progressWordKey)
-        let savedFeedbackSet = defaults.stringArray(forKey: progressFeedbackSetKey) ?? []
         let savedCompletedLoops = defaults.integer(forKey: progressCompletedLoopsKey)
 
         // 还原保存时的播放顺序：wordId 映射回 Section 内索引
@@ -725,14 +1059,6 @@ class ReciteEngine {
             return resetProgressAndFail()
         }
 
-        // 校验 feedbackSet 中所有单词 ID 存在于当前 Section
-        let sectionWordIds = Set(section.entries.map { $0.wordId })
-        for wordId in savedFeedbackSet {
-            if !sectionWordIds.contains(wordId) {
-                return resetProgressAndFail()
-            }
-        }
-
         // 校验走马灯已完成轮次
         let loopCount = AppSettings.shared.carouselLoopCount
         guard savedCompletedLoops >= 0 && savedCompletedLoops < loopCount else {
@@ -740,7 +1066,6 @@ class ReciteEngine {
         }
 
         // 恢复状态
-        feedbackSet = Set(savedFeedbackSet)
         currentWordIndex = savedWordIndex
         completedLoops = savedCompletedLoops
         state = .playing
