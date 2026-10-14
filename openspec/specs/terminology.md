@@ -1,4 +1,4 @@
-# 术语约定：Section
+# 术语约定：Section 与掌握度
 
 ## 决策（2026-08-28，feat02 期间确认）
 
@@ -15,6 +15,17 @@
 - 产品为多语种架构（sourceLang/targetLang 任意方向），界面将扩展多语言；Section 概念单一字面使新语种接入零术语决策
 - 与代码实体（`sectionIndex`、`SectionOrder`）、spec 文档保持一一对应，消除心智映射
 - 目标用户为语言学习者，对 "Section" 无理解门槛
+
+## 掌握度术语（2026-10-14，feat05 期间确认）
+
+用户侧掌握度口径统一使用以下四术语；内部实现隐喻（如「盒」）不得出现在任何用户可见文案。
+
+| key | zh | en |
+| --- | --- | --- |
+| stats.mastery.mastered | 已掌握 | Mastered |
+| stats.mastery.inProgress | 进行中 | In Progress |
+| stats.mastery.unlearned | 未学 | Not Started |
+| stats.mastery.dueForReview | 待复习 | Due for Review |
 
 ## 现有词条基线（zh）
 

@@ -5,7 +5,7 @@ import SwiftUI
 ///
 /// Liquid Glass 玻璃材质 + sidebar 导航设计。
 /// 使用 NavigationSplitView 实现左侧 sidebar + 右侧内容区布局。
-/// 包含 5 个导航项：单词本 / 背记 / 外观 / 发音 / 通用。
+/// 包含 7 个导航项：单词本 / 背记 / 学习统计 / 外观 / 发音 / 体验 / 通用。
 /// 持有 LanguageManager：界面语言切换时内容子树重建 + 窗口标题刷新。
 class SettingsWindowController: NSWindowController {
 
@@ -126,6 +126,7 @@ struct SettingsRootView: View {
             ZStack {
                 tabPage(SidebarItem.wordbook.id) { WordbookTabView() }
                 tabPage(SidebarItem.recite.id) { ReciteSettingsView() }
+                tabPage(SidebarItem.learningStats.id) { StatsView() }
                 tabPage(SidebarItem.appearance.id) { AppearanceView() }
                 tabPage(SidebarItem.speech.id) { SpeechSettingsView() }
                 tabPage(SidebarItem.general.id) { GeneralSettingsView() }

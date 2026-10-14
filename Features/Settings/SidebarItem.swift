@@ -28,11 +28,12 @@ struct SidebarItem: Identifiable, Hashable {
 extension SidebarItem {
     static let wordbook = SidebarItem(id: "wordbook", labelKey: "sidebar.wordbook", icon: "book")
     static let recite = SidebarItem(id: "recite", labelKey: "sidebar.recite", icon: "arrow.triangle.2.circlepath")
+    static let learningStats = SidebarItem(id: "learningStats", labelKey: "sidebar.learningStats", icon: "chart.bar")
     static let appearance = SidebarItem(id: "appearance", labelKey: "sidebar.appearance", icon: "paintbrush")
     static let speech = SidebarItem(id: "speech", labelKey: "sidebar.speech", icon: "speaker.wave.2")
     static let general = SidebarItem(id: "general", labelKey: "sidebar.general", icon: "gearshape")
     static let experience = SidebarItem(id: "experience", labelKey: "sidebar.experience", icon: "wand.and.stars")
 
-    /// 全部导航项，按显示顺序排列（体验在发音后、通用垫后，见 change spec settings-window）
-    static let allItems: [SidebarItem] = [.wordbook, .recite, .appearance, .speech, .experience, .general]
+    /// 全部导航项，按显示顺序排列（学习统计在背记之后，体验在发音后、通用垫后，见 change spec settings-window）
+    static let allItems: [SidebarItem] = [.wordbook, .recite, .learningStats, .appearance, .speech, .experience, .general]
 }

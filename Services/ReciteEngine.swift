@@ -1129,11 +1129,12 @@ class ReciteEngine {
             return false
         }
 
-        // 锚点身份定位（基础队列即可，续背轮的推进顺序与布局无关紧要）
-        guard let anchorIndex = sectionQueue.firstIndex(where: {
-            $0.wordbookId == anchor.wordbookId && $0.sectionIndex == anchor.sectionIndex
-        }) else {
-            // 词本已停用等：锚点失效，清除后走正常路径
+        // 锚点失效判定与学习统计共用同一实现（classifyContinuationAnchor）；
+        // 失效（词本删除 / 停用 / Section 消失）则清除锚点后走正常路径
+        guard case .valid = Self.classifyContinuationAnchor(anchor),
+              let anchorIndex = sectionQueue.firstIndex(where: {
+                  $0.wordbookId == anchor.wordbookId && $0.sectionIndex == anchor.sectionIndex
+              }) else {
             UserDefaults.standard.removeObject(forKey: continuationAnchorKey)
             return false
         }
@@ -1155,6 +1156,59 @@ class ReciteEngine {
         currentSectionQueueIndex = 0
         prepareCurrentSection()
         return false
+    }
+
+    // MARK: - 学习统计只读查询
+
+    /// 续背锚点状态（学习统计展示与 restore 失效判定共用同一口径，见 change feat05 D4）
+    enum ContinuationAnchorState: Equatable {
+        /// 无锚点（从未完成过 Section）
+        case none
+        /// 有效：词本启用且 Section 有词条（携带词本 id / 词本名 / Section 序号供统计页展示）
+        case valid(wordbookId: String, wordbookName: String, sectionIndex: Int)
+        /// 锚点词本已删除
+        case wordbookMissing
+        /// 锚点词本存在但未启用
+        case wordbookDisabled
+        /// 锚点词本启用但该 Section 已无词条（与 restore 失效回退同语义）
+        case sectionInvalid
+    }
+
+    /// 当前续背锚点的只读状态（学习统计入口）
+    ///
+    /// 只读约束：SHALL NOT 清除锚点、SHALL NOT 写任何引擎状态——
+    /// 失效锚点的清除仍仅由 restore 路径（resumeFromContinuationAnchor）执行。
+    var continuationAnchorState: ContinuationAnchorState {
+        Self.classifyContinuationAnchor(
+            decodeFromDefaults(SectionIdentity.self, forKey: continuationAnchorKey)
+        )
+    }
+
+    /// 续背锚点状态判定（与 resumeFromContinuationAnchor 的失效判定同一实现）
+    ///
+    /// 判定基于 Core Data 当前数据而非引擎运行时队列：词本缺失 → wordbookMissing、
+    /// 存在但未启用 → wordbookDisabled、启用且 Section 有词条 → valid、
+    /// 启用但 Section 无词条 → sectionInvalid。口径与队列构建
+    ///（buildQueue：启用词本 × 非空 Section）一致，保证 restore 与统计页不出现两套判定。
+    ///
+    /// - Parameter anchor: 待判定锚点；nil 视为无锚点
+    static func classifyContinuationAnchor(_ anchor: SectionIdentity?) -> ContinuationAnchorState {
+        guard let anchor else { return .none }
+        let context = DataStack.shared.viewContext
+        let request: NSFetchRequest<Wordbook> = Wordbook.fetchRequest()
+        request.predicate = NSPredicate(format: "wordbookId == %@", anchor.wordbookId)
+        request.fetchLimit = 1
+        guard let wordbook = (try? context.fetch(request))?.first else {
+            return .wordbookMissing
+        }
+        guard wordbook.isEnabled else { return .wordbookDisabled }
+
+        let sections = WordbookService.shared.getAllEntriesGroupedBySection(for: wordbook)
+        guard anchor.sectionIndex >= 0, anchor.sectionIndex < sections.count,
+              !sections[anchor.sectionIndex].isEmpty else {
+            return .sectionInvalid
+        }
+        return .valid(wordbookId: wordbook.wordbookId, wordbookName: wordbook.name, sectionIndex: anchor.sectionIndex)
     }
 
     // MARK: - 私有：Codable 与 UserDefaults 桥接
