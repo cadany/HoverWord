@@ -27,6 +27,23 @@ class AppSettings {
     /// Section 组间顺序策略，默认从第一组开始
     var sectionOrder: SectionOrder = .sequential
 
+    /// 记忆反馈模式单词最大曝光次数（1-10，默认 3）
+    ///
+    /// 单词在本会话内累计展示次数达到该阈值仍未标记「认识」时放行，
+    /// 本会话不再重现，跨会话由 ReviewState 调度。
+    var maxExposureRounds: Int = Constants.defaultMaxExposureRounds
+
+    /// 记忆反馈单次会话可调度的到期复习词上限（0 = 不限，默认 0）
+    ///
+    /// 达上限后本会话不再拉取更多到期复习词（新词照常补足），
+    /// 剩余到期词留待下次会话，防长期未开后一次积压。
+    var sessionReviewCap: Int = Constants.defaultSessionReviewCap
+
+    /// 记忆反馈「认识」复习基础间隔（天），0.5/1/2，默认 1
+    ///
+    /// 只作用于认识路径：复习间隔 = 基准天 × 2^(盒-1)；模糊 4h / 不认识 1h 不受影响。
+    var reviewBaseIntervalDays: Double = Constants.defaultReviewBaseIntervalDays
+
     /// 单单词停留时长（秒），取值 1-60，默认 5
     var stayDuration: Int = Constants.defaultStayDuration
 
@@ -124,6 +141,9 @@ class AppSettings {
             carouselLoopCount: carouselLoopCount,
             playOrder: playOrder,
             sectionOrder: sectionOrder,
+            maxExposureRounds: maxExposureRounds,
+            sessionReviewCap: sessionReviewCap,
+            reviewBaseIntervalDays: reviewBaseIntervalDays,
             stayDuration: stayDuration,
             fullscreenAutoHide: fullscreenAutoHide,
             muteSpeechInFullscreen: muteSpeechInFullscreen,
@@ -181,6 +201,9 @@ class AppSettings {
         var carouselLoopCount: Int
         var playOrder: PlayOrder
         var sectionOrder: SectionOrder?
+        var maxExposureRounds: Int?
+        var sessionReviewCap: Int?
+        var reviewBaseIntervalDays: Double?
         var stayDuration: Int
         var fullscreenAutoHide: Bool
         var muteSpeechInFullscreen: Bool?
@@ -211,6 +234,12 @@ class AppSettings {
         playOrder = stored.playOrder
         // 向后兼容：旧版本无组间策略配置时使用默认值
         sectionOrder = stored.sectionOrder ?? .sequential
+        // 向后兼容：旧版本无最大曝光次数配置时使用默认值 3
+        maxExposureRounds = stored.maxExposureRounds ?? Constants.defaultMaxExposureRounds
+        // 向后兼容：旧版本无复习预算配置时默认 0（不限）
+        sessionReviewCap = stored.sessionReviewCap ?? Constants.defaultSessionReviewCap
+        // 向后兼容：旧版本无基准间隔配置时默认 1 天
+        reviewBaseIntervalDays = stored.reviewBaseIntervalDays ?? Constants.defaultReviewBaseIntervalDays
         stayDuration = stored.stayDuration
         fullscreenAutoHide = stored.fullscreenAutoHide
         // 向后兼容：旧版本无全屏静音配置时默认开启

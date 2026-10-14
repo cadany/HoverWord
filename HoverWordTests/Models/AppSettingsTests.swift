@@ -27,6 +27,9 @@ final class AppSettingsTests: XCTestCase {
         AppSettings.shared.playOrder = .sequential
         AppSettings.shared.stayDuration = Constants.defaultStayDuration
         AppSettings.shared.sectionSize = Constants.defaultSectionSize
+        AppSettings.shared.maxExposureRounds = Constants.defaultMaxExposureRounds
+        AppSettings.shared.sessionReviewCap = Constants.defaultSessionReviewCap
+        AppSettings.shared.reviewBaseIntervalDays = Constants.defaultReviewBaseIntervalDays
         AppSettings.shared.autoPlaySpeech = true
         AppSettings.shared.voiceNameByLanguage = [:]
         AppSettings.shared.speechRateMultiplier = 1.0
@@ -165,5 +168,63 @@ final class AppSettingsTests: XCTestCase {
 
         XCTAssertEqual(AppSettings.shared.stayDuration, 15,
                        "postDidChange() 应自动保存设置")
+    }
+
+    // MARK: - 记忆反馈新增设置兼容（任务 5.5）
+
+    func testMaxExposureRoundsDefaultWhenMissing() {
+        // 模拟旧版本 JSON：保存完整设置后，从原始数据中剥离 maxExposureRounds 键
+        AppSettings.shared.maxExposureRounds = 7
+        AppSettings.shared.save()
+        guard var data = UserDefaults.standard.data(forKey: settingsKey),
+              var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            XCTFail("设置数据无法解析")
+            return
+        }
+        object.removeValue(forKey: "maxExposureRounds")
+        data = try! JSONSerialization.data(withJSONObject: object)
+        UserDefaults.standard.set(data, forKey: settingsKey)
+
+        // 加载后应回退默认值 3
+        AppSettings.shared.load()
+
+        XCTAssertEqual(AppSettings.shared.maxExposureRounds, Constants.defaultMaxExposureRounds,
+                       "旧 JSON 无 maxExposureRounds 字段时应回退默认 3")
+    }
+
+    func testNewReviewParamsDefaultWhenMissing() {
+        // 模拟旧版本 JSON：保存后剥离两个新增字段
+        AppSettings.shared.sessionReviewCap = 30
+        AppSettings.shared.reviewBaseIntervalDays = 2
+        AppSettings.shared.save()
+        guard var data = UserDefaults.standard.data(forKey: settingsKey),
+              var object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            XCTFail("设置数据无法解析")
+            return
+        }
+        object.removeValue(forKey: "sessionReviewCap")
+        object.removeValue(forKey: "reviewBaseIntervalDays")
+        data = try! JSONSerialization.data(withJSONObject: object)
+        UserDefaults.standard.set(data, forKey: settingsKey)
+
+        AppSettings.shared.load()
+
+        XCTAssertEqual(AppSettings.shared.sessionReviewCap, Constants.defaultSessionReviewCap,
+                       "旧 JSON 无 sessionReviewCap 时应回退默认 0（不限）")
+        XCTAssertEqual(AppSettings.shared.reviewBaseIntervalDays,
+                       Constants.defaultReviewBaseIntervalDays, accuracy: 1e-9,
+                       "旧 JSON 无 reviewBaseIntervalDays 时应回退默认 1 天")
+    }
+
+    func testNewReviewParamsRoundTrip() {
+        AppSettings.shared.sessionReviewCap = 12
+        AppSettings.shared.reviewBaseIntervalDays = 0.5
+        AppSettings.shared.save()
+
+        let fresh = AppSettings.shared
+        fresh.load()
+
+        XCTAssertEqual(fresh.sessionReviewCap, 12, "复习上限应正确往返")
+        XCTAssertEqual(fresh.reviewBaseIntervalDays, 0.5, accuracy: 1e-9, "基础间隔应正确往返")
     }
 }

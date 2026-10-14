@@ -32,6 +32,15 @@ extension Notification.Name {
     /// 监听方：WordbookTabView（刷新列表，确保显示最新数据）
     static let settingsWindowDidBecomeKey = Notification.Name("settingsWindowDidBecomeKey")
 
+    // MARK: - 掌握度相关
+
+    /// 复习状态已变更（ReviewState 任一写入完成后发送）
+    ///
+    /// 监听方：StatsView（学习统计实时刷新）
+    /// 触发方：ReviewStateService.record()（三态反馈落盘）、resetAll()（重置学习记录落盘）。
+    /// 仅广播数据变更，不携带引擎重启副作用（引擎调度不受该通知影响）。
+    static let reviewStateDidChange = Notification.Name("reviewStateDidChange")
+
     // MARK: - 单词本相关
 
     /// 单词本启用状态已变更
