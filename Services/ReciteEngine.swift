@@ -1184,6 +1184,39 @@ class ReciteEngine {
         )
     }
 
+    /// 走马灯实时位置快照（学习统计背记进度卡 TimelineView 轮询读取，见 change feat05 D3/D7）
+    ///
+    /// 只读约束：仅聚合内存读数，SHALL NOT 写任何引擎状态。
+    /// 词级/Section 级推进均实时反映（每次读取即当前内存值）。
+    struct CarouselProgressSnapshot: Equatable {
+        /// 当前 Section 在合流队列中的位置（0-based）
+        let sectionIndex: Int
+        /// 合流队列 Section 总数
+        let totalSections: Int
+        /// 当前 Section 内当前展示词的位置（0-based，轮次切换时归 0）
+        let wordIndex: Int
+        /// 当前 Section 词数
+        let wordCountInSection: Int
+
+        /// 引擎是否处于有效的走马灯位置（队列非空且当前 Section 存在；
+        /// 全部完成后 index == total 时为 false）
+        var isActive: Bool { totalSections > 0 && sectionIndex < totalSections }
+
+        /// 无有效位置（引擎未启动 / 队列空）的默认快照
+        static let idle = CarouselProgressSnapshot(sectionIndex: 0, totalSections: 0, wordIndex: 0, wordCountInSection: 0)
+    }
+
+    /// 当前走马灯实时位置快照（学习统计入口）
+    var carouselProgressSnapshot: CarouselProgressSnapshot {
+        let (index, total) = currentSectionPosition()
+        return CarouselProgressSnapshot(
+            sectionIndex: index,
+            totalSections: total,
+            wordIndex: currentWordIndex,
+            wordCountInSection: currentSectionWordCount()
+        )
+    }
+
     /// 续背锚点状态判定（与 resumeFromContinuationAnchor 的失效判定同一实现）
     ///
     /// 判定基于 Core Data 当前数据而非引擎运行时队列：词本缺失 → wordbookMissing、

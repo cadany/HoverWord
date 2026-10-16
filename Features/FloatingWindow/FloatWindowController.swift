@@ -29,11 +29,12 @@ class FloatWindowController: NSWindowController {
         engine.setHoverPaused(isHoverPaused || isPreviewPaused)
     }
 
-    /// 走马灯合流 Section 队列进度的只读快照（学习统计背记进度卡取数，见 change feat05 D3）
+    /// 走马灯合流 Section 队列实时位置快照（学习统计背记进度卡取数，见 change feat05 D3/D7）
     ///
     /// 只暴露进度读数、不暴露引擎实例，保证统计路径不触及引擎写接口。
-    var carouselSectionProgress: (index: Int, total: Int) {
-        engine.currentSectionPosition()
+    /// 词级/Section 级推进均实时反映，由统计页 TimelineView 每秒轮询。
+    var carouselProgressSnapshot: ReciteEngine.CarouselProgressSnapshot {
+        engine.carouselProgressSnapshot
     }
 
     /// 当前续背锚点只读状态（学习统计锚点行取数，见 change feat05 D4；转发引擎同一查询）

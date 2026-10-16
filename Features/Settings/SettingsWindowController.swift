@@ -126,7 +126,9 @@ struct SettingsRootView: View {
             ZStack {
                 tabPage(SidebarItem.wordbook.id) { WordbookTabView() }
                 tabPage(SidebarItem.recite.id) { ReciteSettingsView() }
-                tabPage(SidebarItem.learningStats.id) { StatsView() }
+                tabPage(SidebarItem.learningStats.id) {
+                    StatsView(isTabSelected: selectedItemId == SidebarItem.learningStats.id)
+                }
                 tabPage(SidebarItem.appearance.id) { AppearanceView() }
                 tabPage(SidebarItem.speech.id) { SpeechSettingsView() }
                 tabPage(SidebarItem.general.id) { GeneralSettingsView() }
