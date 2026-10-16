@@ -2844,13 +2844,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%d wordbooks enabled · %d Sections combined"
+            "value" : "%d wordbooks enabled · %d Sections in total"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已启用 %d 个单词本 · 合流 %d 个 Section"
+            "value" : "已启用 %d 个单词本 · 共 %d 个 Section"
           }
         }
       }

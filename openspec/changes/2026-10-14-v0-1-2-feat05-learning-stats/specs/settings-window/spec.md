@@ -66,7 +66,7 @@
 #### Scenario: 背记进度卡
 
 - **WHEN** 走马灯模式下学习统计 Tab 渲染背记进度卡
-- **THEN** SHALL 显示合流 Section 队列的进度条与「已完成 N / 共 M 个 Section」（N/M 为跨词本连续计数），副标题显示「已启用 K 个词本 · 合流 M 个 Section」；引擎处于有效走马灯位置时 SHALL 另显示「正在背：Section N+1 · 第 X / Y 词」明细行（实时位置）；存在有效续背锚点时 SHALL 显示「上次背完：〈词本名〉 · Section N」，单选词本时词本名 SHALL 同样显示
+- **THEN** SHALL 显示合流 Section 队列的进度条与「已完成 N / 共 M 个 Section」（N/M 为跨词本连续计数），副标题显示「已启用 K 个词本 · 共 M 个 Section」；引擎处于有效走马灯位置时 SHALL 另显示「正在背：Section N+1 · 第 X / Y 词」明细行（实时位置）；存在有效续背锚点时 SHALL 显示「上次背完：〈词本名〉 · Section N」，单选词本时词本名 SHALL 同样显示
 
 #### Scenario: 背记进度实时刷新
 

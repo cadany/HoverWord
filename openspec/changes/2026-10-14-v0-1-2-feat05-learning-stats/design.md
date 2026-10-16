@@ -20,7 +20,7 @@ feat04 落地 ReviewState（boxLevel/dueAt/lastReviewedAt/lastFeedbackRaw/cumula
 
 ### D3 状态 B：背记进度（走马灯模式）
 
-- **背记进度卡**（单卡）：进度条 = 合流 Section 队列进度（复用 `currentSectionPosition()` 的 `(index, total)`，跨词本连续计数）+「已完成 N / 共 M 个 Section」；引擎处于有效走马灯位置时另显示「正在背：Section N+1 · 第 X / Y 词」明细行；副标题「已启用 K 个词本 · 合流 M 个 Section」
+- **背记进度卡**（单卡）：进度条 = 合流 Section 队列进度（复用 `currentSectionPosition()` 的 `(index, total)`，跨词本连续计数）+「已完成 N / 共 M 个 Section」；引擎处于有效走马灯位置时另显示「正在背：Section N+1 · 第 X / Y 词」明细行；副标题「已启用 K 个词本 · 共 M 个 Section」（措辞定稿：用户侧不出现「合流」这一实现隐喻，2026-10-16 用户确认）
 - **实时刷新**：走马灯推进属高频事件（NotificationNames 约定高频不广播通知），统计页经 `TimelineView` 每秒轮询引擎只读快照 `CarouselProgressSnapshot`（经 FloatWindowController 透出，不暴露引擎实例）——词级推进、Section 切换、引擎重启归零、一轮完成绕回均在 1 秒内自动反映；空态卡仅在引擎无有效位置时显示，避免背记进行中误导「还没有进度」（2026-10-15 用户验收反馈迭代：大半天推进后统计仍显示打开时刻快照 0/300，根因为刷新缺失而非引擎缺陷——引擎存档证明位置在 Section 15）
 - **锚点行**：「上次背完：〈词本名〉 · Section N」——词本名按续背锚点 `SectionIdentity(wordbookId)` 反查 Core Data 得到；单选词本时统一显示词本名（用户定稿，不省略）
 - **锚点状态判定矩阵**（与引擎 restore 同源，见 D4）：
