@@ -9,8 +9,13 @@ import SwiftUI
 /// 只读约束：仅消费 ReviewState 聚合、引擎进度读数与锚点状态判定，
 /// SHALL NOT 写 ReviewState / 背记进度 / 续背锚点（见 D4/D7）。
 /// 刷新时机：onAppear + reviewStateDidChange / appSettingsDidChange /
-/// 词本启停 / 词本内容 / 收藏变更（页面常驻层级，切换 Tab 不重建，靠通知保活数据）。
+/// 词本启停 / 词本内容 / 收藏变更（页面常驻层级，切换 Tab 不重建，靠通知保活数据）；
+/// 走马灯实时位置另由 TimelineView 每秒轮询引擎快照（推进属高频事件，不广播通知）。
 struct StatsView: View {
+
+    /// 当前 Tab 是否处于选中态：常驻层级下非选中页仍在视图树中，
+    /// 据此暂停 TimelineView tick，避免不可见时的每秒轮询渲染
+    let isTabSelected: Bool
 
     // MARK: - 展示状态（refresh() 一次性快照，只读渲染）
 
@@ -31,7 +36,6 @@ struct StatsView: View {
     @State private var totalSummary = ReviewStateService.MasterySummary()
     @State private var wordbookRows: [WordbookRowData] = []
     @State private var anchorState: ReciteEngine.ContinuationAnchorState = .none
-    @State private var sectionProgress: (index: Int, total: Int) = (0, 0)
     @State private var showsExplanation = false
 
     var body: some View {
@@ -215,22 +219,14 @@ struct StatsView: View {
 
     @ViewBuilder
     private var progressSection: some View {
-        // 背记进度卡：合流 Section 队列进度
-        VStack(alignment: .leading, spacing: 12) {
-            Text(L10n.t("stats.progress.title"))
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-            ProgressView(value: progressFraction)
-            Text(L10n.t("stats.progress.format", sectionProgress.index, sectionProgress.total))
-                .font(.system(size: 13))
-            Text(L10n.t("stats.progress.subtitle.format", wordbookRows.count, sectionProgress.total))
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
+        // 进度卡与锚点区每秒轮询引擎快照：走马灯推进属高频事件（项目约定不广播通知），
+        // TimelineView 提供词级实时性，引擎重启归零等状态变化也随 tick 自动反映；
+        // 仅 Tab 选中时包 TimelineView 按秒 tick，非选中（常驻但 opacity 0）静态渲染不轮询
+        if isTabSelected {
+            TimelineView(.periodic(from: .now, by: 1)) { _ in progressContent }
+        } else {
+            progressContent
         }
-        .glassCard()
-
-        // 锚点行 / 异常行 / 空态卡（判定矩阵见 D3，与引擎 restore 同源）
-        anchorView
 
         // 历史掌握度折叠行（有 ReviewState 记录的词本）
         ForEach(wordbookRows.filter { $0.hasRecord }, id: \.id) { row in
@@ -246,13 +242,53 @@ struct StatsView: View {
         }
     }
 
-    private var progressFraction: Double {
-        guard sectionProgress.total > 0 else { return 0 }
-        return Double(sectionProgress.index) / Double(sectionProgress.total)
+    /// 进度卡与锚点区的共同内容（快照在每次 TimelineView 重算时实时读取）
+    private var progressContent: some View {
+        let snapshot = readCarouselSnapshot()
+        return VStack(alignment: .leading, spacing: Constants.settingsCardSpacing) {
+            progressCard(snapshot)
+            anchorView(snapshot)
+        }
+    }
+
+    /// 背记进度卡：合流 Section 队列进度 + 正在背明细行（实时快照驱动）
+    private func progressCard(_ snapshot: ReciteEngine.CarouselProgressSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.t("stats.progress.title"))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.secondary)
+            ProgressView(value: progressFraction(of: snapshot))
+            Text(L10n.t("stats.progress.format", snapshot.sectionIndex, snapshot.totalSections))
+                .font(.system(size: 13))
+            if snapshot.isActive {
+                Text(L10n.t(
+                    "stats.progress.current.format",
+                    snapshot.sectionIndex + 1,
+                    snapshot.wordIndex + 1,
+                    snapshot.wordCountInSection
+                ))
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            }
+            Text(L10n.t("stats.progress.subtitle.format", wordbookRows.count, snapshot.totalSections))
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+        }
+        .glassCard()
+    }
+
+    /// 从悬浮窗控制器读取引擎实时位置快照（只读，controller 不可达时为 idle）
+    private func readCarouselSnapshot() -> ReciteEngine.CarouselProgressSnapshot {
+        AppDelegate.shared?.floatWindowController?.carouselProgressSnapshot ?? .idle
+    }
+
+    private func progressFraction(of snapshot: ReciteEngine.CarouselProgressSnapshot) -> Double {
+        guard snapshot.totalSections > 0 else { return 0 }
+        return Double(snapshot.sectionIndex) / Double(snapshot.totalSections)
     }
 
     @ViewBuilder
-    private var anchorView: some View {
+    private func anchorView(_ snapshot: ReciteEngine.CarouselProgressSnapshot) -> some View {
         switch anchorState {
         case .valid(_, let wordbookName, let sectionIndex):
             Text(L10n.t("stats.anchor.format", wordbookName, sectionIndex + 1))
@@ -270,16 +306,20 @@ struct StatsView: View {
                 .foregroundColor(.secondary)
                 .glassCard()
         case .none, .sectionInvalid:
-            VStack(spacing: 4) {
-                Text(L10n.t("stats.empty.title"))
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                Text(L10n.t("stats.empty.hint"))
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary.opacity(0.7))
+            // 引擎正处于有效走马灯位置时，进行中进度已在进度卡实时展示，
+            // 不再叠加「还没有背记进度」空态卡造成误导
+            if !snapshot.isActive {
+                VStack(spacing: 4) {
+                    Text(L10n.t("stats.empty.title"))
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                    Text(L10n.t("stats.empty.hint"))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .glassCard()
             }
-            .frame(maxWidth: .infinity)
-            .glassCard()
         }
     }
 
@@ -302,11 +342,10 @@ struct StatsView: View {
             )
         }
 
+        // 走马灯实时位置由 TimelineView 每秒轮询快照，此处只同步低频的锚点状态
         if let controller = AppDelegate.shared?.floatWindowController {
-            sectionProgress = controller.carouselSectionProgress
             anchorState = controller.continuationAnchorState
         } else {
-            sectionProgress = (0, 0)
             anchorState = .none
         }
     }

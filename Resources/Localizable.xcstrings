@@ -2804,6 +2804,23 @@
         }
       }
     },
+    "stats.progress.current.format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now on Section %d · Word %d of %d"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在背：Section %d · 第 %d / %d 词"
+          }
+        }
+      }
+    },
     "stats.progress.format" : {
       "extractionState" : "manual",
       "localizations" : {

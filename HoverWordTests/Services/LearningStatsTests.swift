@@ -240,13 +240,13 @@ final class LearningStatsTests: XCTestCase {
     // MARK: - 4.4 restore 行为回归
 
     func testResumeFromValidAnchorStillRestores() {
-        // 队列 = 词本 A 两个 Section（合流 2），锚点指向 Section 0，
-        // 续背应从锚点的下一 Section（索引 1）开始并清除锚点
+        // 合流队列 = 词本 A 两个 Section + 词本 B 一个 Section（共 3），锚点指向 A Section 0，
+        // 续背应从锚点的下一 Section（队列索引 1）开始并清除锚点
         writeAnchor(wordbookId: "stats-wb-a", sectionIndex: 0)
 
         engine.start()
 
-        XCTAssertEqual(engine.currentSectionPosition().total, 2, "合流队列应含 2 个 Section")
+        XCTAssertEqual(engine.currentSectionPosition().total, 3, "合流队列应含 3 个 Section（A 2 + B 1）")
         XCTAssertEqual(
             engine.currentSectionPosition().index, 1,
             "有效锚点应从其下一 Section 续背"
@@ -268,5 +268,32 @@ final class LearningStatsTests: XCTestCase {
             "失效锚点应由 restore 路径清除"
         )
         XCTAssertEqual(engine.currentSectionPosition().index, 0, "失效锚点应回退为新开始")
+    }
+
+    // MARK: - 4.5 走马灯实时快照
+
+    func testCarouselProgressSnapshotOnFreshStart() {
+        engine.start()
+
+        let snapshot = engine.carouselProgressSnapshot
+        XCTAssertEqual(snapshot.sectionIndex, 0, "新开始应位于第一个 Section")
+        XCTAssertEqual(snapshot.totalSections, 3, "快照总数应与合流队列一致（A 2 + B 1）")
+        XCTAssertEqual(snapshot.wordIndex, 0, "新 Section 应从第一个词开始展示")
+        XCTAssertEqual(snapshot.wordCountInSection, 3, "词数应取自当前 Section 实际词条（A Section 0 三词）")
+        XCTAssertTrue(snapshot.isActive)
+    }
+
+    func testCarouselProgressSnapshotRestoresAnchorPosition() {
+        writeAnchor(wordbookId: "stats-wb-a", sectionIndex: 0)
+        engine.start()
+
+        let snapshot = engine.carouselProgressSnapshot
+        XCTAssertEqual(snapshot.sectionIndex, 1, "快照应反映续背恢复后的 Section 位置")
+        XCTAssertEqual(snapshot.wordCountInSection, 2, "A Section 1 应为两词")
+        XCTAssertTrue(snapshot.isActive)
+    }
+
+    func testIdleSnapshotIsInactive() {
+        XCTAssertFalse(ReciteEngine.CarouselProgressSnapshot.idle.isActive, "idle 快照不应视为有效位置")
     }
 }
